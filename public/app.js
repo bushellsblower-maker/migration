@@ -34,10 +34,10 @@ const NATION_NAMES = {
 };
 
 const PALETTES = {
-  ink: ["#e8e0d0", "#c9b89a", "#8f7a55", "#5a4630", "#2b2118"],
-  teal: ["#dce8e4", "#9cbcb4", "#4d8078", "#1f5853", "#0b2f2d"],
+  ink: ["#d2c4a6", "#b08958", "#7a5a32", "#4a341f", "#1f160f"],
+  teal: ["#9cbcb4", "#5d9188", "#2f6b64", "#184843", "#0b2f2d"],
   diverging: ["#8a3d1c", "#c98962", "#eee6d6", "#6a9a8d", "#0f4c4a"],
-  print: ["#f0ece3", "#c8c2b4", "#8d8778", "#534e44", "#221f1b"],
+  print: ["#c8c2b4", "#8d8778", "#534e44", "#3a362f", "#221f1b"],
 };
 
 const $ = (id) => document.getElementById(id);
@@ -318,6 +318,31 @@ function styleFeature(feature) {
   };
 }
 
+function featureLabel(feature) {
+  const id = geoIdFromFeature(feature);
+  const name = feature.properties?.name || NATION_NAMES[id] || id;
+  const l = layer();
+  const used = (l.mapMetric && l.metrics.find((x) => x.id === l.mapMetric)) || metric();
+  const v = mapValue(used, id, state.year);
+  const note = mapValueNote(used, id, state.year);
+  const val = v == null ? "no comparable figure" : formatValue(used, v);
+  return `${name} · ${state.year}: ${val}${note ? ` (${note})` : ""}`;
+}
+
+function updateReadout(geoId) {
+  const el = $("map-readout");
+  if (!el) return;
+  const l = layer();
+  const used = (l.mapMetric && l.metrics.find((x) => x.id === l.mapMetric)) || metric();
+  const rows = NATION_IDS.map((id) => {
+    const v = used ? mapValue(used, id, state.year) : null;
+    const mark = id === geoId ? "←" : "";
+    return `${NATION_NAMES[id]}: ${used ? formatValue(used, v) : "—"}${mark ? ` ${mark}` : ""}`;
+  });
+  const title = used ? `${used.label} · ${state.year}` : l.title;
+  el.innerHTML = `<strong>${title}</strong>${rows.map((r) => `<div>${r}</div>`).join("")}`;
+}
+
 function bannerText() {
   const l = layer();
   if (l.noMapReason && (!l.mapGeos || !l.mapGeos.length)) return l.noMapReason;
@@ -364,35 +389,35 @@ function renderMap() {
   if (state.geoLayer) {
     state.geoLayer.setStyle((f) => styleFeature(f));
   }
+  updateReadout(state.selectedGeo);
 }
 
 function bindMap() {
   state.map = L.map("map", { scrollWheelZoom: true, attributionControl: true }).setView([54.6, -2.4], 5.2);
-  L.tileLayer("https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png", {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a> · nation polygons: Natural Earth',
-    subdomains: "abcd",
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution:
+      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · nation polygons: Natural Earth',
     maxZoom: 12,
   }).addTo(state.map);
   state.geoLayer = L.geoJSON(state.geo, {
     style: (f) => styleFeature(f),
     onEachFeature: (feature, lyr) => {
+      const refreshTip = () => featureLabel(feature);
+      lyr.bindTooltip(refreshTip, { sticky: true, opacity: 0.95, className: "map-tip" });
+      lyr.bindPopup(refreshTip);
       lyr.on("click", () => {
         state.selectedGeo = geoIdFromFeature(feature);
         renderMap();
         renderChart();
         renderNotes();
       });
-      lyr.on("mouseover", () => lyr.setStyle({ weight: 2.4 }));
-      lyr.on("mouseout", () => state.geoLayer.setStyle((f) => styleFeature(f)));
-      lyr.bindTooltip(() => {
-        const id = geoIdFromFeature(feature);
-        const name = feature.properties?.name || NATION_NAMES[id] || id;
-        const l = layer();
-        const used = (l.mapMetric && l.metrics.find((x) => x.id === l.mapMetric)) || metric();
-        const v = mapValue(used, id, state.year);
-        const note = mapValueNote(used, id, state.year);
-        const val = v == null ? "no comparable figure" : formatValue(used, v);
-        return `${name}: ${val}${note ? ` (${note})` : ""}`;
+      lyr.on("mouseover", () => {
+        lyr.setStyle({ weight: 2.4 });
+        updateReadout(geoIdFromFeature(feature));
+      });
+      lyr.on("mouseout", () => {
+        state.geoLayer.setStyle((f) => styleFeature(f));
+        updateReadout(state.selectedGeo);
       });
     },
   }).addTo(state.map);
@@ -401,17 +426,15 @@ function bindMap() {
 function seriesForChart(l, m) {
   if (!m) return [];
   if (l.id === "p1-ltim-net") {
-    const method = /admin/.test(m.id) ? "admin" : "ips";
-    return l.metrics
-      .filter((x) => x.id.includes(method))
-      .map((x) => ({
-        id: x.id,
-        label: x.label,
-        format: x.format,
-        unit: x.unit,
-        points: x.series.UK || [],
-        dash: /ips/.test(x.id),
-      }));
+    return l.metrics.map((x) => ({
+      id: x.id,
+      label: x.label,
+      format: x.format,
+      unit: x.unit,
+      points: x.series.UK || [],
+      dash: /ips/.test(x.id),
+      emphasize: x.id === m.id,
+    }));
   }
   if (l.id === "p1-asylum" && m.id === (l.defaultMetric || "people-claiming-asylum")) {
     const ids = ["people-claiming-asylum", "grants-of-protection-or-other-leave", "refusals", "people-awaiting-an-initial-decision"];
@@ -461,7 +484,7 @@ function drawLineChart(canvas, series, breaks) {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, cssW, cssH);
 
-  const pad = { l: 58, r: 16, t: 16, b: 28 };
+  const pad = { l: 58, r: 16, t: series.length > 3 ? 36 : 18, b: 28 };
   const all = series.flatMap((s) => s.points);
   if (!all.length) return false;
   const xs = all.map((p) => p.year);
@@ -520,7 +543,7 @@ function drawLineChart(canvas, series, breaks) {
     if (!pts.length) return;
     ctx.beginPath();
     ctx.strokeStyle = colors[i % colors.length];
-    ctx.lineWidth = 2;
+    ctx.lineWidth = s.emphasize ? 2.8 : 1.7;
     ctx.setLineDash(s.dash ? [5, 4] : []);
     pts.forEach((p, idx) => {
       const x = xAt(p.year);
@@ -552,7 +575,9 @@ function drawLineChart(canvas, series, breaks) {
   ctx.font = "11px IBM Plex Sans, system-ui, sans-serif";
   series.forEach((s, i) => {
     ctx.fillStyle = colors[i % colors.length];
-    ctx.fillText(s.label.slice(0, 42), pad.l + i * 140, 12);
+    const col = i % 3;
+    const row = Math.floor(i / 3);
+    ctx.fillText(s.label.slice(0, 36), pad.l + col * 210, 12 + row * 12);
   });
   return true;
 }
@@ -663,6 +688,8 @@ function renderChart() {
   canvas.hidden = false;
   empty.hidden = true;
 
+  const ctx0 = canvas.getContext("2d");
+  ctx0.clearRect(0, 0, canvas.width, canvas.height);
   $("chart-title").textContent = l.title;
   $("chart-source").innerHTML = sourceCite(l);
 

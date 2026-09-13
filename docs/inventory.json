@@ -1,0 +1,1979 @@
+{
+  "meta": {
+    "project": "Migration",
+    "repo": "bushellsblower-maker/migration",
+    "domain": "migration.cybush.uk",
+    "title": "UK migration & demographics source inventory",
+    "coverage_intent": "~1940–present (as available)",
+    "compiled_utc": "2026-09-13T21:15:00Z",
+    "compiled_local": "2026-09-13 22:15 BST (Europe/London)",
+    "principles": [
+      "Prefer primary statistical producers (ONS, Home Office, NRS, NISRA, National Archives, Bank of England).",
+      "Secondary synthesis (Migration Observatory, Commons Library) labeled as such.",
+      "Do not invent numbers; this inventory describes sources, not estimates.",
+      "Flag contested fiscal/economic impact literature; list methods and opposing findings.",
+      "Use careful terminology for irregular entry: report what is measured (detections), not an unknown stock of people without permission."
+    ],
+    "default_license_note": "Most ONS/Home Office/GOV.UK official statistics are reusable under the Open Government Licence v3.0 (OGL). Always check each release page for third-party exceptions.",
+    "ogl_url": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/"
+  },
+  "cannot_honestly_map_early_decades": [
+    {
+      "theme": "Ethnicity",
+      "gap": "No comparable ethnicity question in UK censuses before 1991 (England & Wales / Scotland). Cannot map ethnicity stocks continuously from 1940.",
+      "earliest_usable": "1991 Census (categories change in 2001, 2011, 2021/22 — breaks in detailed groups)."
+    },
+    {
+      "theme": "Religion (modern affiliation)",
+      "gap": "Voluntary religion question only from 2001 Census (E&W, Scotland, NI). 1851 religious worship census is not comparable (attendance/places of worship, not affiliation).",
+      "earliest_usable": "2001 Census for affiliation; earlier decades not mappable on a consistent affiliation basis."
+    },
+    {
+      "theme": "Long-term international migration flows (UN 12-month definition)",
+      "gap": "No continuous official LTIM/IPS series from 1940. IPS-based estimates from ~1964 (paper) / 1975 (online); comprehensive LTIM from 1991; admin-based LTIM from ~2012 with major method change vs IPS era.",
+      "earliest_usable": "Indicative IPS timeline ~1964+ with strong caveats; comparable modern LTIM from 1991; admin-based series from YE June 2012 (provisional/revisable)."
+    },
+    {
+      "theme": "UK-born vs non-UK-born / nationality stocks (survey)",
+      "gap": "APS/LFS country-of-birth and nationality series start ~2000–2004. Census birthplace exists historically but geographies, classifications, and UK/overseas groupings change; wartime and Empire/Commonwealth definitions differ.",
+      "earliest_usable": "Census birthplace tables from 19th/early 20th century (Vision of Britain / census reports) for coarse UK vs overseas; modern APS stocks from 2004 (LFS back to ~2000)."
+    },
+    {
+      "theme": "Asylum applications/grants/backlog",
+      "gap": "Modern Home Office published asylum time series are strong from late 20th century onward (Control of Immigration / Immigration Statistics). Continuous digital tables denser from ~2000s; backlog/work-in-progress definitions change.",
+      "earliest_usable": "Use Control of Immigration / historical Immigration Statistics for pre-2010; current Immigration system statistics for recent decades. Do not back-cast backlog concepts into 1940–1970s."
+    },
+    {
+      "theme": "Irregular / illegal entry / small boats",
+      "gap": "No honest time series of 'illegal immigration totals' for early decades. Small-boat detection series effectively from 2018; broader irregular detections published as official statistics from 2022. Undetected entries and visa overstays are not comprehensively measured.",
+      "earliest_usable": "Small boats daily/provisional from 2018; irregular/illegal entry routes chapter from Feb 2022. Never present as total irregular population."
+    },
+    {
+      "theme": "Fertility by mother's country of birth",
+      "gap": "Parents' country of birth recorded at birth registration in England & Wales only from April 1969.",
+      "earliest_usable": "1969+ for E&W; Scotland/NI have separate vital statistics producers with their own start dates for analogous tables."
+    },
+    {
+      "theme": "Age–sex by birthplace/nationality (subnational)",
+      "gap": "Detailed cross-tabs are census-decade products or recent survey/admin research outputs; not available annually for 1940–1990 at LA level.",
+      "earliest_usable": "Census decades (birthplace historically; nationality/passports more recent); APS for national/regional stocks post-2004."
+    },
+    {
+      "theme": "Fiscal impact of migration",
+      "gap": "No primary statistical series; only model-based contested estimates (static vs dynamic; average vs marginal; which public goods allocated). Cannot map a single 'fiscal impact' line from 1940.",
+      "earliest_usable": "Cite study-by-study (Dustmann–Frattini period studies; OBR FRS/EFO scenarios; MAC 2025 lifetime models) with explicit assumptions — never as fact layers without caveats."
+    },
+    {
+      "theme": "Wartime population (1940–45)",
+      "gap": "1941 Census cancelled. 1939 National Register is civilian snapshot. Mid-year estimates for 1940–47 switch between civilian / home / including forces abroad definitions.",
+      "earliest_usable": "Use ONS/Registrar General historical series with explicit wartime definition flags; do not treat as continuous usual-residence MYE."
+    }
+  ],
+  "themes": [
+    {
+      "id": 1,
+      "name": "Population & net migration / immigration / emigration",
+      "sources": [
+        {
+          "id": "ons-ltim-admin",
+          "theme": 1,
+          "theme_name": "Population & net migration / immigration / emigration",
+          "name": "ONS Long-Term International Migration (admin-based LTIM)",
+          "producer": "Office for National Statistics",
+          "primary": true,
+          "earliest_usable_year": 2012,
+          "latest_status_as_of": "2026-05 (docs revised May 2026; series to YE Dec 2025 provisional)",
+          "geography": [
+            "UK"
+          ],
+          "update_frequency": "Twice yearly (end May and end November)",
+          "license": "Open Government Licence v3.0",
+          "urls": {
+            "bulletin_collection": "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/internationalmigration",
+            "qmi": "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/internationalmigration/methodologies/adminbasedlongterminternationalmigrationestimatesqmi",
+            "technical_user_guide": "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/internationalmigration/methodologies/provisionallongterminternationalmigrationestimatestechnicaluserguide",
+            "methods": "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/internationalmigration/methodologies/methodstoproduceprovisionallongterminternationalmigrationestimates"
+          },
+          "api_csv": "ONS website downloads (Excel/CSV via release pages); no single stable public REST API for full LTIM. Prefer release datasets.",
+          "known_breaks": [
+            "Pre-2020 IPS-based LTIM vs post-pandemic admin-based methods (HOBI, RAPID, etc.) — not a continuous identical series.",
+            "EU+/non-EU+/British nationality groupings use different admin sources and methods; EUSS cumulative-stay methods evolving (Nov 2025 updates).",
+            "Latest ~4 data points provisional and revised when more travel history available; British nationals involve 3- or 9-month forecasting."
+          ],
+          "confidence_notes": "Official statistics in development (not yet accredited). Best current UK net migration flow measure for ~2012–present. Do not splice naively onto IPS LTIM 1991–2010s without a break marker.",
+          "measures": [
+            "immigration",
+            "emigration",
+            "net migration",
+            "nationality groupings"
+          ]
+        },
+        {
+          "id": "ons-ltim-ips-historical",
+          "theme": 1,
+          "theme_name": "Population & net migration / immigration / emigration",
+          "name": "ONS IPS / historical LTIM timeline (pre-admin era)",
+          "producer": "Office for National Statistics",
+          "primary": true,
+          "earliest_usable_year": 1964,
+          "latest_status_as_of": "Historical ad hoc / archived LTIM QMI (IPS era)",
+          "geography": [
+            "UK"
+          ],
+          "update_frequency": "Historical (superseded for current production)",
+          "license": "Open Government Licence v3.0",
+          "urls": {
+            "ltim_qmi_ips_era": "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationestimates/methodologies/longterminternationalmigrationqmi",
+            "timeline_1964_2015": "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/internationalmigration/adhocs/006408longterminternationalmigrationintoandoutoftheukbycitizenship1964to2015"
+          },
+          "api_csv": "XLS ad hoc download for 1964–2015 citizenship timeline; IPS 3-series tables historically from 1975 online.",
+          "known_breaks": [
+            "Estimates before 1991 use different methodology than LTIM 1991+.",
+            "IPS measures intentions (pre-admin) vs admin measures observed behaviour.",
+            "COVID IPS suspension broke continuity and accelerated admin transformation."
+          ],
+          "confidence_notes": "Use for long-run charts with clear discontinuity annotations at 1991 and ~2012/2020 method shifts. Online IPS from 1975; 1964–74 mainly paper/archival.",
+          "measures": [
+            "immigration",
+            "emigration",
+            "net migration",
+            "citizenship"
+          ]
+        },
+        {
+          "id": "ons-mye",
+          "theme": 1,
+          "theme_name": "Population & net migration / immigration / emigration",
+          "name": "ONS mid-year population estimates (MYE) & time series",
+          "producer": "Office for National Statistics (with NRS, NISRA for UK compilation)",
+          "primary": true,
+          "earliest_usable_year": 1838,
+          "coverage_note_from_1940": "Long back series exist (UK/GB/E&W). Wartime 1940–47 definitions vary (civilian vs home vs including forces abroad). 1941 Census cancelled; 1939 Register is separate civilian snapshot.",
+          "geography": [
+            "UK",
+            "GB",
+            "England",
+            "Wales",
+            "Scotland",
+            "Northern Ireland",
+            "English regions",
+            "local authorities (modern series denser from 1981/1991)"
+          ],
+          "update_frequency": "Annual (with revisions after census rebases)",
+          "license": "Open Government Licence v3.0",
+          "urls": {
+            "time_series_dataset": "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/populationestimatestimeseriesdataset",
+            "uk_pop_series": "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationestimates/timeseries/ukpop",
+            "uk_ew_ni_scot_dataset": "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/populationestimatesforukenglandandwalesscotlandandnorthernireland",
+            "ew_estimates": "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/estimatesofthepopulationforenglandandwales",
+            "gb_1937_2014_adhoc": "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationestimates/adhocs/004357greatbritainpopulationestimates1937to2014",
+            "nomis_la_sya": "https://www.nomisweb.co.uk/datasets/pestsyoala"
+          },
+          "api_csv": "Nomis query/download (CSV/Excel); ONS time series CSV/XLSX; components of change tables include net international migration (method-dependent).",
+          "known_breaks": [
+            "Census rebases (e.g. 2021/2022) revise intercensal years.",
+            "Wartime population definition breaks 1939–1948.",
+            "LA boundary changes over time; Nomis modern LA series commonly from 1991."
+          ],
+          "confidence_notes": "Core stock layer for the app. International migration component of change should be labeled with the migration method era. Mid-2025 UK total reported as provisional/rounded in recent releases.",
+          "measures": [
+            "usually resident population",
+            "age",
+            "sex",
+            "components of change"
+          ]
+        },
+        {
+          "id": "boe-millennium",
+          "theme": 1,
+          "theme_name": "Population & net migration / immigration / emigration",
+          "name": "Bank of England — A Millennium of Macroeconomic Data (population context)",
+          "producer": "Bank of England",
+          "primary": true,
+          "earliest_usable_year": 1086,
+          "coverage_note_from_1940": "Useful long-run population/macro context through ~2016 (v3.1); not a migration-flow source.",
+          "geography": [
+            "UK / historical GB aggregations (variable definitions over centuries)"
+          ],
+          "update_frequency": "Research dataset (not routinely updated like official MYE)",
+          "license": "Check BoE research dataset terms on page (research reuse; not ONS OGL by default)",
+          "urls": {
+            "research_datasets": "https://www.bankofengland.co.uk/statistics/research-datasets"
+          },
+          "api_csv": "Excel download from BoE research datasets page.",
+          "known_breaks": [
+            "Historical reconstruction; variable definitions across centuries."
+          ],
+          "confidence_notes": "Secondary to ONS MYE for post-1940 official population. Good for ultra-long context charts only.",
+          "measures": [
+            "population (historical macro)"
+          ]
+        },
+        {
+          "id": "vision-of-britain",
+          "theme": 1,
+          "theme_name": "Population & net migration / immigration / emigration",
+          "name": "A Vision of Britain through Time (GB Historical GIS)",
+          "producer": "University of Portsmouth / GB Historical GIS",
+          "primary": false,
+          "secondary_synthesis": true,
+          "earliest_usable_year": 1801,
+          "geography": [
+            "England",
+            "Wales",
+            "Scotland",
+            "historical administrative units down to parish/LA equivalents"
+          ],
+          "update_frequency": "Project site (historical)",
+          "license": "See site terms; much census-derived content; cite GBHGIS/University of Portsmouth",
+          "urls": {
+            "home": "https://www.visionofbritain.org.uk/",
+            "atlas": "https://www.visionofbritain.org.uk/atlas/",
+            "census_reports": "https://www.visionofbritain.org.uk/census/",
+            "data": "https://www.visionofbritain.org.uk/data/"
+          },
+          "api_csv": "Web atlas and data pages; UK Data Service GB Historical Database for research downloads.",
+          "known_breaks": [
+            "Administrative geography changes; census questions change."
+          ],
+          "confidence_notes": "Best for historical birthplace maps and long-run local population before modern Nomis geographies. Label as historical GIS synthesis of census reports.",
+          "measures": [
+            "population",
+            "age structure",
+            "birthplace (historical)"
+          ]
+        },
+        {
+          "id": "migobs-net-migration",
+          "theme": 1,
+          "theme_name": "Population & net migration / immigration / emigration",
+          "name": "Migration Observatory — Net migration to the UK (briefing)",
+          "producer": "Migration Observatory",
+          "primary": false,
+          "secondary_synthesis": true,
+          "earliest_usable_year": 2000,
+          "geography": [
+            "UK"
+          ],
+          "update_frequency": "Periodic",
+          "license": "Cite with attribution",
+          "urls": {
+            "briefing": "https://migrationobservatory.ox.ac.uk/resources/briefings/long-term-international-migration-flows-to-and-from-the-uk/"
+          },
+          "api_csv": "None",
+          "known_breaks": [
+            "Explains ONS method changes for users."
+          ],
+          "confidence_notes": "Secondary explainer for UI methodology tooltips.",
+          "measures": [
+            "synthesis"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "UK-born vs non-UK-born; nationality",
+      "sources": [
+        {
+          "id": "ons-cob-nationality-aps",
+          "theme": 2,
+          "theme_name": "UK-born vs non-UK-born; nationality",
+          "name": "ONS Population of the UK by country of birth and nationality (APS/LFS)",
+          "producer": "Office for National Statistics",
+          "primary": true,
+          "earliest_usable_year": 2000,
+          "coverage_note": "LFS-based ~2000–2003; APS-based 2004 to YE June 2021 in main bulletin series; later ad hoc/grouped estimates may appear — check latest release notes. Household survey: excludes most communal establishments.",
+          "geography": [
+            "UK",
+            "countries",
+            "regions",
+            "local authorities (sample-size limited)"
+          ],
+          "update_frequency": "Historically quarterly then annual; main series paused/changed after YE June 2021 quality issues",
+          "license": "Open Government Licence v3.0",
+          "urls": {
+            "latest_bulletin": "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/internationalmigration/bulletins/ukpopulationbycountryofbirthandnationality/latest",
+            "qmi": "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/internationalmigration/methodologies/populationbycountryofbirthandnationalityqmi"
+          },
+          "api_csv": "ONS datasets accompanying bulletins (Excel/CSV).",
+          "known_breaks": [
+            "COVID interviewing mode change biased non-UK-born/non-British representation; reweighting/RTI adjustments applied.",
+            "APS totals ≠ MYE totals (household vs whole population).",
+            "Main publication series ends YE June 2021; treat post-2021 stock estimates cautiously unless from a documented successor product."
+          ],
+          "confidence_notes": "Primary modern stock source for UK/non-UK born and British/non-British — with survey uncertainty and coverage limits. Prefer Census for detailed LA stocks in census years.",
+          "measures": [
+            "country of birth",
+            "nationality",
+            "UK-born",
+            "non-UK-born"
+          ]
+        },
+        {
+          "id": "census-cob-ew-2021",
+          "theme": 2,
+          "theme_name": "UK-born vs non-UK-born; nationality",
+          "name": "Census 2021 England & Wales — country of birth / passports / national identity (Nomis)",
+          "producer": "Office for National Statistics",
+          "primary": true,
+          "earliest_usable_year": 2021,
+          "historical_note": "Country of birth asked in censuses for well over a century; categories and overseas groupings change. Ethnicity from 1991; religion from 2001; passports held more recent.",
+          "geography": [
+            "England",
+            "Wales",
+            "down to Output Area / LA / region"
+          ],
+          "update_frequency": "Decennial (2021)",
+          "license": "Open Government Licence v3.0",
+          "urls": {
+            "bulk": "https://www.nomisweb.co.uk/sources/census_2021_bulk",
+            "ts012_cob_detailed": "https://www.nomisweb.co.uk/datasets/c2021ts012",
+            "story_of_census": "https://www.ons.gov.uk/visualisations/storyofthecensus/"
+          },
+          "api_csv": "Nomis bulk ZIP CSV; Nomis API for many tables.",
+          "known_breaks": [
+            "Census-to-census classification changes; Scotland census in 2022 not 2021."
+          ],
+          "confidence_notes": "Gold-standard stock snapshot for E&W March 2021. Combine with Scotland 2022 and NI 2021 carefully (different dates).",
+          "measures": [
+            "country of birth",
+            "passports held",
+            "national identity"
+          ]
+        },
+        {
+          "id": "census-cob-scotland-2022",
+          "theme": 2,
+          "theme_name": "UK-born vs non-UK-born; nationality",
+          "name": "Scotland’s Census 2022 — country of birth / national identity",
+          "producer": "National Records of Scotland",
+          "primary": true,
+          "earliest_usable_year": 2022,
+          "geography": [
+            "Scotland",
+            "council areas",
+            "smaller census geographies"
+          ],
+          "update_frequency": "Decennial (2022; delayed from 2021)",
+          "license": "Open Government Licence v3.0 (typical for NRS census outputs — confirm on release)",
+          "urls": {
+            "eilr_report": "https://www.scotlandscensus.gov.uk/2022-reports/scotland-s-census-2022-ethnic-group-national-identity-language-and-religion/",
+            "search": "https://www.scotlandscensus.gov.uk/search-the-census"
+          },
+          "api_csv": "Scotland’s Census data search / published tables (CSV/Excel).",
+          "known_breaks": [
+            "One year later than E&W/NI 2021 — UK-wide 2021 maps need Scotland 2022 or interpolated caveat."
+          ],
+          "confidence_notes": "Primary for Scotland stocks. Non-UK-born share rose 7.0% (2011) to 10.2% (2022) per NRS report — cite report, do not hardcode as app 'truth' without source stamp.",
+          "measures": [
+            "country of birth",
+            "national identity",
+            "ethnic group",
+            "religion"
+          ]
+        },
+        {
+          "id": "census-ni-2021",
+          "theme": 2,
+          "theme_name": "UK-born vs non-UK-born; nationality",
+          "name": "NISRA Census 2021 Northern Ireland — country of birth / ethnicity / religion",
+          "producer": "Northern Ireland Statistics and Research Agency",
+          "primary": true,
+          "earliest_usable_year": 2021,
+          "geography": [
+            "Northern Ireland",
+            "LGDs",
+            "smaller geographies"
+          ],
+          "update_frequency": "Decennial",
+          "license": "Open Government Licence v3.0 (confirm on NISRA pages)",
+          "urls": {
+            "census_hub": "https://www.nisra.gov.uk/statistics/census/census-2021",
+            "main_stats_supplemental": "https://www.nisra.gov.uk/publications/census-2021-main-statistics-northern-ireland-supplemental"
+          },
+          "api_csv": "NISRA Flexible Table Builder; Excel downloads (e.g. MS-A18 country of birth).",
+          "known_breaks": [
+            "Religion questions differ from E&W (community background concepts historically important in NI)."
+          ],
+          "confidence_notes": "Primary for NI. Religion and 'religion brought up in' are NI-specific analytic staples.",
+          "measures": [
+            "country of birth",
+            "ethnic group",
+            "religion",
+            "national identity"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Ethnicity (Census + mid-year estimates if any)",
+      "sources": [
+        {
+          "id": "census-ethnicity-ew",
+          "theme": 3,
+          "theme_name": "Ethnicity (Census + mid-year estimates if any)",
+          "name": "Census ethnicity — England & Wales (1991–2021)",
+          "producer": "Office for National Statistics",
+          "primary": true,
+          "earliest_usable_year": 1991,
+          "geography": [
+            "England",
+            "Wales",
+            "LA / OA"
+          ],
+          "update_frequency": "Decennial",
+          "license": "Open Government Licence v3.0",
+          "urls": {
+            "ts022": "https://www.nomisweb.co.uk/datasets/c2021ts022",
+            "bulk": "https://www.nomisweb.co.uk/sources/census_2021_bulk",
+            "ethnic_groups_style": "https://www.ethnicity-facts-figures.service.gov.uk/style-guide/ethnic-groups",
+            "history_blog": "https://history.blog.gov.uk/2019/03/07/50-years-of-collecting-ethnicity-data/"
+          },
+          "api_csv": "Nomis CSV/API; Ethnicity Facts & Figures republishes selected series.",
+          "known_breaks": [
+            "1991 first ethnicity question; 2001 added Mixed; Chinese moved categories 2001→2011; write-in detail expands 2021.",
+            "Detailed groups not comparable across all censuses without concordance."
+          ],
+          "confidence_notes": "No honest ethnicity time series before 1991. Between censuses, survey/admin research estimates exist but are not full accredited annual MYE-by-ethnicity for all years.",
+          "measures": [
+            "ethnic group"
+          ]
+        },
+        {
+          "id": "ons-ethnicity-estimates-research",
+          "theme": 3,
+          "theme_name": "Ethnicity (Census + mid-year estimates if any)",
+          "name": "ONS population estimates by ethnic group (research / characteristics methods)",
+          "producer": "Office for National Statistics",
+          "primary": true,
+          "earliest_usable_year": 2016,
+          "coverage_note": "Research/illustrative methods aligning APS to MYE; not a continuous certified annual national statistics product for all years 1991–present.",
+          "geography": [
+            "UK / England & Wales LA (method-dependent)"
+          ],
+          "update_frequency": "Ad hoc / research outputs",
+          "license": "Open Government Licence v3.0",
+          "urls": {
+            "methodology": "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationestimates/methodologies/populationestimatesbyethnicgroup",
+            "research_report": "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationestimates/methodologies/researchreportonpopulationestimatesbycharacteristics"
+          },
+          "api_csv": "Accompanying research datasets when published.",
+          "known_breaks": [
+            "Method experiments; not equivalent to census."
+          ],
+          "confidence_notes": "Use only with 'research/experimental' labeling. Prefer census for map layers.",
+          "measures": [
+            "ethnic group aligned to MYE (research)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "Religion",
+      "sources": [
+        {
+          "id": "census-religion",
+          "theme": 4,
+          "theme_name": "Religion",
+          "name": "Census religion (voluntary) — UK nations",
+          "producer": "ONS / NRS / NISRA",
+          "primary": true,
+          "earliest_usable_year": 2001,
+          "geography": [
+            "England & Wales",
+            "Scotland",
+            "Northern Ireland",
+            "subnational"
+          ],
+          "update_frequency": "Decennial",
+          "license": "Open Government Licence v3.0",
+          "urls": {
+            "nomis_bulk_ew": "https://www.nomisweb.co.uk/sources/census_2021_bulk",
+            "scotland_2022_eilr": "https://www.scotlandscensus.gov.uk/2022-reports/scotland-s-census-2022-ethnic-group-national-identity-language-and-religion/",
+            "nisra_supplemental": "https://www.nisra.gov.uk/publications/census-2021-main-statistics-northern-ireland-supplemental",
+            "story_of_census": "https://www.ons.gov.uk/visualisations/storyofthecensus/"
+          },
+          "api_csv": "Nomis / Scotland’s Census / NISRA downloads.",
+          "known_breaks": [
+            "Voluntary question; non-response handling differs (esp. Scotland).",
+            "1851 worship census not comparable to modern affiliation.",
+            "NI religion vs religion brought up in."
+          ],
+          "confidence_notes": "Cannot map modern religion affiliation before 2001. Treat as census snapshots only.",
+          "measures": [
+            "religion / religious affiliation"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Age and sex structure (by birthplace/nationality if possible)",
+      "sources": [
+        {
+          "id": "ons-age-sex-mye",
+          "theme": 5,
+          "theme_name": "Age and sex structure (by birthplace/nationality if possible)",
+          "name": "MYE by age and sex (+ Nomis single year of age)",
+          "producer": "ONS / NRS / NISRA",
+          "primary": true,
+          "earliest_usable_year": 1991,
+          "coverage_note": "National age–sex long before 1991; consistent LA single-year-of-age commonly via Nomis from 1991. Cross-tabs by birthplace/nationality require census or APS.",
+          "geography": [
+            "UK",
+            "nations",
+            "regions",
+            "LA"
+          ],
+          "update_frequency": "Annual",
+          "license": "Open Government Licence v3.0",
+          "urls": {
+            "nomis": "https://www.nomisweb.co.uk/datasets/pestsyoala",
+            "ew_dataset": "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/estimatesofthepopulationforenglandandwales"
+          },
+          "api_csv": "Nomis CSV; ONS Excel.",
+          "known_breaks": [
+            "Boundary changes; census rebases."
+          ],
+          "confidence_notes": "Phase-1 pyramid layer. For birthplace×age use census tables; APS for national estimates with sampling error.",
+          "measures": [
+            "age",
+            "sex",
+            "population"
+          ]
+        },
+        {
+          "id": "1939-register",
+          "theme": 5,
+          "theme_name": "Age and sex structure (by birthplace/nationality if possible)",
+          "name": "1939 National Register statistics (wartime civilian age/sex)",
+          "producer": "General Register Office / HMSO (historical)",
+          "primary": true,
+          "earliest_usable_year": 1939,
+          "geography": [
+            "UK and Isle of Man (published tables)"
+          ],
+          "update_frequency": "One-off wartime register",
+          "license": "Public domain / Crown historical; digitised copies vary (e.g. Internet Archive)",
+          "urls": {
+            "archive_org": "https://archive.org/details/b32170130",
+            "ons_census_story": "https://www.ons.gov.uk/visualisations/storyofthecensus/"
+          },
+          "api_csv": "Scanned report; not a modern API.",
+          "known_breaks": [
+            "Civilian only; not usual-residence MYE; 1941 Census cancelled."
+          ],
+          "confidence_notes": "Bridge for late-1930s structure only. Do not extend as migration stock.",
+          "measures": [
+            "age",
+            "sex",
+            "marital condition"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "name": "Birth rates / fertility (esp. by mother's country of birth)",
+      "sources": [
+        {
+          "id": "ons-births-parents-cob",
+          "theme": 6,
+          "theme_name": "Birth rates / fertility (esp. by mother's country of birth)",
+          "name": "ONS Births by parents’ country of birth, England and Wales",
+          "producer": "Office for National Statistics",
+          "primary": true,
+          "earliest_usable_year": 1969,
+          "coverage_note": "Parents' country of birth recorded at registration since April 1969. From 2025 releases, country-of-birth content integrated into broader Births in England and Wales datasets.",
+          "geography": [
+            "England",
+            "Wales",
+            "regions/LA in detailed tables"
+          ],
+          "update_frequency": "Annual",
+          "license": "Open Government Licence v3.0",
+          "urls": {
+            "births_latest": "https://www.ons.gov.uk/peoplepopulationandcommunity/birthsdeathsandmarriages/livebirths/bulletins/birthsummarytablesenglandandwales/latest",
+            "parents_cob_2023_bulletin": "https://www.ons.gov.uk/peoplepopulationandcommunity/birthsdeathsandmarriages/livebirths/bulletins/parentscountryofbirthenglandandwales/2023",
+            "nomis_life_events": "https://www.nomisweb.co.uk/"
+          },
+          "api_csv": "ONS datasets: Birth registrations; Linked births; Parents' country of birth (Excel/CSV).",
+          "known_breaks": [
+            "Country coding lists evolve.",
+            "Birthplace ≠ ethnicity and ≠ long-term migrant status.",
+            "Scotland/NI published by NRS/NISRA separately."
+          ],
+          "confidence_notes": "Best primary series for share of births to non-UK-born mothers in E&W from 1969. Fertility rates need consistent population denominators (MYE).",
+          "measures": [
+            "live births",
+            "TFR/ASFR",
+            "mother/father country of birth"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "name": "Asylum applications, grants, refusals, backlog/status",
+      "sources": [
+        {
+          "id": "ho-immigration-system-stats",
+          "theme": 7,
+          "theme_name": "Asylum applications, grants, refusals, backlog/status",
+          "name": "Home Office Immigration system statistics (asylum)",
+          "producer": "Home Office",
+          "primary": true,
+          "earliest_usable_year": 1979,
+          "coverage_note": "Modern quarterly Immigation system statistics; historical Control of Immigration / Asylum Statistics / Immigration statistics historical data for earlier years. Continuous digital detail denser from 2000s. Backlog/WIP definitions change; people vs cases focus has shifted in recent chapters.",
+          "geography": [
+            "UK (national); some support data by UK region/LA"
+          ],
+          "update_frequency": "Quarterly (plus transparency data)",
+          "license": "Open Government Licence v3.0",
+          "urls": {
+            "collection": "https://www.gov.uk/government/collections/migration-statistics",
+            "data_tables": "https://www.gov.uk/government/statistical-data-sets/immigration-system-statistics-data-tables",
+            "asylum_backlog_chapter_example": "https://www.gov.uk/government/statistics/immigration-system-statistics-year-ending-june-2026/how-many-people-are-in-the-uk-asylum-system",
+            "claims_chapter_example": "https://www.gov.uk/government/statistics/immigration-system-statistics-year-ending-december-2025/how-many-people-claim-asylum-in-the-uk",
+            "historic_asylum_datasets": "https://www.gov.uk/government/statistical-data-sets/asylum-and-resettlement-datasets",
+            "transparency": "https://www.gov.uk/government/collections/migration-statistics",
+            "commons_library": "https://commonslibrary.parliament.uk/research-briefings/sn01403/"
+          },
+          "api_csv": "ODS/Excel detailed datasets (Asy_D01 claims, Asy_D02 decisions, Asy_D03 awaiting decision, etc.). Migration transparency data for operational WIP tables (e.g. ASY_03).",
+          "known_breaks": [
+            "Applications vs people (main applicants + dependants).",
+            "Initial decision grant rates exclude withdrawals/admin outcomes depending on table.",
+            "Total asylum 'work in progress' (appeals/removals) publication lag/gaps (e.g. latest full WIP noted to June 2024 in mid-2020s chapters).",
+            "Policy regime changes (e.g. Illegal Migration Act effects on decision pausing) affect stocks."
+          ],
+          "confidence_notes": "Authoritative for asylum system throughput. Always label people vs cases. Commons Library SN01403 is useful secondary synthesis.",
+          "measures": [
+            "asylum claims",
+            "initial decisions",
+            "grants",
+            "refusals",
+            "awaiting decision",
+            "appeals",
+            "support"
+          ]
+        },
+        {
+          "id": "migobs-asylum",
+          "theme": 7,
+          "theme_name": "Asylum applications, grants, refusals, backlog/status",
+          "name": "Migration Observatory — Asylum in the UK / asylum backlog briefings",
+          "producer": "Migration Observatory",
+          "primary": false,
+          "secondary_synthesis": true,
+          "earliest_usable_year": null,
+          "geography": [
+            "UK"
+          ],
+          "update_frequency": "Periodic",
+          "license": "Cite with attribution",
+          "urls": {
+            "asylum": "https://migrationobservatory.ox.ac.uk/resources/briefings/asylum-in-the-uk/",
+            "briefings_index": "https://migrationobservatory.ox.ac.uk/resources/briefings/"
+          },
+          "api_csv": "None",
+          "known_breaks": [],
+          "confidence_notes": "Secondary synthesis for narrative; numbers from HO.",
+          "measures": [
+            "synthesis"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "name": "Irregular / illegal entry / small boats / detections",
+      "sources": [
+        {
+          "id": "ho-irregular-small-boats",
+          "theme": 8,
+          "theme_name": "Irregular / illegal entry / small boats / detections",
+          "name": "Home Office illegal entry routes / irregular migration & small boat detections",
+          "producer": "Home Office",
+          "primary": true,
+          "earliest_usable_year": 2018,
+          "coverage_note": "Small boat provisional daily series from 1 Jan 2018; irregular/illegal entry routes official statistics chapter from Feb 2022 (terminology evolved from 'irregular migration' to 'illegal entry routes' in later releases).",
+          "geography": [
+            "UK (Channel/operational); national totals"
+          ],
+          "update_frequency": "Quarterly official stats; provisional daily/weekly operational updates",
+          "license": "Open Government Licence v3.0",
+          "urls": {
+            "user_guide": "https://www.gov.uk/government/publications/home-office-irregular-migration-to-the-uk-statistics-user-guide/home-office-irregular-migration-to-the-uk-statistics-user-guide",
+            "chapter_example": "https://www.gov.uk/government/statistics/immigration-system-statistics-year-ending-december-2025/how-many-people-come-to-the-uk-via-illegal-entry-routes",
+            "daily_weekly": "https://www.gov.uk/government/publications/migrants-detected-crossing-the-english-channel-in-small-boats/migrants-detected-crossing-the-english-channel-in-small-boats-last-7-days",
+            "ons_measuring_illegal": "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/internationalmigration/articles/measuringillegalmigrationanewwayforward/july2019"
+          },
+          "api_csv": "Immigration system statistics irregular/illegal entry datasets; daily HTML/CSV-like tables on GOV.UK.",
+          "known_breaks": [
+            "Counts DETECTIONS not unique individuals necessarily; not undetected arrivals; not visa overstays; not French preventions (published separately).",
+            "Small boats most visible → detection bias vs other methods; do not infer relative attempt volumes across methods.",
+            "Provisional daily figures can differ from quality-assured quarterly stats."
+          ],
+          "confidence_notes": "CRITICAL UX: UI must say 'detected small boat arrivals' / 'detected illegal entry routes', never 'illegal immigrant population'. Home Office explicitly does not estimate stock without permission.",
+          "measures": [
+            "small boat detections",
+            "other detected illegal entry methods",
+            "asylum claims from small boat arrivals"
+          ]
+        },
+        {
+          "id": "migobs-small-boats",
+          "theme": 8,
+          "theme_name": "Irregular / illegal entry / small boats / detections",
+          "name": "Migration Observatory — People crossing the English Channel in small boats (briefing)",
+          "producer": "Migration Observatory, COMPAS, University of Oxford",
+          "primary": false,
+          "secondary_synthesis": true,
+          "earliest_usable_year": 2018,
+          "geography": [
+            "UK"
+          ],
+          "update_frequency": "Updated briefings (periodic)",
+          "license": "Check Migration Observatory site terms; usually free to read/cite with attribution",
+          "urls": {
+            "briefing": "https://migrationobservatory.ox.ac.uk/resources/briefings/people-crossing-the-english-channel-in-small-boats/"
+          },
+          "api_csv": "None (synthesis of Home Office stats).",
+          "known_breaks": [
+            "Inherits HO detection definitions."
+          ],
+          "confidence_notes": "Excellent plain-language secondary layer for methodology caveats; always link through to HO primary tables for numbers.",
+          "measures": [
+            "synthesis of detections and asylum outcomes"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "name": "Fiscal / economic impact estimates (contested)",
+      "sources": [
+        {
+          "id": "obr-frs",
+          "theme": 9,
+          "theme_name": "Fiscal / economic impact estimates (contested)",
+          "name": "OBR Fiscal risks and sustainability / EFO — migration scenarios",
+          "producer": "Office for Budget Responsibility",
+          "primary": true,
+          "earliest_usable_year": 2011,
+          "coverage_note": "Long-term fiscal projections with net migration variants; age-profile tax/spend arithmetic. Not a micro estimate of 'immigrants' fiscal balance by visa. Assumptions change with ONS population projections (e.g. 2024 FRS vs 2025/2026 FRS migration settles).",
+          "geography": [
+            "UK"
+          ],
+          "update_frequency": "FRS roughly annual/periodic; EFO biannual",
+          "license": "Open Government Licence v3.0 (typical Crown)",
+          "urls": {
+            "frs_july_2026": "https://obr.uk/frs/fiscal-risks-and-sustainability-july-2026/",
+            "frs_2024_pdf": "https://obr.uk/docs/dlm_uploads/Fiscal-risks-and-sustainability-report-September-2024-1.pdf",
+            "frs_2025_pdf": "https://obr.uk/docs/dlm_uploads/Fiscal-risks-and-sustainability-report-July-2025.pdf",
+            "migration_box_historical": "https://obr.uk/box/migration-and-fiscal-sustainability/"
+          },
+          "api_csv": "OBR chart data / supplementary tables on release pages when provided.",
+          "known_breaks": [
+            "Central net migration assumption jumps with ONS projections (e.g. ~129k vs ~315k vs ~230k long-run settles across FRS vintages).",
+            "Often assumes migrants have similar age-specific fiscal profiles to residents unless scenario varies earnings/length of stay.",
+            "Does not fully cost asylum backlog/system operational spikes in all vintages."
+          ],
+          "confidence_notes": "Contested interpretation: higher net migration usually improves modelled debt path via working-age inflows but does not 'solve' ageing; long-run debt still rises under many baselines. Present as model scenarios.",
+          "measures": [
+            "net migration variants",
+            "debt/deficit paths",
+            "dependency ratio"
+          ],
+          "methods": "Age-specific tax and spend profiles applied to ONS population projections; sensitivity on earnings and length of stay in some FRS editions.",
+          "opposing_findings": "Results sensitive to migrant earnings mix, dependants, return migration, and public-goods allocation; zero/low migration worsens long-run debt arithmetic but is not a welfare analysis."
+        },
+        {
+          "id": "mac-fiscal-2025",
+          "theme": 9,
+          "theme_name": "Fiscal / economic impact estimates (contested)",
+          "name": "Migration Advisory Committee — Fiscal impact of immigration (2025)",
+          "producer": "Migration Advisory Committee / Home Office publication",
+          "primary": true,
+          "earliest_usable_year": 2025,
+          "coverage_note": "Static (arrival year) and dynamic (lifetime NPV) estimates for specific visa cohorts (e.g. Skilled Worker 2022/23; Partner route in Annual Report 2025).",
+          "geography": [
+            "UK"
+          ],
+          "update_frequency": "Ad hoc reports",
+          "license": "Open Government Licence v3.0",
+          "urls": {
+            "report": "https://www.gov.uk/government/publications/the-fiscal-impact-of-immigration-in-the-uk",
+            "annual_report_2025": "https://www.gov.uk/government/publications/migration-advisory-committee-annual-report-2025/migration-advisory-committee-mac-annual-report-2025-accessible"
+          },
+          "api_csv": "ODS data tables published alongside report (Mar 2026 update noted on GOV.UK).",
+          "known_breaks": [
+            "Cohort- and route-specific; not whole migrant stock; discount rate and lifetime assumptions drive NPV."
+          ],
+          "confidence_notes": "Shows large positive lifetime NPV for some skilled main applicants and negative for some dependants/partner routes — illustrates heterogeneity. Contested if used as a single headline for 'immigration'.",
+          "measures": [
+            "static fiscal impact",
+            "lifetime NPV by visa route"
+          ],
+          "methods": "In-house static + dynamic lifetime fiscal model; earnings, employment conditions of visa, public service use, discounting (~3%).",
+          "opposing_findings": "Lifetime estimates (Dustmann–Frattini) and OBR age-profile approaches can differ in sign/magnitude depending on group, period, and cost allocation."
+        },
+        {
+          "id": "dustmann-frattini-2014",
+          "theme": 9,
+          "theme_name": "Fiscal / economic impact estimates (contested)",
+          "name": "Dustmann & Frattini (2014) — The Fiscal Effects of Immigration to the UK",
+          "producer": "Academic (Economic Journal / CReAM)",
+          "primary": false,
+          "secondary_synthesis": false,
+          "earliest_usable_year": 1995,
+          "coverage_note": "Static period analysis ~1995–2011/12; EEA vs non-EEA distinctions influential in debate.",
+          "geography": [
+            "UK"
+          ],
+          "update_frequency": "One-off academic study (widely cited)",
+          "license": "Journal / author copyright — cite, do not republish full text",
+          "urls": {
+            "ideas_repec": "https://ideas.repec.org/a/wly/econjl/v124y2014i580pf593-f643.html"
+          },
+          "api_csv": "None for app ingestion; cite findings qualitatively or with permissioned extracts.",
+          "known_breaks": [
+            "Static framework; period-specific; subsequent demographic/policy change."
+          ],
+          "confidence_notes": "Foundational reference often contrasted with later dynamic/lifetime models. Present as one study, not official statistics.",
+          "measures": [
+            "net fiscal contribution by immigrant groups over study window"
+          ],
+          "methods": "Static accounting of revenues and expenditures attributable to immigrants vs natives over years.",
+          "opposing_findings": "Critics dispute public-goods allocation, household composition, and extrapolation beyond study window; later MAC/OBR work uses different frames."
+        },
+        {
+          "id": "migobs-fiscal-briefing",
+          "theme": 9,
+          "theme_name": "Fiscal / economic impact estimates (contested)",
+          "name": "Migration Observatory — The fiscal impact of immigration in the UK (briefing)",
+          "producer": "Migration Observatory, University of Oxford",
+          "primary": false,
+          "secondary_synthesis": true,
+          "earliest_usable_year": null,
+          "geography": [
+            "UK"
+          ],
+          "update_frequency": "Updated briefings",
+          "license": "Cite with attribution; check site",
+          "urls": {
+            "briefing": "https://migrationobservatory.ox.ac.uk/resources/briefings/the-fiscal-impact-of-immigration-in-the-uk/"
+          },
+          "api_csv": "None",
+          "known_breaks": [
+            "Synthesis of OBR/MAC/academic literature."
+          ],
+          "confidence_notes": "Best secondary explainer that there is no single correct estimate; maps assumption space for the app's methodology notes.",
+          "measures": [
+            "literature synthesis"
+          ],
+          "methods": "Evidence review of static vs dynamic; average vs marginal; skill/visa heterogeneity.",
+          "opposing_findings": "Explicitly documents conflicting study results and assumption dependence."
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "name": "Employment/wages/housing context indicators",
+      "sources": [
+        {
+          "id": "ons-emp-cob-nationality",
+          "theme": 10,
+          "theme_name": "Employment/wages/housing context indicators",
+          "name": "ONS employment by country of birth and nationality (EMP06 / A12 / LMS)",
+          "producer": "Office for National Statistics",
+          "primary": true,
+          "earliest_usable_year": 1997,
+          "coverage_note": "LFS-based; series availability varies by exact table. EMP06 and A12 current quarterly datasets.",
+          "geography": [
+            "UK"
+          ],
+          "update_frequency": "Quarterly",
+          "license": "Open Government Licence v3.0",
+          "urls": {
+            "emp06": "https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/employmentandemployeetypes/datasets/employmentbycountryofbirthandnationalityemp06/current",
+            "a12": "https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/employmentandemployeetypes/datasets/a12employmentunemploymentandeconomicinactivitybynationalityandcountryofbirth/current",
+            "uk_born_emp_level": "https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/employmentandemployeetypes/timeseries/jf6f/lms"
+          },
+          "api_csv": "ONS CSV/XLS downloads; LMS time series.",
+          "known_breaks": [
+            "LFS volatility and reweighting (esp. post-COVID); sample uncertainty for subgroups."
+          ],
+          "confidence_notes": "Core labour-market context by UK/non-UK birth and nationality. Pair with caveats on LFS quality.",
+          "measures": [
+            "employment level/rate",
+            "unemployment",
+            "inactivity",
+            "by COB/nationality"
+          ]
+        },
+        {
+          "id": "ons-ashe",
+          "theme": 10,
+          "theme_name": "Employment/wages/housing context indicators",
+          "name": "ONS Annual Survey of Hours and Earnings (ASHE)",
+          "producer": "Office for National Statistics",
+          "primary": true,
+          "earliest_usable_year": 1997,
+          "geography": [
+            "UK",
+            "nations",
+            "regions",
+            "LA (some estimates)"
+          ],
+          "update_frequency": "Annual",
+          "license": "Open Government Licence v3.0",
+          "urls": {
+            "bulletin_2025": "https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/earningsandworkinghours/bulletins/annualsurveyofhoursandearnings/2025"
+          },
+          "api_csv": "ONS ASHE datasets.",
+          "known_breaks": [
+            "SOC 2010 → SOC 2020 break around 2021 earnings estimates."
+          ],
+          "confidence_notes": "Wage context; not migrant-specific in headline tables (use with EMP06 and academic/MAC earnings analyses).",
+          "measures": [
+            "median/mean earnings"
+          ]
+        },
+        {
+          "id": "ons-housing-affordability",
+          "theme": 10,
+          "theme_name": "Employment/wages/housing context indicators",
+          "name": "ONS Housing affordability (house price to earnings ratios)",
+          "producer": "Office for National Statistics",
+          "primary": true,
+          "earliest_usable_year": 1997,
+          "geography": [
+            "England",
+            "Wales",
+            "regions",
+            "LA"
+          ],
+          "update_frequency": "Annual",
+          "license": "Open Government Licence v3.0",
+          "urls": {
+            "bulletin_2025": "https://www.ons.gov.uk/peoplepopulationandcommunity/housing/bulletins/housingaffordabilityinenglandandwales/2025",
+            "qmi": "https://www.ons.gov.uk/peoplepopulationandcommunity/housing/methodologies/housingaffordabilityinenglandandwalesqmi"
+          },
+          "api_csv": "House price to workplace-based / residence-based earnings ratio datasets.",
+          "known_breaks": [
+            "Transfer from MHCLG method to ONS (series reconstructed); prices are transactions not stock."
+          ],
+          "confidence_notes": "Interpretation aid for housing pressure — not a causal migration impact measure. Scotland/NI separate producers.",
+          "measures": [
+            "median price to earnings ratio"
+          ]
+        },
+        {
+          "id": "mhclg-dwelling-stock",
+          "theme": 10,
+          "theme_name": "Employment/wages/housing context indicators",
+          "name": "MHCLG Dwelling stock estimates (England)",
+          "producer": "Ministry of Housing, Communities and Local Government",
+          "primary": true,
+          "earliest_usable_year": null,
+          "coverage_note": "Long England dwelling stock series; census-baseline + net additions. Confirm earliest year on release technical notes.",
+          "geography": [
+            "England",
+            "LA"
+          ],
+          "update_frequency": "Annual",
+          "license": "Open Government Licence v3.0",
+          "urls": {
+            "latest": "https://www.gov.uk/government/statistics/dwelling-stock-estimates-in-england-2025/dwelling-stock-estimates-england-31-march-2025"
+          },
+          "api_csv": "GOV.UK statistical tables.",
+          "known_breaks": [
+            "Tenure measurement methods; Wales/Scotland/NI separate."
+          ],
+          "confidence_notes": "Housing supply context layer.",
+          "measures": [
+            "dwelling stock by tenure"
+          ]
+        }
+      ]
+    }
+  ],
+  "phase1_recommended_layers": [
+    {
+      "layer_id": "p1-mye-total",
+      "title": "UK / nation mid-year population (stock)",
+      "source_ids": [
+        "ons-mye"
+      ],
+      "why": "Anchors all rates; long historical coverage with wartime caveats."
+    },
+    {
+      "layer_id": "p1-ltim-net",
+      "title": "Net migration, immigration, emigration (flows)",
+      "source_ids": [
+        "ons-ltim-admin",
+        "ons-ltim-ips-historical"
+      ],
+      "why": "Core Migration explorer series; must show method breaks (IPS vs admin)."
+    },
+    {
+      "layer_id": "p1-cob-stock",
+      "title": "UK-born vs non-UK-born stock",
+      "source_ids": [
+        "census-cob-ew-2021",
+        "census-cob-scotland-2022",
+        "census-ni-2021",
+        "ons-cob-nationality-aps"
+      ],
+      "why": "Census for maps; APS for recent national trends with uncertainty bands."
+    },
+    {
+      "layer_id": "p1-ethnicity-census",
+      "title": "Ethnicity (census snapshots 1991–2021/22)",
+      "source_ids": [
+        "census-ethnicity-ew",
+        "census-cob-scotland-2022",
+        "census-ni-2021"
+      ],
+      "why": "No pre-1991 series; concordance notes required."
+    },
+    {
+      "layer_id": "p1-religion-census",
+      "title": "Religion (census snapshots 2001–2021/22)",
+      "source_ids": [
+        "census-religion"
+      ],
+      "why": "Voluntary; nation-specific caveats."
+    },
+    {
+      "layer_id": "p1-age-sex",
+      "title": "Age–sex structure (MYE pyramids)",
+      "source_ids": [
+        "ons-age-sex-mye"
+      ],
+      "why": "Interpretation for dependency and fiscal context."
+    },
+    {
+      "layer_id": "p1-births-cob",
+      "title": "Births / % to non-UK-born mothers (E&W)",
+      "source_ids": [
+        "ons-births-parents-cob"
+      ],
+      "why": "Strong vital-registration series from 1969."
+    },
+    {
+      "layer_id": "p1-asylum",
+      "title": "Asylum claims, decisions, awaiting initial decision",
+      "source_ids": [
+        "ho-immigration-system-stats"
+      ],
+      "why": "Primary HO tables; people vs cases labeling."
+    },
+    {
+      "layer_id": "p1-small-boats",
+      "title": "Detected small boat / illegal entry route arrivals",
+      "source_ids": [
+        "ho-irregular-small-boats"
+      ],
+      "why": "Only as detections; strict terminology in UI."
+    },
+    {
+      "layer_id": "p1-labour-housing",
+      "title": "Employment by COB/nationality + housing affordability context",
+      "source_ids": [
+        "ons-emp-cob-nationality",
+        "ons-housing-affordability",
+        "ons-ashe"
+      ],
+      "why": "Context indicators — not causal attribution layers."
+    },
+    {
+      "layer_id": "p1-fiscal-notes",
+      "title": "Fiscal impact — contested evidence panel (not a single series)",
+      "source_ids": [
+        "obr-frs",
+        "mac-fiscal-2025",
+        "migobs-fiscal-briefing",
+        "dustmann-frattini-2014"
+      ],
+      "why": "Show methods and opposing findings; never one number as fact."
+    }
+  ],
+  "sources_flat": [
+    {
+      "id": "ons-ltim-admin",
+      "theme": 1,
+      "theme_name": "Population & net migration / immigration / emigration",
+      "name": "ONS Long-Term International Migration (admin-based LTIM)",
+      "producer": "Office for National Statistics",
+      "primary": true,
+      "earliest_usable_year": 2012,
+      "latest_status_as_of": "2026-05 (docs revised May 2026; series to YE Dec 2025 provisional)",
+      "geography": [
+        "UK"
+      ],
+      "update_frequency": "Twice yearly (end May and end November)",
+      "license": "Open Government Licence v3.0",
+      "urls": {
+        "bulletin_collection": "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/internationalmigration",
+        "qmi": "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/internationalmigration/methodologies/adminbasedlongterminternationalmigrationestimatesqmi",
+        "technical_user_guide": "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/internationalmigration/methodologies/provisionallongterminternationalmigrationestimatestechnicaluserguide",
+        "methods": "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/internationalmigration/methodologies/methodstoproduceprovisionallongterminternationalmigrationestimates"
+      },
+      "api_csv": "ONS website downloads (Excel/CSV via release pages); no single stable public REST API for full LTIM. Prefer release datasets.",
+      "known_breaks": [
+        "Pre-2020 IPS-based LTIM vs post-pandemic admin-based methods (HOBI, RAPID, etc.) — not a continuous identical series.",
+        "EU+/non-EU+/British nationality groupings use different admin sources and methods; EUSS cumulative-stay methods evolving (Nov 2025 updates).",
+        "Latest ~4 data points provisional and revised when more travel history available; British nationals involve 3- or 9-month forecasting."
+      ],
+      "confidence_notes": "Official statistics in development (not yet accredited). Best current UK net migration flow measure for ~2012–present. Do not splice naively onto IPS LTIM 1991–2010s without a break marker.",
+      "measures": [
+        "immigration",
+        "emigration",
+        "net migration",
+        "nationality groupings"
+      ]
+    },
+    {
+      "id": "ons-ltim-ips-historical",
+      "theme": 1,
+      "theme_name": "Population & net migration / immigration / emigration",
+      "name": "ONS IPS / historical LTIM timeline (pre-admin era)",
+      "producer": "Office for National Statistics",
+      "primary": true,
+      "earliest_usable_year": 1964,
+      "latest_status_as_of": "Historical ad hoc / archived LTIM QMI (IPS era)",
+      "geography": [
+        "UK"
+      ],
+      "update_frequency": "Historical (superseded for current production)",
+      "license": "Open Government Licence v3.0",
+      "urls": {
+        "ltim_qmi_ips_era": "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationestimates/methodologies/longterminternationalmigrationqmi",
+        "timeline_1964_2015": "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/internationalmigration/adhocs/006408longterminternationalmigrationintoandoutoftheukbycitizenship1964to2015"
+      },
+      "api_csv": "XLS ad hoc download for 1964–2015 citizenship timeline; IPS 3-series tables historically from 1975 online.",
+      "known_breaks": [
+        "Estimates before 1991 use different methodology than LTIM 1991+.",
+        "IPS measures intentions (pre-admin) vs admin measures observed behaviour.",
+        "COVID IPS suspension broke continuity and accelerated admin transformation."
+      ],
+      "confidence_notes": "Use for long-run charts with clear discontinuity annotations at 1991 and ~2012/2020 method shifts. Online IPS from 1975; 1964–74 mainly paper/archival.",
+      "measures": [
+        "immigration",
+        "emigration",
+        "net migration",
+        "citizenship"
+      ]
+    },
+    {
+      "id": "ons-mye",
+      "theme": 1,
+      "theme_name": "Population & net migration / immigration / emigration",
+      "name": "ONS mid-year population estimates (MYE) & time series",
+      "producer": "Office for National Statistics (with NRS, NISRA for UK compilation)",
+      "primary": true,
+      "earliest_usable_year": 1838,
+      "coverage_note_from_1940": "Long back series exist (UK/GB/E&W). Wartime 1940–47 definitions vary (civilian vs home vs including forces abroad). 1941 Census cancelled; 1939 Register is separate civilian snapshot.",
+      "geography": [
+        "UK",
+        "GB",
+        "England",
+        "Wales",
+        "Scotland",
+        "Northern Ireland",
+        "English regions",
+        "local authorities (modern series denser from 1981/1991)"
+      ],
+      "update_frequency": "Annual (with revisions after census rebases)",
+      "license": "Open Government Licence v3.0",
+      "urls": {
+        "time_series_dataset": "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/populationestimatestimeseriesdataset",
+        "uk_pop_series": "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationestimates/timeseries/ukpop",
+        "uk_ew_ni_scot_dataset": "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/populationestimatesforukenglandandwalesscotlandandnorthernireland",
+        "ew_estimates": "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/estimatesofthepopulationforenglandandwales",
+        "gb_1937_2014_adhoc": "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationestimates/adhocs/004357greatbritainpopulationestimates1937to2014",
+        "nomis_la_sya": "https://www.nomisweb.co.uk/datasets/pestsyoala"
+      },
+      "api_csv": "Nomis query/download (CSV/Excel); ONS time series CSV/XLSX; components of change tables include net international migration (method-dependent).",
+      "known_breaks": [
+        "Census rebases (e.g. 2021/2022) revise intercensal years.",
+        "Wartime population definition breaks 1939–1948.",
+        "LA boundary changes over time; Nomis modern LA series commonly from 1991."
+      ],
+      "confidence_notes": "Core stock layer for the app. International migration component of change should be labeled with the migration method era. Mid-2025 UK total reported as provisional/rounded in recent releases.",
+      "measures": [
+        "usually resident population",
+        "age",
+        "sex",
+        "components of change"
+      ]
+    },
+    {
+      "id": "boe-millennium",
+      "theme": 1,
+      "theme_name": "Population & net migration / immigration / emigration",
+      "name": "Bank of England — A Millennium of Macroeconomic Data (population context)",
+      "producer": "Bank of England",
+      "primary": true,
+      "earliest_usable_year": 1086,
+      "coverage_note_from_1940": "Useful long-run population/macro context through ~2016 (v3.1); not a migration-flow source.",
+      "geography": [
+        "UK / historical GB aggregations (variable definitions over centuries)"
+      ],
+      "update_frequency": "Research dataset (not routinely updated like official MYE)",
+      "license": "Check BoE research dataset terms on page (research reuse; not ONS OGL by default)",
+      "urls": {
+        "research_datasets": "https://www.bankofengland.co.uk/statistics/research-datasets"
+      },
+      "api_csv": "Excel download from BoE research datasets page.",
+      "known_breaks": [
+        "Historical reconstruction; variable definitions across centuries."
+      ],
+      "confidence_notes": "Secondary to ONS MYE for post-1940 official population. Good for ultra-long context charts only.",
+      "measures": [
+        "population (historical macro)"
+      ]
+    },
+    {
+      "id": "vision-of-britain",
+      "theme": 1,
+      "theme_name": "Population & net migration / immigration / emigration",
+      "name": "A Vision of Britain through Time (GB Historical GIS)",
+      "producer": "University of Portsmouth / GB Historical GIS",
+      "primary": false,
+      "secondary_synthesis": true,
+      "earliest_usable_year": 1801,
+      "geography": [
+        "England",
+        "Wales",
+        "Scotland",
+        "historical administrative units down to parish/LA equivalents"
+      ],
+      "update_frequency": "Project site (historical)",
+      "license": "See site terms; much census-derived content; cite GBHGIS/University of Portsmouth",
+      "urls": {
+        "home": "https://www.visionofbritain.org.uk/",
+        "atlas": "https://www.visionofbritain.org.uk/atlas/",
+        "census_reports": "https://www.visionofbritain.org.uk/census/",
+        "data": "https://www.visionofbritain.org.uk/data/"
+      },
+      "api_csv": "Web atlas and data pages; UK Data Service GB Historical Database for research downloads.",
+      "known_breaks": [
+        "Administrative geography changes; census questions change."
+      ],
+      "confidence_notes": "Best for historical birthplace maps and long-run local population before modern Nomis geographies. Label as historical GIS synthesis of census reports.",
+      "measures": [
+        "population",
+        "age structure",
+        "birthplace (historical)"
+      ]
+    },
+    {
+      "id": "ons-cob-nationality-aps",
+      "theme": 2,
+      "theme_name": "UK-born vs non-UK-born; nationality",
+      "name": "ONS Population of the UK by country of birth and nationality (APS/LFS)",
+      "producer": "Office for National Statistics",
+      "primary": true,
+      "earliest_usable_year": 2000,
+      "coverage_note": "LFS-based ~2000–2003; APS-based 2004 to YE June 2021 in main bulletin series; later ad hoc/grouped estimates may appear — check latest release notes. Household survey: excludes most communal establishments.",
+      "geography": [
+        "UK",
+        "countries",
+        "regions",
+        "local authorities (sample-size limited)"
+      ],
+      "update_frequency": "Historically quarterly then annual; main series paused/changed after YE June 2021 quality issues",
+      "license": "Open Government Licence v3.0",
+      "urls": {
+        "latest_bulletin": "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/internationalmigration/bulletins/ukpopulationbycountryofbirthandnationality/latest",
+        "qmi": "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/internationalmigration/methodologies/populationbycountryofbirthandnationalityqmi"
+      },
+      "api_csv": "ONS datasets accompanying bulletins (Excel/CSV).",
+      "known_breaks": [
+        "COVID interviewing mode change biased non-UK-born/non-British representation; reweighting/RTI adjustments applied.",
+        "APS totals ≠ MYE totals (household vs whole population).",
+        "Main publication series ends YE June 2021; treat post-2021 stock estimates cautiously unless from a documented successor product."
+      ],
+      "confidence_notes": "Primary modern stock source for UK/non-UK born and British/non-British — with survey uncertainty and coverage limits. Prefer Census for detailed LA stocks in census years.",
+      "measures": [
+        "country of birth",
+        "nationality",
+        "UK-born",
+        "non-UK-born"
+      ]
+    },
+    {
+      "id": "census-cob-ew-2021",
+      "theme": 2,
+      "theme_name": "UK-born vs non-UK-born; nationality",
+      "name": "Census 2021 England & Wales — country of birth / passports / national identity (Nomis)",
+      "producer": "Office for National Statistics",
+      "primary": true,
+      "earliest_usable_year": 2021,
+      "historical_note": "Country of birth asked in censuses for well over a century; categories and overseas groupings change. Ethnicity from 1991; religion from 2001; passports held more recent.",
+      "geography": [
+        "England",
+        "Wales",
+        "down to Output Area / LA / region"
+      ],
+      "update_frequency": "Decennial (2021)",
+      "license": "Open Government Licence v3.0",
+      "urls": {
+        "bulk": "https://www.nomisweb.co.uk/sources/census_2021_bulk",
+        "ts012_cob_detailed": "https://www.nomisweb.co.uk/datasets/c2021ts012",
+        "story_of_census": "https://www.ons.gov.uk/visualisations/storyofthecensus/"
+      },
+      "api_csv": "Nomis bulk ZIP CSV; Nomis API for many tables.",
+      "known_breaks": [
+        "Census-to-census classification changes; Scotland census in 2022 not 2021."
+      ],
+      "confidence_notes": "Gold-standard stock snapshot for E&W March 2021. Combine with Scotland 2022 and NI 2021 carefully (different dates).",
+      "measures": [
+        "country of birth",
+        "passports held",
+        "national identity"
+      ]
+    },
+    {
+      "id": "census-cob-scotland-2022",
+      "theme": 2,
+      "theme_name": "UK-born vs non-UK-born; nationality",
+      "name": "Scotland’s Census 2022 — country of birth / national identity",
+      "producer": "National Records of Scotland",
+      "primary": true,
+      "earliest_usable_year": 2022,
+      "geography": [
+        "Scotland",
+        "council areas",
+        "smaller census geographies"
+      ],
+      "update_frequency": "Decennial (2022; delayed from 2021)",
+      "license": "Open Government Licence v3.0 (typical for NRS census outputs — confirm on release)",
+      "urls": {
+        "eilr_report": "https://www.scotlandscensus.gov.uk/2022-reports/scotland-s-census-2022-ethnic-group-national-identity-language-and-religion/",
+        "search": "https://www.scotlandscensus.gov.uk/search-the-census"
+      },
+      "api_csv": "Scotland’s Census data search / published tables (CSV/Excel).",
+      "known_breaks": [
+        "One year later than E&W/NI 2021 — UK-wide 2021 maps need Scotland 2022 or interpolated caveat."
+      ],
+      "confidence_notes": "Primary for Scotland stocks. Non-UK-born share rose 7.0% (2011) to 10.2% (2022) per NRS report — cite report, do not hardcode as app 'truth' without source stamp.",
+      "measures": [
+        "country of birth",
+        "national identity",
+        "ethnic group",
+        "religion"
+      ]
+    },
+    {
+      "id": "census-ni-2021",
+      "theme": 2,
+      "theme_name": "UK-born vs non-UK-born; nationality",
+      "name": "NISRA Census 2021 Northern Ireland — country of birth / ethnicity / religion",
+      "producer": "Northern Ireland Statistics and Research Agency",
+      "primary": true,
+      "earliest_usable_year": 2021,
+      "geography": [
+        "Northern Ireland",
+        "LGDs",
+        "smaller geographies"
+      ],
+      "update_frequency": "Decennial",
+      "license": "Open Government Licence v3.0 (confirm on NISRA pages)",
+      "urls": {
+        "census_hub": "https://www.nisra.gov.uk/statistics/census/census-2021",
+        "main_stats_supplemental": "https://www.nisra.gov.uk/publications/census-2021-main-statistics-northern-ireland-supplemental"
+      },
+      "api_csv": "NISRA Flexible Table Builder; Excel downloads (e.g. MS-A18 country of birth).",
+      "known_breaks": [
+        "Religion questions differ from E&W (community background concepts historically important in NI)."
+      ],
+      "confidence_notes": "Primary for NI. Religion and 'religion brought up in' are NI-specific analytic staples.",
+      "measures": [
+        "country of birth",
+        "ethnic group",
+        "religion",
+        "national identity"
+      ]
+    },
+    {
+      "id": "census-ethnicity-ew",
+      "theme": 3,
+      "theme_name": "Ethnicity (Census + mid-year estimates if any)",
+      "name": "Census ethnicity — England & Wales (1991–2021)",
+      "producer": "Office for National Statistics",
+      "primary": true,
+      "earliest_usable_year": 1991,
+      "geography": [
+        "England",
+        "Wales",
+        "LA / OA"
+      ],
+      "update_frequency": "Decennial",
+      "license": "Open Government Licence v3.0",
+      "urls": {
+        "ts022": "https://www.nomisweb.co.uk/datasets/c2021ts022",
+        "bulk": "https://www.nomisweb.co.uk/sources/census_2021_bulk",
+        "ethnic_groups_style": "https://www.ethnicity-facts-figures.service.gov.uk/style-guide/ethnic-groups",
+        "history_blog": "https://history.blog.gov.uk/2019/03/07/50-years-of-collecting-ethnicity-data/"
+      },
+      "api_csv": "Nomis CSV/API; Ethnicity Facts & Figures republishes selected series.",
+      "known_breaks": [
+        "1991 first ethnicity question; 2001 added Mixed; Chinese moved categories 2001→2011; write-in detail expands 2021.",
+        "Detailed groups not comparable across all censuses without concordance."
+      ],
+      "confidence_notes": "No honest ethnicity time series before 1991. Between censuses, survey/admin research estimates exist but are not full accredited annual MYE-by-ethnicity for all years.",
+      "measures": [
+        "ethnic group"
+      ]
+    },
+    {
+      "id": "ons-ethnicity-estimates-research",
+      "theme": 3,
+      "theme_name": "Ethnicity (Census + mid-year estimates if any)",
+      "name": "ONS population estimates by ethnic group (research / characteristics methods)",
+      "producer": "Office for National Statistics",
+      "primary": true,
+      "earliest_usable_year": 2016,
+      "coverage_note": "Research/illustrative methods aligning APS to MYE; not a continuous certified annual national statistics product for all years 1991–present.",
+      "geography": [
+        "UK / England & Wales LA (method-dependent)"
+      ],
+      "update_frequency": "Ad hoc / research outputs",
+      "license": "Open Government Licence v3.0",
+      "urls": {
+        "methodology": "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationestimates/methodologies/populationestimatesbyethnicgroup",
+        "research_report": "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationestimates/methodologies/researchreportonpopulationestimatesbycharacteristics"
+      },
+      "api_csv": "Accompanying research datasets when published.",
+      "known_breaks": [
+        "Method experiments; not equivalent to census."
+      ],
+      "confidence_notes": "Use only with 'research/experimental' labeling. Prefer census for map layers.",
+      "measures": [
+        "ethnic group aligned to MYE (research)"
+      ]
+    },
+    {
+      "id": "census-religion",
+      "theme": 4,
+      "theme_name": "Religion",
+      "name": "Census religion (voluntary) — UK nations",
+      "producer": "ONS / NRS / NISRA",
+      "primary": true,
+      "earliest_usable_year": 2001,
+      "geography": [
+        "England & Wales",
+        "Scotland",
+        "Northern Ireland",
+        "subnational"
+      ],
+      "update_frequency": "Decennial",
+      "license": "Open Government Licence v3.0",
+      "urls": {
+        "nomis_bulk_ew": "https://www.nomisweb.co.uk/sources/census_2021_bulk",
+        "scotland_2022_eilr": "https://www.scotlandscensus.gov.uk/2022-reports/scotland-s-census-2022-ethnic-group-national-identity-language-and-religion/",
+        "nisra_supplemental": "https://www.nisra.gov.uk/publications/census-2021-main-statistics-northern-ireland-supplemental",
+        "story_of_census": "https://www.ons.gov.uk/visualisations/storyofthecensus/"
+      },
+      "api_csv": "Nomis / Scotland’s Census / NISRA downloads.",
+      "known_breaks": [
+        "Voluntary question; non-response handling differs (esp. Scotland).",
+        "1851 worship census not comparable to modern affiliation.",
+        "NI religion vs religion brought up in."
+      ],
+      "confidence_notes": "Cannot map modern religion affiliation before 2001. Treat as census snapshots only.",
+      "measures": [
+        "religion / religious affiliation"
+      ]
+    },
+    {
+      "id": "ons-age-sex-mye",
+      "theme": 5,
+      "theme_name": "Age and sex structure (by birthplace/nationality if possible)",
+      "name": "MYE by age and sex (+ Nomis single year of age)",
+      "producer": "ONS / NRS / NISRA",
+      "primary": true,
+      "earliest_usable_year": 1991,
+      "coverage_note": "National age–sex long before 1991; consistent LA single-year-of-age commonly via Nomis from 1991. Cross-tabs by birthplace/nationality require census or APS.",
+      "geography": [
+        "UK",
+        "nations",
+        "regions",
+        "LA"
+      ],
+      "update_frequency": "Annual",
+      "license": "Open Government Licence v3.0",
+      "urls": {
+        "nomis": "https://www.nomisweb.co.uk/datasets/pestsyoala",
+        "ew_dataset": "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/estimatesofthepopulationforenglandandwales"
+      },
+      "api_csv": "Nomis CSV; ONS Excel.",
+      "known_breaks": [
+        "Boundary changes; census rebases."
+      ],
+      "confidence_notes": "Phase-1 pyramid layer. For birthplace×age use census tables; APS for national estimates with sampling error.",
+      "measures": [
+        "age",
+        "sex",
+        "population"
+      ]
+    },
+    {
+      "id": "1939-register",
+      "theme": 5,
+      "theme_name": "Age and sex structure (by birthplace/nationality if possible)",
+      "name": "1939 National Register statistics (wartime civilian age/sex)",
+      "producer": "General Register Office / HMSO (historical)",
+      "primary": true,
+      "earliest_usable_year": 1939,
+      "geography": [
+        "UK and Isle of Man (published tables)"
+      ],
+      "update_frequency": "One-off wartime register",
+      "license": "Public domain / Crown historical; digitised copies vary (e.g. Internet Archive)",
+      "urls": {
+        "archive_org": "https://archive.org/details/b32170130",
+        "ons_census_story": "https://www.ons.gov.uk/visualisations/storyofthecensus/"
+      },
+      "api_csv": "Scanned report; not a modern API.",
+      "known_breaks": [
+        "Civilian only; not usual-residence MYE; 1941 Census cancelled."
+      ],
+      "confidence_notes": "Bridge for late-1930s structure only. Do not extend as migration stock.",
+      "measures": [
+        "age",
+        "sex",
+        "marital condition"
+      ]
+    },
+    {
+      "id": "ons-births-parents-cob",
+      "theme": 6,
+      "theme_name": "Birth rates / fertility (esp. by mother's country of birth)",
+      "name": "ONS Births by parents’ country of birth, England and Wales",
+      "producer": "Office for National Statistics",
+      "primary": true,
+      "earliest_usable_year": 1969,
+      "coverage_note": "Parents' country of birth recorded at registration since April 1969. From 2025 releases, country-of-birth content integrated into broader Births in England and Wales datasets.",
+      "geography": [
+        "England",
+        "Wales",
+        "regions/LA in detailed tables"
+      ],
+      "update_frequency": "Annual",
+      "license": "Open Government Licence v3.0",
+      "urls": {
+        "births_latest": "https://www.ons.gov.uk/peoplepopulationandcommunity/birthsdeathsandmarriages/livebirths/bulletins/birthsummarytablesenglandandwales/latest",
+        "parents_cob_2023_bulletin": "https://www.ons.gov.uk/peoplepopulationandcommunity/birthsdeathsandmarriages/livebirths/bulletins/parentscountryofbirthenglandandwales/2023",
+        "nomis_life_events": "https://www.nomisweb.co.uk/"
+      },
+      "api_csv": "ONS datasets: Birth registrations; Linked births; Parents' country of birth (Excel/CSV).",
+      "known_breaks": [
+        "Country coding lists evolve.",
+        "Birthplace ≠ ethnicity and ≠ long-term migrant status.",
+        "Scotland/NI published by NRS/NISRA separately."
+      ],
+      "confidence_notes": "Best primary series for share of births to non-UK-born mothers in E&W from 1969. Fertility rates need consistent population denominators (MYE).",
+      "measures": [
+        "live births",
+        "TFR/ASFR",
+        "mother/father country of birth"
+      ]
+    },
+    {
+      "id": "ho-immigration-system-stats",
+      "theme": 7,
+      "theme_name": "Asylum applications, grants, refusals, backlog/status",
+      "name": "Home Office Immigration system statistics (asylum)",
+      "producer": "Home Office",
+      "primary": true,
+      "earliest_usable_year": 1979,
+      "coverage_note": "Modern quarterly Immigation system statistics; historical Control of Immigration / Asylum Statistics / Immigration statistics historical data for earlier years. Continuous digital detail denser from 2000s. Backlog/WIP definitions change; people vs cases focus has shifted in recent chapters.",
+      "geography": [
+        "UK (national); some support data by UK region/LA"
+      ],
+      "update_frequency": "Quarterly (plus transparency data)",
+      "license": "Open Government Licence v3.0",
+      "urls": {
+        "collection": "https://www.gov.uk/government/collections/migration-statistics",
+        "data_tables": "https://www.gov.uk/government/statistical-data-sets/immigration-system-statistics-data-tables",
+        "asylum_backlog_chapter_example": "https://www.gov.uk/government/statistics/immigration-system-statistics-year-ending-june-2026/how-many-people-are-in-the-uk-asylum-system",
+        "claims_chapter_example": "https://www.gov.uk/government/statistics/immigration-system-statistics-year-ending-december-2025/how-many-people-claim-asylum-in-the-uk",
+        "historic_asylum_datasets": "https://www.gov.uk/government/statistical-data-sets/asylum-and-resettlement-datasets",
+        "transparency": "https://www.gov.uk/government/collections/migration-statistics",
+        "commons_library": "https://commonslibrary.parliament.uk/research-briefings/sn01403/"
+      },
+      "api_csv": "ODS/Excel detailed datasets (Asy_D01 claims, Asy_D02 decisions, Asy_D03 awaiting decision, etc.). Migration transparency data for operational WIP tables (e.g. ASY_03).",
+      "known_breaks": [
+        "Applications vs people (main applicants + dependants).",
+        "Initial decision grant rates exclude withdrawals/admin outcomes depending on table.",
+        "Total asylum 'work in progress' (appeals/removals) publication lag/gaps (e.g. latest full WIP noted to June 2024 in mid-2020s chapters).",
+        "Policy regime changes (e.g. Illegal Migration Act effects on decision pausing) affect stocks."
+      ],
+      "confidence_notes": "Authoritative for asylum system throughput. Always label people vs cases. Commons Library SN01403 is useful secondary synthesis.",
+      "measures": [
+        "asylum claims",
+        "initial decisions",
+        "grants",
+        "refusals",
+        "awaiting decision",
+        "appeals",
+        "support"
+      ]
+    },
+    {
+      "id": "ho-irregular-small-boats",
+      "theme": 8,
+      "theme_name": "Irregular / illegal entry / small boats / detections",
+      "name": "Home Office illegal entry routes / irregular migration & small boat detections",
+      "producer": "Home Office",
+      "primary": true,
+      "earliest_usable_year": 2018,
+      "coverage_note": "Small boat provisional daily series from 1 Jan 2018; irregular/illegal entry routes official statistics chapter from Feb 2022 (terminology evolved from 'irregular migration' to 'illegal entry routes' in later releases).",
+      "geography": [
+        "UK (Channel/operational); national totals"
+      ],
+      "update_frequency": "Quarterly official stats; provisional daily/weekly operational updates",
+      "license": "Open Government Licence v3.0",
+      "urls": {
+        "user_guide": "https://www.gov.uk/government/publications/home-office-irregular-migration-to-the-uk-statistics-user-guide/home-office-irregular-migration-to-the-uk-statistics-user-guide",
+        "chapter_example": "https://www.gov.uk/government/statistics/immigration-system-statistics-year-ending-december-2025/how-many-people-come-to-the-uk-via-illegal-entry-routes",
+        "daily_weekly": "https://www.gov.uk/government/publications/migrants-detected-crossing-the-english-channel-in-small-boats/migrants-detected-crossing-the-english-channel-in-small-boats-last-7-days",
+        "ons_measuring_illegal": "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/internationalmigration/articles/measuringillegalmigrationanewwayforward/july2019"
+      },
+      "api_csv": "Immigration system statistics irregular/illegal entry datasets; daily HTML/CSV-like tables on GOV.UK.",
+      "known_breaks": [
+        "Counts DETECTIONS not unique individuals necessarily; not undetected arrivals; not visa overstays; not French preventions (published separately).",
+        "Small boats most visible → detection bias vs other methods; do not infer relative attempt volumes across methods.",
+        "Provisional daily figures can differ from quality-assured quarterly stats."
+      ],
+      "confidence_notes": "CRITICAL UX: UI must say 'detected small boat arrivals' / 'detected illegal entry routes', never 'illegal immigrant population'. Home Office explicitly does not estimate stock without permission.",
+      "measures": [
+        "small boat detections",
+        "other detected illegal entry methods",
+        "asylum claims from small boat arrivals"
+      ]
+    },
+    {
+      "id": "migobs-small-boats",
+      "theme": 8,
+      "theme_name": "Irregular / illegal entry / small boats / detections",
+      "name": "Migration Observatory — People crossing the English Channel in small boats (briefing)",
+      "producer": "Migration Observatory, COMPAS, University of Oxford",
+      "primary": false,
+      "secondary_synthesis": true,
+      "earliest_usable_year": 2018,
+      "geography": [
+        "UK"
+      ],
+      "update_frequency": "Updated briefings (periodic)",
+      "license": "Check Migration Observatory site terms; usually free to read/cite with attribution",
+      "urls": {
+        "briefing": "https://migrationobservatory.ox.ac.uk/resources/briefings/people-crossing-the-english-channel-in-small-boats/"
+      },
+      "api_csv": "None (synthesis of Home Office stats).",
+      "known_breaks": [
+        "Inherits HO detection definitions."
+      ],
+      "confidence_notes": "Excellent plain-language secondary layer for methodology caveats; always link through to HO primary tables for numbers.",
+      "measures": [
+        "synthesis of detections and asylum outcomes"
+      ]
+    },
+    {
+      "id": "obr-frs",
+      "theme": 9,
+      "theme_name": "Fiscal / economic impact estimates (contested)",
+      "name": "OBR Fiscal risks and sustainability / EFO — migration scenarios",
+      "producer": "Office for Budget Responsibility",
+      "primary": true,
+      "earliest_usable_year": 2011,
+      "coverage_note": "Long-term fiscal projections with net migration variants; age-profile tax/spend arithmetic. Not a micro estimate of 'immigrants' fiscal balance by visa. Assumptions change with ONS population projections (e.g. 2024 FRS vs 2025/2026 FRS migration settles).",
+      "geography": [
+        "UK"
+      ],
+      "update_frequency": "FRS roughly annual/periodic; EFO biannual",
+      "license": "Open Government Licence v3.0 (typical Crown)",
+      "urls": {
+        "frs_july_2026": "https://obr.uk/frs/fiscal-risks-and-sustainability-july-2026/",
+        "frs_2024_pdf": "https://obr.uk/docs/dlm_uploads/Fiscal-risks-and-sustainability-report-September-2024-1.pdf",
+        "frs_2025_pdf": "https://obr.uk/docs/dlm_uploads/Fiscal-risks-and-sustainability-report-July-2025.pdf",
+        "migration_box_historical": "https://obr.uk/box/migration-and-fiscal-sustainability/"
+      },
+      "api_csv": "OBR chart data / supplementary tables on release pages when provided.",
+      "known_breaks": [
+        "Central net migration assumption jumps with ONS projections (e.g. ~129k vs ~315k vs ~230k long-run settles across FRS vintages).",
+        "Often assumes migrants have similar age-specific fiscal profiles to residents unless scenario varies earnings/length of stay.",
+        "Does not fully cost asylum backlog/system operational spikes in all vintages."
+      ],
+      "confidence_notes": "Contested interpretation: higher net migration usually improves modelled debt path via working-age inflows but does not 'solve' ageing; long-run debt still rises under many baselines. Present as model scenarios.",
+      "measures": [
+        "net migration variants",
+        "debt/deficit paths",
+        "dependency ratio"
+      ],
+      "methods": "Age-specific tax and spend profiles applied to ONS population projections; sensitivity on earnings and length of stay in some FRS editions.",
+      "opposing_findings": "Results sensitive to migrant earnings mix, dependants, return migration, and public-goods allocation; zero/low migration worsens long-run debt arithmetic but is not a welfare analysis."
+    },
+    {
+      "id": "mac-fiscal-2025",
+      "theme": 9,
+      "theme_name": "Fiscal / economic impact estimates (contested)",
+      "name": "Migration Advisory Committee — Fiscal impact of immigration (2025)",
+      "producer": "Migration Advisory Committee / Home Office publication",
+      "primary": true,
+      "earliest_usable_year": 2025,
+      "coverage_note": "Static (arrival year) and dynamic (lifetime NPV) estimates for specific visa cohorts (e.g. Skilled Worker 2022/23; Partner route in Annual Report 2025).",
+      "geography": [
+        "UK"
+      ],
+      "update_frequency": "Ad hoc reports",
+      "license": "Open Government Licence v3.0",
+      "urls": {
+        "report": "https://www.gov.uk/government/publications/the-fiscal-impact-of-immigration-in-the-uk",
+        "annual_report_2025": "https://www.gov.uk/government/publications/migration-advisory-committee-annual-report-2025/migration-advisory-committee-mac-annual-report-2025-accessible"
+      },
+      "api_csv": "ODS data tables published alongside report (Mar 2026 update noted on GOV.UK).",
+      "known_breaks": [
+        "Cohort- and route-specific; not whole migrant stock; discount rate and lifetime assumptions drive NPV."
+      ],
+      "confidence_notes": "Shows large positive lifetime NPV for some skilled main applicants and negative for some dependants/partner routes — illustrates heterogeneity. Contested if used as a single headline for 'immigration'.",
+      "measures": [
+        "static fiscal impact",
+        "lifetime NPV by visa route"
+      ],
+      "methods": "In-house static + dynamic lifetime fiscal model; earnings, employment conditions of visa, public service use, discounting (~3%).",
+      "opposing_findings": "Lifetime estimates (Dustmann–Frattini) and OBR age-profile approaches can differ in sign/magnitude depending on group, period, and cost allocation."
+    },
+    {
+      "id": "dustmann-frattini-2014",
+      "theme": 9,
+      "theme_name": "Fiscal / economic impact estimates (contested)",
+      "name": "Dustmann & Frattini (2014) — The Fiscal Effects of Immigration to the UK",
+      "producer": "Academic (Economic Journal / CReAM)",
+      "primary": false,
+      "secondary_synthesis": false,
+      "earliest_usable_year": 1995,
+      "coverage_note": "Static period analysis ~1995–2011/12; EEA vs non-EEA distinctions influential in debate.",
+      "geography": [
+        "UK"
+      ],
+      "update_frequency": "One-off academic study (widely cited)",
+      "license": "Journal / author copyright — cite, do not republish full text",
+      "urls": {
+        "ideas_repec": "https://ideas.repec.org/a/wly/econjl/v124y2014i580pf593-f643.html"
+      },
+      "api_csv": "None for app ingestion; cite findings qualitatively or with permissioned extracts.",
+      "known_breaks": [
+        "Static framework; period-specific; subsequent demographic/policy change."
+      ],
+      "confidence_notes": "Foundational reference often contrasted with later dynamic/lifetime models. Present as one study, not official statistics.",
+      "measures": [
+        "net fiscal contribution by immigrant groups over study window"
+      ],
+      "methods": "Static accounting of revenues and expenditures attributable to immigrants vs natives over years.",
+      "opposing_findings": "Critics dispute public-goods allocation, household composition, and extrapolation beyond study window; later MAC/OBR work uses different frames."
+    },
+    {
+      "id": "migobs-fiscal-briefing",
+      "theme": 9,
+      "theme_name": "Fiscal / economic impact estimates (contested)",
+      "name": "Migration Observatory — The fiscal impact of immigration in the UK (briefing)",
+      "producer": "Migration Observatory, University of Oxford",
+      "primary": false,
+      "secondary_synthesis": true,
+      "earliest_usable_year": null,
+      "geography": [
+        "UK"
+      ],
+      "update_frequency": "Updated briefings",
+      "license": "Cite with attribution; check site",
+      "urls": {
+        "briefing": "https://migrationobservatory.ox.ac.uk/resources/briefings/the-fiscal-impact-of-immigration-in-the-uk/"
+      },
+      "api_csv": "None",
+      "known_breaks": [
+        "Synthesis of OBR/MAC/academic literature."
+      ],
+      "confidence_notes": "Best secondary explainer that there is no single correct estimate; maps assumption space for the app's methodology notes.",
+      "measures": [
+        "literature synthesis"
+      ],
+      "methods": "Evidence review of static vs dynamic; average vs marginal; skill/visa heterogeneity.",
+      "opposing_findings": "Explicitly documents conflicting study results and assumption dependence."
+    },
+    {
+      "id": "ons-emp-cob-nationality",
+      "theme": 10,
+      "theme_name": "Employment/wages/housing context indicators",
+      "name": "ONS employment by country of birth and nationality (EMP06 / A12 / LMS)",
+      "producer": "Office for National Statistics",
+      "primary": true,
+      "earliest_usable_year": 1997,
+      "coverage_note": "LFS-based; series availability varies by exact table. EMP06 and A12 current quarterly datasets.",
+      "geography": [
+        "UK"
+      ],
+      "update_frequency": "Quarterly",
+      "license": "Open Government Licence v3.0",
+      "urls": {
+        "emp06": "https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/employmentandemployeetypes/datasets/employmentbycountryofbirthandnationalityemp06/current",
+        "a12": "https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/employmentandemployeetypes/datasets/a12employmentunemploymentandeconomicinactivitybynationalityandcountryofbirth/current",
+        "uk_born_emp_level": "https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/employmentandemployeetypes/timeseries/jf6f/lms"
+      },
+      "api_csv": "ONS CSV/XLS downloads; LMS time series.",
+      "known_breaks": [
+        "LFS volatility and reweighting (esp. post-COVID); sample uncertainty for subgroups."
+      ],
+      "confidence_notes": "Core labour-market context by UK/non-UK birth and nationality. Pair with caveats on LFS quality.",
+      "measures": [
+        "employment level/rate",
+        "unemployment",
+        "inactivity",
+        "by COB/nationality"
+      ]
+    },
+    {
+      "id": "ons-ashe",
+      "theme": 10,
+      "theme_name": "Employment/wages/housing context indicators",
+      "name": "ONS Annual Survey of Hours and Earnings (ASHE)",
+      "producer": "Office for National Statistics",
+      "primary": true,
+      "earliest_usable_year": 1997,
+      "geography": [
+        "UK",
+        "nations",
+        "regions",
+        "LA (some estimates)"
+      ],
+      "update_frequency": "Annual",
+      "license": "Open Government Licence v3.0",
+      "urls": {
+        "bulletin_2025": "https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/earningsandworkinghours/bulletins/annualsurveyofhoursandearnings/2025"
+      },
+      "api_csv": "ONS ASHE datasets.",
+      "known_breaks": [
+        "SOC 2010 → SOC 2020 break around 2021 earnings estimates."
+      ],
+      "confidence_notes": "Wage context; not migrant-specific in headline tables (use with EMP06 and academic/MAC earnings analyses).",
+      "measures": [
+        "median/mean earnings"
+      ]
+    },
+    {
+      "id": "ons-housing-affordability",
+      "theme": 10,
+      "theme_name": "Employment/wages/housing context indicators",
+      "name": "ONS Housing affordability (house price to earnings ratios)",
+      "producer": "Office for National Statistics",
+      "primary": true,
+      "earliest_usable_year": 1997,
+      "geography": [
+        "England",
+        "Wales",
+        "regions",
+        "LA"
+      ],
+      "update_frequency": "Annual",
+      "license": "Open Government Licence v3.0",
+      "urls": {
+        "bulletin_2025": "https://www.ons.gov.uk/peoplepopulationandcommunity/housing/bulletins/housingaffordabilityinenglandandwales/2025",
+        "qmi": "https://www.ons.gov.uk/peoplepopulationandcommunity/housing/methodologies/housingaffordabilityinenglandandwalesqmi"
+      },
+      "api_csv": "House price to workplace-based / residence-based earnings ratio datasets.",
+      "known_breaks": [
+        "Transfer from MHCLG method to ONS (series reconstructed); prices are transactions not stock."
+      ],
+      "confidence_notes": "Interpretation aid for housing pressure — not a causal migration impact measure. Scotland/NI separate producers.",
+      "measures": [
+        "median price to earnings ratio"
+      ]
+    },
+    {
+      "id": "mhclg-dwelling-stock",
+      "theme": 10,
+      "theme_name": "Employment/wages/housing context indicators",
+      "name": "MHCLG Dwelling stock estimates (England)",
+      "producer": "Ministry of Housing, Communities and Local Government",
+      "primary": true,
+      "earliest_usable_year": null,
+      "coverage_note": "Long England dwelling stock series; census-baseline + net additions. Confirm earliest year on release technical notes.",
+      "geography": [
+        "England",
+        "LA"
+      ],
+      "update_frequency": "Annual",
+      "license": "Open Government Licence v3.0",
+      "urls": {
+        "latest": "https://www.gov.uk/government/statistics/dwelling-stock-estimates-in-england-2025/dwelling-stock-estimates-england-31-march-2025"
+      },
+      "api_csv": "GOV.UK statistical tables.",
+      "known_breaks": [
+        "Tenure measurement methods; Wales/Scotland/NI separate."
+      ],
+      "confidence_notes": "Housing supply context layer.",
+      "measures": [
+        "dwelling stock by tenure"
+      ]
+    },
+    {
+      "id": "migobs-net-migration",
+      "theme": 1,
+      "theme_name": "Population & net migration / immigration / emigration",
+      "name": "Migration Observatory — Net migration to the UK (briefing)",
+      "producer": "Migration Observatory",
+      "primary": false,
+      "secondary_synthesis": true,
+      "earliest_usable_year": 2000,
+      "geography": [
+        "UK"
+      ],
+      "update_frequency": "Periodic",
+      "license": "Cite with attribution",
+      "urls": {
+        "briefing": "https://migrationobservatory.ox.ac.uk/resources/briefings/long-term-international-migration-flows-to-and-from-the-uk/"
+      },
+      "api_csv": "None",
+      "known_breaks": [
+        "Explains ONS method changes for users."
+      ],
+      "confidence_notes": "Secondary explainer for UI methodology tooltips.",
+      "measures": [
+        "synthesis"
+      ]
+    },
+    {
+      "id": "migobs-asylum",
+      "theme": 7,
+      "theme_name": "Asylum applications, grants, refusals, backlog/status",
+      "name": "Migration Observatory — Asylum in the UK / asylum backlog briefings",
+      "producer": "Migration Observatory",
+      "primary": false,
+      "secondary_synthesis": true,
+      "earliest_usable_year": null,
+      "geography": [
+        "UK"
+      ],
+      "update_frequency": "Periodic",
+      "license": "Cite with attribution",
+      "urls": {
+        "asylum": "https://migrationobservatory.ox.ac.uk/resources/briefings/asylum-in-the-uk/",
+        "briefings_index": "https://migrationobservatory.ox.ac.uk/resources/briefings/"
+      },
+      "api_csv": "None",
+      "known_breaks": [],
+      "confidence_notes": "Secondary synthesis for narrative; numbers from HO.",
+      "measures": [
+        "synthesis"
+      ]
+    }
+  ]
+}

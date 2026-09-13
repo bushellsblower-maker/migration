@@ -138,7 +138,7 @@ function parsePopCsv() {
     EW: header.findIndex((h) => /England and Wales/i.test(h)),
     UK: header.findIndex((h) => /United Kingdom/i.test(h)),
     NI: header.findIndex((h) => /Northern Ireland/i.test(h)),
-    W: header.findIndex((h) => /Wales population/i.test(h)),
+    W: header.findIndex((h) => /^Wales population/i.test(h)),
   };
   const series = {};
   for (const row of rows) {

@@ -1,0 +1,24 @@
+# migration — migration.cybush.uk
+name = "migration"
+account_id = "f027194dcc0be7e3812e673468bab58d"
+compatibility_date = "2025-12-01"
+workers_dev = false
+main = "src/worker.js"
+
+routes = [
+  { pattern = "migration.cybush.uk/*", zone_name = "cybush.uk" },
+]
+
+[assets]
+directory = "./public"
+not_found_handling = "single-page-application"
+html_handling = "auto-trailing-slash"
+binding = "ASSETS"
+run_worker_first = true
+
+[observability]
+enabled = true
+
+[[analytics_engine_datasets]]
+binding = "AUDIT_HITS"
+dataset = "cybush"

@@ -1,0 +1,18 @@
+{
+  "name": "migration",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Evidence-led UK migration & demographics explorer (Phase 1 HTML)",
+  "scripts": {
+    "download": "bash scripts/download-raw.sh",
+    "build": "node scripts/ingest.mjs",
+    "dev": "wrangler dev",
+    "start": "wrangler dev",
+    "preview": "python3 -m http.server 8788 --directory public"
+  },
+  "devDependencies": {
+    "wrangler": "^4.40.0",
+    "xlsx": "^0.18.5"
+  }
+}

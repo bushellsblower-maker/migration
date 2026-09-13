@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Migration — UK demographics explorer</title>
+    <meta
+      name="description"
+      content="Evidence-led explorer of UK population, migration flows, census stocks, asylum and detections. Official sources only; method breaks labelled."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./app.css" />
+  </head>
+  <body>
+    <a class="skip" href="#map">Skip to map</a>
+    <header class="top">
+      <div class="brand">
+        <p class="kicker">Cybush · Phase 1</p>
+        <h1>Migration</h1>
+        <p class="tagline">UK population and migration, as published — not as argued.</p>
+      </div>
+      <p class="guard">
+        UK-born is not nationality. Nationality is not White British. Detections are not a stock of people without permission.
+      </p>
+      <nav class="top-nav">
+        <button type="button" id="btn-layers" class="nav-btn" aria-expanded="false">Layers</button>
+        <button type="button" id="btn-notes" class="nav-btn" aria-expanded="false">Notes</button>
+        <a href="#sources">Sources</a>
+      </nav>
+    </header>
+
+    <div class="app">
+      <aside class="rail" id="layer-rail">
+        <h2>Layers</h2>
+        <div id="layer-list" class="layer-list"></div>
+        <fieldset class="controls">
+          <legend>Colour</legend>
+          <label>
+            Palette
+            <select id="palette">
+              <option value="ink">Ink (sequential)</option>
+              <option value="teal">Teal (sequential)</option>
+              <option value="diverging">Diverging (net / change)</option>
+              <option value="print">Print greys</option>
+            </select>
+          </label>
+          <label>
+            Visualisation
+            <select id="viz-mode"></select>
+          </label>
+          <label>
+            Series
+            <select id="metric"></select>
+          </label>
+        </fieldset>
+      </aside>
+
+      <main class="stage">
+        <div class="map-wrap">
+          <div id="map" role="img" aria-label="UK nations choropleth"></div>
+          <div id="map-banner" class="map-banner" hidden></div>
+          <div id="legend" class="legend"></div>
+          <div id="map-readout" class="map-readout" aria-live="polite"></div>
+        </div>
+        <section class="timeline" aria-label="Year controls">
+          <div class="year-row">
+            <button type="button" id="play" aria-pressed="false">Play</button>
+            <strong id="year-label">2021</strong>
+            <span id="year-status" class="year-status"></span>
+          </div>
+          <input id="year" type="range" min="1940" max="2025" value="2021" />
+          <div class="ticks" aria-hidden="true">
+            <span>1940</span><span>1964</span><span>1991</span><span>2012</span><span>2025</span>
+          </div>
+        </section>
+        <section class="chart-panel">
+          <div class="chart-head">
+            <h2 id="chart-title">National series</h2>
+            <p id="chart-source" class="cite"></p>
+          </div>
+          <canvas id="chart" width="900" height="280"></canvas>
+          <div id="chart-html" class="chart-html" hidden></div>
+          <p id="chart-empty" class="empty" hidden>No comparable series for this year or geography.</p>
+        </section>
+      </main>
+
+      <aside class="inspect" id="notes-rail">
+        <div class="tabs" role="tablist">
+          <button type="button" role="tab" aria-selected="true" data-tab="def">Definitions</button>
+          <button type="button" role="tab" aria-selected="false" data-tab="breaks">Method breaks</button>
+          <button type="button" role="tab" aria-selected="false" data-tab="src">Sources</button>
+          <button type="button" role="tab" aria-selected="false" data-tab="data">Area table</button>
+        </div>
+        <div id="tab-def" class="tab-body"></div>
+        <div id="tab-breaks" class="tab-body" hidden></div>
+        <div id="tab-src" class="tab-body" hidden></div>
+        <div id="tab-data" class="tab-body" hidden></div>
+      </aside>
+    </div>
+
+    <section id="sources" class="sources-page">
+      <h2>Sources and limitations</h2>
+      <p>
+        Every number in the explorer is copied from a downloaded official file under the
+        <a href="https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/">Open Government Licence v3.0</a>
+        (or cited academic/secondary work in the fiscal panel). Nothing is interpolated to fill a gap.
+        Years and places without a comparable published series are marked
+        <strong>no comparable data</strong> and the map is dimmed.
+      </p>
+      <h3>What this Phase 1 build can and cannot show</h3>
+      <ul>
+        <li>The map is the four UK nations. English-region and local-authority figures appear in the area table and charts where the source file has them.</li>
+        <li>Ethnicity cannot be mapped before 1991. This extract has England &amp; Wales 2011 and 2021 high-level groups only.</li>
+        <li>Modern religion affiliation cannot be mapped before 2001. This extract has E&amp;W 2011 and 2021.</li>
+        <li>Long-term migration flows are a UK series. IPS-era (1964–2015) and admin-based LTIM (2012–, YE December) are drawn separately and must not be read as one line.</li>
+        <li>Small-boat and illegal-entry figures are <em>detections</em>. They are not a count of people in the UK without permission.</li>
+        <li>The fiscal panel reports published model results and methods. It is not a map of “the cost of immigration”.</li>
+        <li>Parents’ country of birth has been collected in E&amp;W since 1969; the workbook ingested here supplies a consistent 2008–2025 table.</li>
+      </ul>
+      <div id="source-index"></div>
+      <p class="cite">Inventory: <a href="https://github.com/bushellsblower-maker/migration/blob/main/docs/inventory.md">docs/inventory.md</a>. File list: <code>data/SOURCES.md</code>.</p>
+    </section>
+
+    <footer class="foot">
+      <p>Migration · evidence-led explorer · not a campaign site.</p>
+    </footer>
+
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

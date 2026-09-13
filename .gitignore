@@ -1,0 +1,14 @@
+node_modules/
+.wrangler/
+.dev.vars
+*.log
+.DS_Store
+# Large source files used only during ingest; summaries are committed.
+data/raw/geo/uk-click.json
+data/raw/geo/countries-arcgis.json
+data/raw/geo/eng-region.json
+data/raw/geo/itl1-arcgis.json
+data/raw/ho/asylum-claims-jun-2026.xlsx
+data/raw/ho/asylum-awaiting-jun-2026.xlsx
+data/raw/ho/illegal-entry-dataset-jun-2026.xlsx
+data/raw/nomis/

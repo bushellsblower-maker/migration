@@ -1,0 +1,1114 @@
+/**
+ * Build public/data/catalog.json from downloaded official files.
+ * Never invent values: skip cells that are not parseable numbers.
+ */
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import XLSX from "xlsx";
+
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const RAW = path.join(ROOT, "data", "raw");
+const OUT = path.join(ROOT, "public", "data");
+const GEO_OUT = path.join(ROOT, "public", "geo");
+
+const NATIONS = {
+  UK: { id: "UK", name: "United Kingdom", gss: "K02000001", kind: "uk" },
+  GB: { id: "GB", name: "Great Britain", gss: "K03000001", kind: "gb" },
+  EW: { id: "EW", name: "England and Wales", gss: "K04000001", kind: "country-group" },
+  E: { id: "E", name: "England", gss: "E92000001", kind: "nation" },
+  W: { id: "W", name: "Wales", gss: "W92000004", kind: "nation" },
+  S: { id: "S", name: "Scotland", gss: "S92000003", kind: "nation" },
+  NI: { id: "NI", name: "Northern Ireland", gss: "N92000002", kind: "nation" },
+};
+
+const REGIONS = {
+  E12000001: "North East",
+  E12000002: "North West",
+  E12000003: "Yorkshire and The Humber",
+  E12000004: "East Midlands",
+  E12000005: "West Midlands",
+  E12000006: "East of England",
+  E12000007: "London",
+  E12000008: "South East",
+  E12000009: "South West",
+};
+
+const GSS_TO_ID = {
+  K02000001: "UK",
+  K03000001: "GB",
+  K04000001: "EW",
+  E92000001: "E",
+  W92000004: "W",
+  S92000003: "S",
+  N92000002: "NI",
+};
+
+function readWb(rel) {
+  const abs = path.join(RAW, rel);
+  if (!fs.existsSync(abs) || fs.statSync(abs).size === 0) {
+    console.warn("missing", rel);
+    return null;
+  }
+  return XLSX.read(fs.readFileSync(abs), { type: "buffer", cellDates: false });
+}
+
+function sheetAoa(wb, name) {
+  if (!wb || !wb.Sheets[name]) return [];
+  return XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, defval: "", raw: false });
+}
+
+function num(value) {
+  if (value === null || value === undefined) return null;
+  let s = String(value).trim();
+  if (!s || s === ":" || s === "-" || s === "–" || s === "—" || s === "z" || s === "[z]" || s === "*" || /^missing/i.test(s)) {
+    return null;
+  }
+  s = s.replace(/[£$€]/g, "").replace(/,/g, "").replace(/\s/g, "").replace(/%$/, "");
+  if (/^\((.+)\)$/.test(s)) s = `-${s.slice(1, -1)}`;
+  s = s.replace(/p$/i, "").replace(/r$/i, "");
+  if (!/^-?\d+(\.\d+)?$/.test(s)) return null;
+  const n = Number(s);
+  return Number.isFinite(n) ? n : null;
+}
+
+function yearOf(value) {
+  const s = String(value);
+  const full = s.match(/(18|19|20)\d{2}/);
+  if (full) return Number(full[0]);
+  const ye = s.match(/YE\s+(?:Jan|Mar|Jun|Sep|Dec)\s+(\d{2})\b/i);
+  if (ye) {
+    const yy = Number(ye[1]);
+    return yy >= 40 ? 1900 + yy : 2000 + yy;
+  }
+  return null;
+}
+
+function point(year, value, extra = {}) {
+  if (year == null || value == null) return null;
+  return { year, value, ...extra };
+}
+
+function addPoint(series, geo, year, value, extra) {
+  const p = point(year, value, extra);
+  if (!p) return;
+  if (!series[geo]) series[geo] = [];
+  series[geo].push(p);
+}
+
+function sortSeries(series) {
+  for (const key of Object.keys(series)) {
+    const byYear = new Map();
+    for (const p of series[key]) byYear.set(p.year, p);
+    series[key] = [...byYear.values()].sort((a, b) => a.year - b.year);
+  }
+  return series;
+}
+
+function parseCsv(rel) {
+  const abs = path.join(RAW, rel);
+  const text = fs.readFileSync(abs, "utf8");
+  return text.split(/\r?\n/).map((line) => {
+    const out = [];
+    let cur = "";
+    let q = false;
+    for (const ch of line) {
+      if (ch === '"') q = !q;
+      else if (ch === "," && !q) {
+        out.push(cur);
+        cur = "";
+      } else cur += ch;
+    }
+    out.push(cur);
+    return out;
+  });
+}
+
+function source(id, name, url, extra = {}) {
+  return { id, name, url, license: "OGL v3.0", ...extra };
+}
+
+function parsePopCsv() {
+  const rows = parseCsv("ons/pop.csv");
+  const header = rows[0].map((h) => h.replace(/^"|"$/g, ""));
+  const col = {
+    S: header.findIndex((h) => /Scotland/i.test(h)),
+    GB: header.findIndex((h) => /Great Britain/i.test(h)),
+    E: header.findIndex((h) => /^England population/i.test(h)),
+    EW: header.findIndex((h) => /England and Wales/i.test(h)),
+    UK: header.findIndex((h) => /United Kingdom/i.test(h)),
+    NI: header.findIndex((h) => /Northern Ireland/i.test(h)),
+    W: header.findIndex((h) => /^Wales population/i.test(h)),
+  };
+  const series = {};
+  for (const row of rows) {
+    const y = yearOf(row[0]);
+    if (!y) continue;
+    for (const [geo, idx] of Object.entries(col)) {
+      if (idx >= 0) addPoint(series, geo, y, num(row[idx]));
+    }
+  }
+  return sortSeries(series);
+}
+
+function parseEwHistorical(wb) {
+  const series = {};
+  const t7 = sheetAoa(wb, "Table 7");
+  for (const row of t7) {
+    const y = yearOf(row[0]);
+    if (!y) continue;
+    addPoint(series, "EW", y, num(row[1]));
+  }
+  const t10 = sheetAoa(wb, "Table 10");
+  for (const row of t10) {
+    const y = yearOf(row[0]);
+    if (!y) continue;
+    addPoint(series, "E", y, num(row[1]));
+  }
+  const t12 = sheetAoa(wb, "Table 12");
+  for (const row of t12) {
+    const y = yearOf(row[0]);
+    if (!y) continue;
+    addPoint(series, "W", y, num(row[1]));
+  }
+  return sortSeries(series);
+}
+
+function parseGb1937(wb) {
+  const series = {};
+  const rows = sheetAoa(wb, "GB Total Pop 1937-2014");
+  for (const row of rows) {
+    const y = yearOf(row[0]);
+    if (!y) continue;
+    let v = num(row[1]);
+    if (v != null && v < 200000) v = Math.round(v * 1000);
+    addPoint(series, "GB", y, v, y >= 1940 && y <= 1947 ? { flag: "wartime-definition" } : {});
+  }
+  return sortSeries(series);
+}
+
+function parseRegional(wb) {
+  const series = {};
+  for (const sheet of ["Table 3", "Table 4"]) {
+    const rows = sheetAoa(wb, sheet);
+    for (const row of rows) {
+      const y = yearOf(row[0]);
+      const code = String(row[1] || "").trim();
+      if (!y || !REGIONS[code]) continue;
+      addPoint(series, code, y, num(row[3]));
+    }
+  }
+  return sortSeries(series);
+}
+
+function parseAgeSex(ewWb, myeWb) {
+  const pyramids = {};
+  const t9 = sheetAoa(ewWb, "Table 9");
+  const yearCols = {};
+  if (t9[1]) {
+    t9[1].forEach((cell, i) => {
+      const y = yearOf(cell);
+      if (y) yearCols[y] = i;
+    });
+  }
+  const bands = {};
+  for (const row of t9.slice(2)) {
+    const age = String(row[0]).trim();
+    const sex = String(row[1]).trim().toLowerCase();
+    if (age !== "All Ages" && /^\d+$/.test(age) && (sex === "males" || sex === "females" || sex === "persons")) {
+      const ageN = Number(age);
+      const band = ageN >= 90 ? "90+" : `${Math.floor(ageN / 5) * 5}-${Math.floor(ageN / 5) * 5 + 4}`;
+      for (const [y, col] of Object.entries(yearCols)) {
+        const v = num(row[col]);
+        if (v == null) continue;
+        bands[y] ??= {};
+        bands[y][band] ??= { male: 0, female: 0, persons: 0 };
+        if (sex === "males") bands[y][band].male += v;
+        else if (sex === "females") bands[y][band].female += v;
+        else bands[y][band].persons += v;
+      }
+    }
+  }
+  // Table 9 in this file is persons by single year (Sex column = Persons).
+  // Use MYE2 male/female sheets for the latest mid-year.
+  if (myeWb) {
+    const persons = sheetAoa(myeWb, "MYE2 - Persons");
+    const females = sheetAoa(myeWb, "MYE2 - Females");
+    const males = sheetAoa(myeWb, "MYE2 - Males");
+    const headerRow = persons.find((r) => String(r[0]).trim() === "Code");
+    const latestYear = 2025;
+    const take = (rows, geoName) => {
+      const row = rows.find((r) => String(r[1]).replace(/\s+/g, " ").trim().toUpperCase() === geoName);
+      return row || null;
+    };
+    const geoRows = {
+      EW: "ENGLAND AND WALES",
+      E: "ENGLAND",
+    };
+    for (const [geo, label] of Object.entries(geoRows)) {
+      const p = take(persons, label);
+      const f = take(females, label);
+      const m = take(males, label);
+      if (!p || !headerRow) continue;
+      const pyramid = [];
+      for (let i = 4; i < headerRow.length; i++) {
+        const ageLabel = String(headerRow[i]).trim();
+        const ageN = ageLabel === "90+" ? 90 : num(ageLabel);
+        if (ageN == null) continue;
+        const band = ageN >= 90 ? "90+" : `${Math.floor(ageN / 5) * 5}-${Math.floor(ageN / 5) * 5 + 4}`;
+        let slot = pyramid.find((b) => b.band === band);
+        if (!slot) {
+          slot = { band, male: 0, female: 0, persons: 0 };
+          pyramid.push(slot);
+        }
+        slot.persons += num(p[i]) || 0;
+        if (m) slot.male += num(m[i]) || 0;
+        if (f) slot.female += num(f[i]) || 0;
+      }
+      pyramids[`${geo}:${latestYear}`] = pyramid;
+    }
+    // English regions
+    for (const [code, name] of Object.entries(REGIONS)) {
+      const p = persons.find((r) => String(r[0]).trim() === code);
+      const f = females.find((r) => String(r[0]).trim() === code);
+      const m = males.find((r) => String(r[0]).trim() === code);
+      if (!p || !headerRow) continue;
+      const pyramid = [];
+      for (let i = 4; i < headerRow.length; i++) {
+        const ageLabel = String(headerRow[i]).trim();
+        const ageN = ageLabel === "90+" ? 90 : num(ageLabel);
+        if (ageN == null) continue;
+        const band = ageN >= 90 ? "90+" : `${Math.floor(ageN / 5) * 5}-${Math.floor(ageN / 5) * 5 + 4}`;
+        let slot = pyramid.find((b) => b.band === band);
+        if (!slot) {
+          slot = { band, male: 0, female: 0, persons: 0 };
+          pyramid.push(slot);
+        }
+        slot.persons += num(p[i]) || 0;
+        if (m) slot.male += num(m[i]) || 0;
+        if (f) slot.female += num(f[i]) || 0;
+      }
+      pyramids[`${code}:${latestYear}`] = pyramid;
+    }
+  }
+  return { pyramids };
+}
+
+function parseLtimHistorical(wb) {
+  const immigration = {};
+  const emigration = {};
+  const net = {};
+  const rows = sheetAoa(wb, "Data");
+  const headerIdx = rows.findIndex((r) => String(r[0]).trim() === "Year");
+  for (const row of rows.slice(headerIdx + 1)) {
+    const y = yearOf(row[0]);
+    if (!y) continue;
+    // File is in thousands
+    const imm = num(row[1]);
+    const emi = num(row[2]);
+    const n = num(row[3]);
+    addPoint(immigration, "UK", y, imm == null ? null : imm * 1000, { method: y < 1991 ? "pre-1991" : "ips-ltim" });
+    addPoint(emigration, "UK", y, emi == null ? null : emi * 1000, { method: y < 1991 ? "pre-1991" : "ips-ltim" });
+    addPoint(net, "UK", y, n == null ? null : n * 1000, { method: y < 1991 ? "pre-1991" : "ips-ltim" });
+  }
+  return {
+    immigration: sortSeries(immigration),
+    emigration: sortSeries(emigration),
+    net: sortSeries(net),
+  };
+}
+
+function parseLtimAdmin(wb) {
+  const immigration = {};
+  const emigration = {};
+  const net = {};
+  const rows = sheetAoa(wb, "1");
+  const headerIdx = rows.findIndex((r) => /Flow/i.test(String(r[0])));
+  for (const row of rows.slice(headerIdx + 1)) {
+    const flow = String(row[0]).trim();
+    const period = String(row[1] || "");
+    if (!/^YE Dec /i.test(period)) continue;
+    const y = yearOf(period);
+    const v = num(row[2]);
+    const extra = {
+      method: "admin-ltim",
+      period,
+      provisional: /p/i.test(period),
+      revised: /r/i.test(period),
+    };
+    if (flow === "Immigration") addPoint(immigration, "UK", y, v, extra);
+    if (flow === "Emigration") addPoint(emigration, "UK", y, v, extra);
+    if (/^Net/i.test(flow)) addPoint(net, "UK", y, v, extra);
+  }
+  return {
+    immigration: sortSeries(immigration),
+    emigration: sortSeries(emigration),
+    net: sortSeries(net),
+  };
+}
+
+function parseAps(wb) {
+  const bornUk = {};
+  const bornNonUk = {};
+  const shareNonUk = {};
+  const rows = sheetAoa(wb, "1.1");
+  const headerIdx = rows.findIndex((r) => String(r[0]).trim() === "Area Code");
+  const header = (rows[headerIdx] || []).map((h) => String(h).replace(/\s+/g, " ").trim());
+  const ukCol = header.findIndex((h) => /^United Kingdom Estimate/i.test(h));
+  const nonCol = header.findIndex((h) => /^Non-United Kingdom Estimate/i.test(h));
+  const ukCi = header.findIndex((h) => /^United Kingdom \+\/- CI/i.test(h));
+  const nonCi = header.findIndex((h) => /^Non-United Kingdom \+\/- CI/i.test(h));
+  const year = 2021;
+  const las = [];
+  for (const row of rows.slice(headerIdx + 1)) {
+    const code = String(row[0] || "").trim();
+    const name = String(row[1] || "").replace(/\[Note.*?\]/g, "").trim();
+    const geoType = String(row[2] || "").trim();
+    const uk = num(row[ukCol]);
+    const non = num(row[nonCol]);
+    if (uk == null || non == null) continue;
+    const extra = { lo: null, hi: null };
+    const geo = GSS_TO_ID[code];
+    if (geo) {
+      addPoint(bornUk, geo, year, uk, { ci: num(row[ukCi]) });
+      addPoint(bornNonUk, geo, year, non, { ci: num(row[nonCi]) });
+      addPoint(shareNonUk, geo, year, (100 * non) / (uk + non));
+    }
+    if (REGIONS[code]) {
+      addPoint(bornUk, code, year, uk, { ci: num(row[ukCi]) });
+      addPoint(bornNonUk, code, year, non, { ci: num(row[nonCi]) });
+      addPoint(shareNonUk, code, year, (100 * non) / (uk + non));
+    }
+    if (/local authority|unitary|metropolitan district|london borough/i.test(geoType)) {
+      las.push({
+        code,
+        name,
+        year,
+        ukBorn: uk,
+        nonUkBorn: non,
+        shareNonUk: (100 * non) / (uk + non),
+        ciNonUk: num(row[nonCi]),
+      });
+    }
+  }
+  return {
+    bornUk: sortSeries(bornUk),
+    bornNonUk: sortSeries(bornNonUk),
+    shareNonUk: sortSeries(shareNonUk),
+    las,
+  };
+}
+
+function parseCensusCob(fig4) {
+  const share = {};
+  const las = [];
+  const rows = sheetAoa(fig4, "Figure 4");
+  const headerIdx = rows.findIndex((r) => /LA code/i.test(String(r[0])));
+  for (const row of rows.slice(headerIdx + 1)) {
+    const code = String(row[0] || "").trim();
+    const name = String(row[1] || "").trim();
+    if (!/^E|^W/.test(code)) continue;
+    const p2011 = num(row[2]);
+    const p2021 = num(row[3]);
+    las.push({ code, name, y2011: p2011, y2021: p2021 });
+  }
+  // Nation rollups are not in this LA file; use census-cob-fig1? That's components of change.
+  // We compute E&W unweighted? No — do not average LAs. Leave nation totals to APS + notes.
+  return { share: sortSeries(share), las };
+}
+
+function parseEthnicity(grouped, mapWb) {
+  const composition = { E: { 2011: [], 2021: [] }, EW: { 2011: [], 2021: [] } };
+  const rows = sheetAoa(grouped, "Figure 1");
+  const headerIdx = rows.findIndex((r) => /Ethnic Group/i.test(String(r[0])));
+  for (const row of rows.slice(headerIdx + 1)) {
+    const group = String(row[0] || "").trim();
+    if (!group || /^(units|notes?:|source|figure)/i.test(group) || /excluded|presented ethnic|distribution \(high-level/i.test(group)) continue;
+    const n2011 = num(row[1]);
+    const n2021 = num(row[2]);
+    const p2011 = num(row[3]);
+    const p2021 = num(row[4]);
+    if (n2011 == null && n2021 == null && p2011 == null && p2021 == null) continue;
+    composition.EW[2011].push({ group, n: n2011, pct: p2011 });
+    composition.EW[2021].push({ group, n: n2021, pct: p2021 });
+  }
+  const whiteShare = {};
+  const las = [];
+  const map = sheetAoa(mapWb, "Figure 3");
+  const h = map.find((r) => /Area code/i.test(String(r[0])));
+  const hIdx = map.indexOf(h);
+  const labels = (h || []).map((x) => String(x));
+  for (const row of map.slice(hIdx + 1)) {
+    const code = String(row[0] || "").trim();
+    const name = String(row[1] || "").trim();
+    if (!code) continue;
+    const cells = [];
+    let total = 0;
+    let white = 0;
+    for (let i = 2; i < labels.length; i++) {
+      const v = num(row[i]);
+      if (v == null) continue;
+      cells.push({ group: labels[i], n: v });
+      total += v;
+      if (/^White/i.test(labels[i])) white += v;
+    }
+    if (!total) continue;
+    const pctWhite = (100 * white) / total;
+    las.push({ code, name, year: 2021, pctWhite, total, groups: cells });
+  }
+  addPoint(whiteShare, "EW", 2011, composition.EW[2011].find((g) => /^White$/i.test(g.group))?.pct);
+  addPoint(whiteShare, "EW", 2021, composition.EW[2021].find((g) => /^White$/i.test(g.group))?.pct);
+  return { composition, whiteShare: sortSeries(whiteShare), las };
+}
+
+function parseReligion(fig1, fig2) {
+  const composition = { EW: { 2011: [], 2021: [] } };
+  const rows = sheetAoa(fig1, "Figure 1");
+  const headerIdx = rows.findIndex((r) => /^Religion$/i.test(String(r[0]).trim()));
+  for (const row of rows.slice(headerIdx + 1)) {
+    const group = String(row[0] || "").trim();
+    if (!group || /^(units|notes?:|source|figure)/i.test(group)) continue;
+    const n2011 = num(row[1]);
+    const n2021 = num(row[2]);
+    const p2011 = num(row[3]);
+    const p2021 = num(row[4]);
+    if (n2011 == null && n2021 == null && p2011 == null && p2021 == null) continue;
+    composition.EW[2011].push({ group, n: n2011, pct: p2011 });
+    composition.EW[2021].push({ group, n: n2021, pct: p2021 });
+  }
+  const christian = {};
+  const none = {};
+  const muslim = {};
+  for (const [y, arr] of Object.entries(composition.EW)) {
+    addPoint(christian, "EW", Number(y), arr.find((g) => /^Christian$/i.test(g.group))?.pct);
+    addPoint(none, "EW", Number(y), arr.find((g) => /^No religion$/i.test(g.group))?.pct);
+    addPoint(muslim, "EW", Number(y), arr.find((g) => /^Muslim$/i.test(g.group))?.pct);
+  }
+  const las = [];
+  const map = sheetAoa(fig2, "Figure 2");
+  const h = map.find((r) => /Area code/i.test(String(r[0])));
+  const hIdx = map.indexOf(h);
+  const labels = (h || []).map((x) => String(x));
+  for (const row of map.slice(hIdx + 1)) {
+    const code = String(row[0] || "").trim();
+    const name = String(row[1] || "").trim();
+    if (!code) continue;
+    const rec = { code, name, year: 2021 };
+    let total = 0;
+    for (let i = 2; i < labels.length; i++) {
+      const v = num(row[i]);
+      if (v == null) continue;
+      const key = labels[i].replace(/\s*\(number\)\s*/i, "").trim();
+      rec[key] = v;
+      total += v;
+    }
+    rec.total = total;
+    if (total) {
+      rec.pctChristian = rec.Christian != null ? (100 * rec.Christian) / total : null;
+      rec.pctNone = rec["No religion"] != null ? (100 * rec["No religion"]) / total : null;
+      rec.pctMuslim = rec.Muslim != null ? (100 * rec.Muslim) / total : null;
+    }
+    las.push(rec);
+  }
+  return {
+    composition,
+    christian: sortSeries(christian),
+    none: sortSeries(none),
+    muslim: sortSeries(muslim),
+    las,
+  };
+}
+
+function parseBirths(wb2025, mapWb) {
+  const ukMothers = {};
+  const nonUkMothers = {};
+  const total = {};
+  const share = {};
+  const t1 = sheetAoa(wb2025, "Table_1");
+  const header = t1.find((r) => String(r[0]).includes("Country of birth of mother"));
+  const years = header.slice(1).map(yearOf);
+  const findRow = (re) => t1.find((r) => re.test(String(r[0])));
+  const uk = findRow(/^UK$/i);
+  const non = findRow(/outside United Kingdom/i);
+  const tot = findRow(/^Total$/i);
+  years.forEach((y, i) => {
+    if (!y) return;
+    addPoint(ukMothers, "EW", y, num(uk?.[i + 1]));
+    addPoint(nonUkMothers, "EW", y, num(non?.[i + 1]));
+    addPoint(total, "EW", y, num(tot?.[i + 1]));
+    const t = num(tot?.[i + 1]);
+    const n = num(non?.[i + 1]);
+    if (t && n != null) addPoint(share, "EW", y, (100 * n) / t);
+  });
+  const regionShare = {};
+  const map = sheetAoa(mapWb, "data");
+  const mh = map.find((r) => String(r[0]).trim() === "Code");
+  const mIdx = map.indexOf(mh);
+  const mapYears = (mh || []).slice(3).map(yearOf);
+  for (const row of map.slice(mIdx + 1)) {
+    const code = String(row[0] || "").split(",")[0].trim();
+    const geo = GSS_TO_ID[code] || (REGIONS[code] ? code : null);
+    if (!geo) continue;
+    mapYears.forEach((y, i) => {
+      if (!y) return;
+      addPoint(regionShare, geo, y, num(row[i + 3]));
+    });
+  }
+  return {
+    ukMothers: sortSeries(ukMothers),
+    nonUkMothers: sortSeries(nonUkMothers),
+    total: sortSeries(total),
+    share: sortSeries(share),
+    regionShare: sortSeries(regionShare),
+  };
+}
+
+function parseWideYearTable(rows, startRowLabel) {
+  const headerIdx = rows.findIndex((r) => String(r[0]).includes(startRowLabel) || /Date|Year|Method|As at/i.test(String(r[0])));
+  let header = rows[headerIdx];
+  // find the header that actually contains years
+  for (let i = 0; i < rows.length; i++) {
+    const years = rows[i].filter((c) => yearOf(c));
+    if (years.length >= 5) {
+      header = rows[i];
+      break;
+    }
+  }
+  const years = header.map((c, i) => ({ i, y: yearOf(c), label: String(c) }));
+  const metrics = {};
+  for (const row of rows) {
+    const name = String(row[0] || "").trim();
+    if (!name || yearOf(name) || /date|as at|method of entry|year$/i.test(name)) continue;
+    const series = {};
+    for (const { i, y, label } of years) {
+      if (!y || i === 0) continue;
+      if (/year ending june/i.test(label)) continue;
+      addPoint(series, "UK", y, num(row[i]));
+    }
+    if (Object.keys(series).length) metrics[name] = sortSeries(series);
+  }
+  return metrics;
+}
+
+function parseAsylum(wb) {
+  const rows = sheetAoa(wb, "Asy_00a");
+  return parseWideYearTable(rows, "Date");
+}
+
+function parseBoats(wb) {
+  const rows = sheetAoa(wb, "IER_01");
+  return parseWideYearTable(rows, "Method");
+}
+
+function parseEmp06(wb) {
+  const rates = {};
+  const rows = sheetAoa(wb, "Country of birth rates");
+  const headerIdx = rows.findIndex((r) => /Dataset identifier/i.test(String(r[0])));
+  // columns: Total, UK-born, Non-UK born
+  for (const row of rows.slice(headerIdx + 1)) {
+    const label = String(row[0] || "").trim();
+    const y = yearOf(label);
+    if (!y) continue;
+    // Use Oct-Dec as annual-ish point when present; otherwise any quarter — keep all as year.fraction? Keep last quarter of each year.
+    if (!/Oct-Dec|Oct–Dec/i.test(label)) continue;
+    addPoint(rates, "UK-born", y, num(row[2]));
+    addPoint(rates, "non-UK-born", y, num(row[3]));
+    addPoint(rates, "all", y, num(row[1]));
+  }
+  return { rates: sortSeries(rates) };
+}
+
+function parseHousing(wb) {
+  const ratio = {};
+  const rows = sheetAoa(wb, "1c");
+  const header = rows.find((r) => String(r[0]).trim() === "Code");
+  const years = header.slice(2).map(yearOf);
+  const hIdx = rows.indexOf(header);
+  for (const row of rows.slice(hIdx + 1)) {
+    const code = String(row[0] || "").trim();
+    const geo = GSS_TO_ID[code] || (REGIONS[code] ? code : null);
+    if (!geo) continue;
+    years.forEach((y, i) => addPoint(ratio, geo, y, num(row[i + 2])));
+  }
+  return { ratio: sortSeries(ratio) };
+}
+
+function parseMac(wb) {
+  const fig10 = sheetAoa(wb, "Figure_10");
+  const groups = (fig10[1] || []).slice(1).map((x) => String(x).replace(/\s+/g, " ").trim()).filter(Boolean);
+  const values = (fig10[2] || []).slice(1).map(num);
+  const staticEstimates = groups.map((label, i) => ({ label, gbp: values[i], year: "2022/23" })).filter((d) => d.gbp != null);
+  const t11 = sheetAoa(wb, "Table_11");
+  const headers = (t11[1] || []).map((x) => String(x).replace(/\s+/g, " ").trim());
+  const sensitivities = [];
+  for (const row of t11.slice(2)) {
+    const scenario = String(row[0] || "").trim();
+    if (!scenario) continue;
+    const cells = {};
+    headers.forEach((h, i) => {
+      if (!i || !h) return;
+      const v = num(row[i]);
+      if (v != null) cells[h] = v;
+    });
+    if (Object.keys(cells).length) sensitivities.push({ scenario, cells });
+  }
+  return { staticEstimates, sensitivities };
+}
+
+function yearsOfSeries(series) {
+  const ys = new Set();
+  for (const pts of Object.values(series || {})) {
+    for (const p of pts) ys.add(p.year);
+  }
+  return [...ys].sort((a, b) => a - b);
+}
+
+function mergePrefer(primary, fallback) {
+  const out = { ...fallback };
+  for (const [geo, pts] of Object.entries(primary)) {
+    const map = new Map((out[geo] || []).map((p) => [p.year, p]));
+    for (const p of pts) map.set(p.year, p);
+    out[geo] = [...map.values()].sort((a, b) => a.year - b.year);
+  }
+  return out;
+}
+
+function main() {
+  const pop = parsePopCsv();
+  const ewHist = parseEwHistorical(readWb("ons/ew-pop-1838-2025.xlsx"));
+  const gb = parseGb1937(readWb("ons/gb-pop-1937-2014.xls"));
+  const regional = parseRegional(readWb("ons/regional-pop-1971-2023.xlsx"));
+  const age = parseAgeSex(readWb("ons/ew-pop-1838-2025.xlsx"), readWb("ons/mye25tablesew.xlsx"));
+  const ltimHist = parseLtimHistorical(readWb("ons/ltim-1964-2015.xls"));
+  const ltimAdmin = parseLtimAdmin(readWb("ons/ltim-flows-may2026.xlsx"));
+  const aps = parseAps(readWb("ons/aps-cob-nationality-2021.xls"));
+  const cobCensus = parseCensusCob(readWb("ons/census-cob-fig4.xlsx"));
+  const ethnicity = parseEthnicity(readWb("ons/census-ethnicity-grouped.xlsx"), readWb("ons/census-ethnicity-map.xlsx"));
+  const religion = parseReligion(readWb("ons/census-religion-fig1.xlsx"), readWb("ons/census-religion-fig2.xlsx"));
+  const births = parseBirths(readWb("ons/births-parents-cob-2025.xlsx"), readWb("ons/births-cob-map.xlsx"));
+  const asylum = parseAsylum(readWb("ho/asylum-summary-jun-2026.ods"));
+  const boats = parseBoats(readWb("ho/illegal-entry-summary-jun-2026.ods"));
+  const emp = parseEmp06(readWb("ons/emp06aug2026.xls"));
+  const housing = parseHousing(readWb("ons/housing-affordability.xlsx"));
+  const mac = parseMac(readWb("mac/fiscal_report_ods_tables.checked.ods"));
+
+  const mye = mergePrefer(pop, mergePrefer(ewHist, gb));
+
+  const layers = [
+    {
+      id: "p1-mye-total",
+      title: "Mid-year population stock",
+      short: "Population",
+      coverage: { start: 1940, end: 2025 },
+      mapGeos: ["E", "W", "S", "NI"],
+      confidence: "accredited",
+      badges: ["Accredited official statistics", "Wartime definition break 1940–47", "Census rebases"],
+      breaks: [
+        { year: 1940, label: "Wartime civilian / home / forces-abroad definitions vary (1940–47)" },
+        { year: 1941, label: "1941 Census cancelled" },
+        { year: 1971, label: "Consistent UK/nation MYE time series in this extract" },
+        { year: 2021, label: "Census 2021/22 rebase revises intercensal years" },
+        { year: 2025, label: "UK mid-2025 provisional / rounded" },
+      ],
+      sources: [
+        source("ons-mye", "ONS population estimates time series (pop)", "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/populationestimatestimeseriesdataset"),
+        source("ons-ew-long", "ONS England & Wales population estimates 1838–2025", "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/estimatesofthepopulationforenglandandwales"),
+        source("ons-gb-1937", "ONS Great Britain population estimates 1937–2014 (ad hoc)", "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationestimates/adhocs/004357greatbritainpopulationestimates1937to2014"),
+        source("ons-regional", "ONS regional population estimates 1971–2023", "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/estimatesofthepopulationforenglandandwales"),
+      ],
+      notes: [
+        "UK nation totals in this app follow the ONS pop time series from 1971. Earlier years use the E&W long table and the GB 1937–2014 ad hoc — they are not a single spliced usual-residence definition.",
+        "Mid-year estimates count usual residents (UN 12-month concept). They do not count short-term migrants.",
+        "Scotland and Northern Ireland are not separately identified in the 1937–2014 GB ad hoc extract used for 1940–1970.",
+      ],
+      definitions: [
+        "Usually resident population: people who live in the UK, or intend to, for 12 months or more.",
+      ],
+      metrics: [
+        { id: "population", label: "Usual residents", unit: "people", format: "count", series: mye },
+        { id: "regional", label: "Regional usual residents (E&W)", unit: "people", format: "count", series: regional },
+      ],
+      defaultMetric: "population",
+      mapMetric: "population",
+      vizModes: ["absolute", "index"],
+    },
+    {
+      id: "p1-ltim-net",
+      title: "Immigration, emigration and net migration",
+      short: "Migration flows",
+      coverage: { start: 1964, end: 2025 },
+      mapGeos: [],
+      noMapReason: "Official LTIM in this extract is a UK national series. There is no comparable historic local-authority flow map.",
+      confidence: "mixed",
+      badges: ["Method break 1991", "IPS vs admin (do not splice)", "Latest points provisional"],
+      breaks: [
+        { year: 1964, label: "IPS-based timeline begins (pre-1991 methods differ)" },
+        { year: 1991, label: "LTIM 1991+ methodology" },
+        { year: 2012, label: "Admin-based LTIM (YE June 2012–); official statistics in development" },
+        { year: 2020, label: "IPS disruption / COVID; admin transformation" },
+      ],
+      sources: [
+        source("ons-ltim-ips", "ONS LTIM by citizenship 1964–2015 (ad hoc)", "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/internationalmigration/adhocs/006408longterminternationalmigrationintoandoutoftheukbycitizenship1964to2015"),
+        source("ons-ltim-admin", "ONS long-term international migration flows, provisional (YE Dec 2025)", "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/internationalmigration/datasets/longterminternationalimmigrationemigrationandnetmigrationflowsprovisional"),
+        source("ons-ltim-qmi", "Admin-based LTIM QMI", "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/internationalmigration/methodologies/adminbasedlongterminternationalmigrationestimatesqmi"),
+      ],
+      notes: [
+        "The 1964–2015 series and the 2012– admin series are shown as separate lines. They are not the same method.",
+        "Admin-based chart points use year-ending December only, to avoid plotting four overlapping quarterly vintages as four years.",
+        "IPS measured stated intentions; admin-based LTIM observes travel and visa/tax histories. Latest ~four points are revisable.",
+      ],
+      definitions: [
+        "Long-term international migrant (UN): a person who changes their country of usual residence for 12 months or more.",
+        "Net migration = immigration − emigration.",
+      ],
+      metrics: [
+        { id: "immig-ips", label: "Immigration (IPS-era)", unit: "people", format: "count", series: ltimHist.immigration },
+        { id: "emig-ips", label: "Emigration (IPS-era)", unit: "people", format: "count", series: ltimHist.emigration },
+        { id: "net-ips", label: "Net migration (IPS-era)", unit: "people", format: "count", series: ltimHist.net },
+        { id: "immig-admin", label: "Immigration (admin LTIM, YE Dec)", unit: "people", format: "count", series: ltimAdmin.immigration },
+        { id: "emig-admin", label: "Emigration (admin LTIM, YE Dec)", unit: "people", format: "count", series: ltimAdmin.emigration },
+        { id: "net-admin", label: "Net migration (admin LTIM, YE Dec)", unit: "people", format: "count", series: ltimAdmin.net },
+      ],
+      defaultMetric: "net-admin",
+      vizModes: ["absolute"],
+    },
+    {
+      id: "p1-cob-stock",
+      title: "UK-born and non-UK-born stock",
+      short: "Country of birth",
+      coverage: { start: 2011, end: 2021 },
+      mapGeos: ["E", "W", "S", "NI"],
+      confidence: "survey-and-census",
+      badges: ["UK-born ≠ nationality ≠ White British", "APS household survey", "Census 2021 LA snapshot"],
+      breaks: [
+        { year: 2011, label: "Census 2011 country-of-birth (E&W LA percentages)" },
+        { year: 2021, label: "Census 2021 (E&W) and APS YE June 2021 (UK, nations, regions, LAs)" },
+      ],
+      sources: [
+        source("ons-aps", "ONS population by country of birth and nationality (APS, YE June 2021)", "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/internationalmigration/datasets/populationoftheunitedkingdombycountryofbirthandnationality"),
+        source("census-cob", "Census 2021 E&W country of birth / passports (figure data)", "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/internationalmigration/bulletins/internationalmigrationenglandandwales/census2021"),
+        source("nomis-ts012", "Nomis TS012 Country of birth", "https://www.nomisweb.co.uk/datasets/c2021ts012"),
+      ],
+      notes: [
+        "Country of birth is not nationality and is not ethnicity. A UK-born person may have any ethnic group; a British national may be born abroad.",
+        "APS is a household survey: it excludes most communal establishments and totals do not match mid-year estimates.",
+        "The main APS bulletin series ends YE June 2021. This build does not invent a post-2021 APS time series.",
+        "Scotland’s Census was in 2022. Combining it with E&W/NI 2021 as a single UK census year would be a date mismatch.",
+      ],
+      definitions: [
+        "UK-born: usual residents born in England, Wales, Scotland or Northern Ireland.",
+        "Non-UK-born: usual residents born elsewhere, including the Crown Dependencies and the rest of the world.",
+      ],
+      metrics: [
+        { id: "uk-born", label: "UK-born (APS YE Jun 2021)", unit: "people", format: "count", series: aps.bornUk },
+        { id: "non-uk-born", label: "Non-UK-born (APS YE Jun 2021)", unit: "people", format: "count", series: aps.bornNonUk },
+        { id: "share-non-uk", label: "Non-UK-born share (APS)", unit: "%", format: "percent", series: aps.shareNonUk },
+      ],
+      extras: { las: cobCensus.las, apsLas: aps.las.slice(0, 400) },
+      snapshotYears: [2011, 2021],
+      defaultMetric: "share-non-uk",
+      mapMetric: "share-non-uk",
+      vizModes: ["share", "absolute"],
+    },
+    {
+      id: "p1-ethnicity-census",
+      title: "Ethnicity (census snapshots)",
+      short: "Ethnicity",
+      coverage: { start: 2011, end: 2021 },
+      mapGeos: ["E", "W"],
+      noMapYearsOutside: "No comparable UK ethnicity question before 1991. This extract has E&W 2011 and 2021 high-level groups; 1991/2001 concordance is not in the downloaded files.",
+      confidence: "census-snapshot",
+      badges: ["No pre-1991 series", "Categories change between censuses", "E&W extract"],
+      breaks: [
+        { year: 1991, label: "First census ethnicity question (not in this extract)" },
+        { year: 2001, label: "Mixed category added (not in this extract)" },
+        { year: 2011, label: "E&W high-level groups in this extract" },
+        { year: 2021, label: "E&W Census 2021; write-in detail expanded" },
+      ],
+      sources: [
+        source("census-eth", "Census 2021 ethnic group, England and Wales", "https://www.ons.gov.uk/peoplepopulationandcommunity/culturalidentity/ethnicity/bulletins/ethnicgroupenglandandwales/census2021"),
+        source("nomis-ts021", "Nomis TS021 Ethnic group", "https://www.nomisweb.co.uk/datasets/c2021ts021"),
+      ],
+      notes: [
+        "Ethnicity is self-identified and is not country of birth or nationality.",
+        "‘White’ includes White British, White Irish, Gypsy or Irish Traveller, Roma (2021), and Other White. It is not a synonym for UK-born.",
+        "Scotland 2022 and Northern Ireland 2021 ethnicity tables are published separately and are not in this extract.",
+      ],
+      definitions: [
+        "High-level ethnic groups follow the ONS 2021 five-group presentation used in the cited bulletin figure.",
+      ],
+      metrics: [
+        { id: "pct-white", label: "White (high-level %, E&W)", unit: "%", format: "percent", series: ethnicity.whiteShare },
+      ],
+      extras: { composition: ethnicity.composition, las: ethnicity.las.map(({ groups, ...rest }) => rest) },
+      defaultMetric: "pct-white",
+      mapMetric: "pct-white",
+      vizModes: ["share", "composition"],
+    },
+    {
+      id: "p1-religion-census",
+      title: "Religion (census snapshots)",
+      short: "Religion",
+      coverage: { start: 2011, end: 2021 },
+      mapGeos: ["E", "W"],
+      confidence: "census-snapshot",
+      badges: ["Voluntary question", "No modern affiliation series before 2001", "E&W extract"],
+      breaks: [
+        { year: 2001, label: "First modern affiliation question (2001 counts cited in bulletin text; 2011/21 in this extract)" },
+        { year: 2011, label: "E&W Census 2011" },
+        { year: 2021, label: "E&W Census 2021" },
+      ],
+      sources: [
+        source("census-rel", "Census 2021 religion, England and Wales", "https://www.ons.gov.uk/peoplepopulationandcommunity/culturalidentity/religion/bulletins/religionenglandandwales/census2021"),
+      ],
+      notes: [
+        "The religion question is voluntary. Non-response is a category, not missing data to be filled in.",
+        "1851 worship-attendance counts are not comparable to modern affiliation.",
+        "Northern Ireland’s ‘religion brought up in’ concept is different and is not mixed into these E&W percentages.",
+      ],
+      metrics: [
+        { id: "christian", label: "Christian % (E&W)", unit: "%", format: "percent", series: religion.christian },
+        { id: "none", label: "No religion % (E&W)", unit: "%", format: "percent", series: religion.none },
+        { id: "muslim", label: "Muslim % (E&W)", unit: "%", format: "percent", series: religion.muslim },
+      ],
+      extras: { composition: religion.composition, las: religion.las.map((r) => ({ code: r.code, name: r.name, year: 2021, pctChristian: r.pctChristian, pctNone: r.pctNone, pctMuslim: r.pctMuslim })) },
+      defaultMetric: "christian",
+      mapMetric: "christian",
+      vizModes: ["share", "composition"],
+    },
+    {
+      id: "p1-age-sex",
+      title: "Age–sex structure",
+      short: "Age–sex",
+      coverage: { start: 2025, end: 2025 },
+      mapGeos: ["E", "W"],
+      confidence: "accredited",
+      badges: ["Mid-2025 E&W / regions", "Pyramid is latest year only in this extract"],
+      breaks: [],
+      sources: [
+        source("ons-mye-age", "ONS mid-2025 population estimates, England and Wales", "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/estimatesofthepopulationforenglandandwales"),
+      ],
+      notes: [
+        "Pyramids are from the mid-2025 single-year-of-age tables (2023 LA boundaries). They are not birthplace- or nationality-specific.",
+        "Age × country-of-birth cross-tabs are census or APS products, not this MYE file.",
+      ],
+      metrics: [],
+      extras: { pyramids: age.pyramids },
+      vizModes: ["pyramid"],
+    },
+    {
+      id: "p1-births-cob",
+      title: "Births by mother’s country of birth",
+      short: "Births",
+      coverage: { start: 2008, end: 2025 },
+      mapGeos: ["E", "W"],
+      confidence: "accredited",
+      badges: ["E&W vital registration", "Recorded since 1969; this extract 2008–2025", "Birthplace ≠ ethnicity"],
+      breaks: [
+        { year: 1969, label: "Parents’ country of birth collected at E&W registration from April 1969 (earlier years not in this workbook)" },
+        { year: 2008, label: "Start of the consistent table ingested from the 2025 workbook" },
+      ],
+      sources: [
+        source("ons-births", "ONS births by parents’ country of birth, England and Wales", "https://www.ons.gov.uk/peoplepopulationandcommunity/birthsdeathsandmarriages/livebirths/datasets/parentscountryofbirth"),
+        source("ons-births-map", "ONS 2023 bulletin figure (regional shares 2016–2022)", "https://www.ons.gov.uk/peoplepopulationandcommunity/birthsdeathsandmarriages/livebirths/bulletins/parentscountryofbirthenglandandwales/2023"),
+      ],
+      notes: [
+        "A birth to a non-UK-born mother is not a measure of the mother’s ethnicity, nationality, or long-term migrant status.",
+        "Scotland and Northern Ireland publish separate vital statistics.",
+        "The 2025 workbook’s Table 1 in this download covers 2008–2025. Longer 1969– series exist in earlier releases but were not a single clean column set in the files retrieved.",
+      ],
+      metrics: [
+        { id: "share-non-uk-mother", label: "Births to non-UK-born mothers (E&W)", unit: "%", format: "percent", series: births.share },
+        { id: "births-non-uk", label: "Births to non-UK-born mothers", unit: "births", format: "count", series: births.nonUkMothers },
+        { id: "births-uk", label: "Births to UK-born mothers", unit: "births", format: "count", series: births.ukMothers },
+        { id: "region-share", label: "Regional share (either parent born outside UK, 2016–22 figure)", unit: "%", format: "percent", series: births.regionShare },
+      ],
+      defaultMetric: "share-non-uk-mother",
+      mapMetric: "share-non-uk-mother",
+      vizModes: ["share", "absolute"],
+    },
+    {
+      id: "p1-asylum",
+      title: "Asylum claims, decisions and awaiting decision",
+      short: "Asylum",
+      coverage: { start: 2010, end: 2025 },
+      mapGeos: [],
+      noMapReason: "Home Office asylum summary tables in this extract are UK totals (people). Local support data exist in other HO files and are not mapped here.",
+      confidence: "accredited",
+      badges: ["People, not cases — labelled", "WIP / backlog definitions change", "Appeals incomplete after 2022"],
+      breaks: [
+        { year: 2010, label: "Start of this summary-table extract" },
+        { year: 2022, label: "Appeals columns suppressed in later years of Asy_00a" },
+      ],
+      sources: [
+        source("ho-asy", "Home Office asylum summary tables, YE June 2026", "https://www.gov.uk/government/statistical-data-sets/immigration-system-statistics-data-tables"),
+        source("ho-asy-chapter", "How many people are in the UK asylum system", "https://www.gov.uk/government/statistics/immigration-system-statistics-year-ending-june-2026/how-many-people-are-in-the-uk-asylum-system"),
+      ],
+      notes: [
+        "Rows distinguish people claiming asylum from cases awaiting a decision.",
+        "Grant rate is at initial decision and excludes withdrawals depending on the table.",
+        "Do not back-cast modern ‘work in progress’ concepts into 1940–1970s.",
+      ],
+      definitions: [
+        "People claiming asylum: main applicants plus dependants in the summary people count.",
+        "Awaiting an initial decision: stock at year end, not a lifetime backlog of every later stage.",
+      ],
+      metrics: Object.entries(asylum).map(([name, series]) => ({
+        id: name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-+$/g, ""),
+        label: name,
+        unit: /rate|%/i.test(name) ? "%" : "people",
+        format: /rate|%/i.test(name) ? "percent" : "count",
+        series,
+      })),
+      defaultMetric: "people-claiming-asylum",
+      vizModes: ["absolute"],
+    },
+    {
+      id: "p1-small-boats",
+      title: "Detected small-boat and illegal-entry-route arrivals",
+      short: "Detections",
+      coverage: { start: 2018, end: 2025 },
+      mapGeos: [],
+      noMapReason: "These are national operational detection counts, not a map of an undetected population.",
+      confidence: "operational",
+      badges: ["DETECTIONS only", "Not a stock of people without permission", "Not visa overstays"],
+      breaks: [{ year: 2018, label: "Small-boat detection series from 1 January 2018" }],
+      sources: [
+        source("ho-ier", "Home Office illegal entry routes summary, YE June 2026", "https://www.gov.uk/government/statistical-data-sets/immigration-system-statistics-data-tables"),
+        source("ho-user", "HO irregular / illegal-entry statistics user guide", "https://www.gov.uk/government/publications/home-office-irregular-migration-to-the-uk-statistics-user-guide/home-office-irregular-migration-to-the-uk-statistics-user-guide"),
+      ],
+      notes: [
+        "These series count detected arrivals by recorded method of entry. They are not an estimate of total irregular presence, undetected entries, or visa overstays.",
+        "The Home Office does not publish a stock of people in the UK without permission from this series.",
+        "French preventions are a separate operational series and are not included.",
+        "Provisional daily Channel figures can differ from these quality-assured annual totals.",
+      ],
+      terminology: [
+        "Prefer: detected small-boat arrivals; detected arrivals via illegal entry routes.",
+        "Do not say: illegal immigrant population; total illegal immigration.",
+      ],
+      metrics: Object.entries(boats).map(([name, series]) => ({
+        id: name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-+$/g, ""),
+        label: name,
+        unit: "detections",
+        format: "count",
+        series,
+      })),
+      defaultMetric: "small-boat-arrivals",
+      vizModes: ["absolute"],
+    },
+    {
+      id: "p1-labour-housing",
+      title: "Labour market and housing context",
+      short: "Labour & housing",
+      coverage: { start: 1997, end: 2025 },
+      mapGeos: ["E", "W"],
+      confidence: "accredited",
+      badges: ["Context, not causation", "LFS quality caveats", "Affordability ≠ migration impact"],
+      breaks: [
+        { year: 2020, label: "COVID LFS mode change" },
+        { year: 2025, label: "EMP06 note on 2025 LFS estimates" },
+      ],
+      sources: [
+        source("ons-emp06", "ONS EMP06 employment by country of birth and nationality", "https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/employmentandemployeetypes/datasets/employmentbycountryofbirthandnationalityemp06/current"),
+        source("ons-aff", "ONS house-price-to-workplace-earnings ratio", "https://www.ons.gov.uk/peoplepopulationandcommunity/housing/datasets/ratioofhousepricetoworkplacebasedearningslowerquartileandmedian"),
+      ],
+      notes: [
+        "Employment rates by country of birth are LFS/APS-based and should not be read as a causal migration-impact layer.",
+        "Housing affordability is median price to workplace-based earnings. It is not a measure of the fiscal or demographic ‘effect’ of migration.",
+        "Oct–Dec quarters are plotted as the calendar year for the employment-rate series.",
+      ],
+      metrics: [
+        { id: "emp-uk-born", label: "Employment rate, UK-born (Oct–Dec)", unit: "%", format: "percent", series: { UK: emp.rates["UK-born"] || [] } },
+        { id: "emp-non-uk-born", label: "Employment rate, non-UK-born (Oct–Dec)", unit: "%", format: "percent", series: { UK: emp.rates["non-UK-born"] || [] } },
+        { id: "affordability", label: "Median house-price-to-earnings ratio", unit: "ratio", format: "ratio", series: housing.ratio },
+      ],
+      defaultMetric: "emp-non-uk-born",
+      mapMetric: "affordability",
+      vizModes: ["absolute"],
+    },
+    {
+      id: "p1-fiscal-notes",
+      title: "Fiscal impact — contested evidence",
+      short: "Fiscal (contested)",
+      coverage: { start: 1995, end: 2025 },
+      mapGeos: [],
+      noMapReason: "There is no official mapped ‘cost of migration’ series. This panel is methods and published model results, not a fact layer.",
+      confidence: "modelled-contested",
+      badges: ["Not a single cost", "Static ≠ dynamic", "Route- and assumption-specific"],
+      breaks: [],
+      sources: [
+        source("mac-2025", "Migration Advisory Committee, The fiscal impact of immigration in the UK", "https://www.gov.uk/government/publications/the-fiscal-impact-of-immigration-in-the-uk"),
+        source("obr-frs", "OBR Fiscal risks and sustainability", "https://obr.uk/frs/fiscal-risks-and-sustainability-july-2026/"),
+        source("migobs", "Migration Observatory fiscal-impact briefing", "https://migrationobservatory.ox.ac.uk/resources/briefings/the-fiscal-impact-of-immigration-in-the-uk/"),
+        source("df2014", "Dustmann & Frattini (2014), The Fiscal Effects of Immigration to the UK", "https://ideas.repec.org/a/wly/econjl/v124y2014i580pf593-f643.html", { license: "Journal / cite only" }),
+      ],
+      notes: [
+        "Static annual snapshots, lifetime NPVs, and OBR age-profile scenarios can differ in sign depending on the visa route, dependants, public-goods allocation, and time window.",
+        "MAC Figure 10 values below are the committee’s published static net estimates for specific 2022/23-style groups — not a UK-wide migrant-stock total.",
+      ],
+      extras: {
+        methods: [
+          { name: "OBR FRS / EFO", frame: "Age-specific tax and spend profiles applied to population projections with net-migration variants. Sensitive to the ONS long-run migration settle and to assumed earnings/length of stay." },
+          { name: "MAC 2025 lifetime / static", frame: "Cohort and visa-route model (Skilled Worker, Health & Care, dependants). Discount rate and lifetime assumptions drive NPV. Not the whole stock." },
+          { name: "Dustmann–Frattini 2014", frame: "Static period accounting ~1995–2011/12, EEA vs non-EEA. Foundational in debate; not official statistics and not current." },
+        ],
+        macStatic: mac.staticEstimates,
+        macSensitivities: mac.sensitivities,
+      },
+      metrics: [],
+      vizModes: ["panel"],
+    },
+  ];
+
+  // Drop empty metrics
+  for (const layer of layers) {
+    layer.metrics = (layer.metrics || []).filter((m) => yearsOfSeries(m.series).length);
+    layer.years = [...new Set(layer.metrics.flatMap((m) => yearsOfSeries(m.series)))].sort((a, b) => a - b);
+    if (!layer.years.length && layer.extras?.pyramids) {
+      layer.years = [...new Set(Object.keys(layer.extras.pyramids).map((k) => Number(k.split(":")[1])))];
+    }
+    if (!layer.years.length && layer.id === "p1-fiscal-notes") layer.years = [2014, 2024, 2025];
+    if (layer.snapshotYears?.length) {
+      layer.years = [...new Set([...layer.years, ...layer.snapshotYears])].sort((a, b) => a - b);
+    }
+    if (layer.defaultMetric && !layer.metrics.some((m) => m.id === layer.defaultMetric)) {
+      layer.defaultMetric = layer.metrics[0]?.id || null;
+    }
+  }
+
+  const catalog = {
+    generated: new Date().toISOString(),
+    title: "Migration — Phase 1 catalog",
+    yearMin: 1940,
+    yearMax: 2025,
+    nations: Object.values(NATIONS),
+    regions: Object.entries(REGIONS).map(([id, name]) => ({ id, name, kind: "region" })),
+    principles: [
+      "No invented statistics.",
+      "UK-born is not nationality and is not White British.",
+      "Detected arrivals are not an irregular population stock.",
+      "Fiscal estimates are methods and ranges, not one cost.",
+    ],
+    layers,
+  };
+
+  fs.mkdirSync(OUT, { recursive: true });
+  fs.mkdirSync(GEO_OUT, { recursive: true });
+  fs.writeFileSync(path.join(OUT, "catalog.json"), JSON.stringify(catalog));
+
+  const nationsGeo = path.join(RAW, "geo/uk-nations.geojson");
+  if (fs.existsSync(nationsGeo)) {
+    fs.copyFileSync(nationsGeo, path.join(GEO_OUT, "uk-nations.geojson"));
+  }
+
+  const summary = layers.map((l) => ({
+    id: l.id,
+    years: `${l.years[0] ?? "—"}–${l.years[l.years.length - 1] ?? "—"}`,
+    metrics: l.metrics.map((m) => `${m.id}:${yearsOfSeries(m.series).length}`),
+  }));
+  console.log(JSON.stringify(summary, null, 2));
+  console.log("wrote", path.join(OUT, "catalog.json"), fs.statSync(path.join(OUT, "catalog.json")).size);
+}
+
+main();

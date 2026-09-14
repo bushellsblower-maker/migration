@@ -1922,6 +1922,7 @@ function phase6GapsHtml() {
     ${row("Religion / census choropleth join", p7.choroplethJoin || { status: "fixed", note: "LA/ITL1 keys match GeoJSON" })}
     </tbody></table>
     <p class="cite">Phase 7 re-probed UV bulk and Scotland/NI static sex × age × birthplace tables. Still blocked or not published as static files — no counts invented. Narrative pack: <a href="./data/stories.json">stories.json</a>.</p>`;
+}
 
 function printOnePager() {
   const l = layer();

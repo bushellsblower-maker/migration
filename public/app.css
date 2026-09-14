@@ -109,6 +109,10 @@ a.skip:focus { top: 8px; }
   display: grid;
   gap: 10px;
 }
+#fiscal-box[hidden],
+#identity-box[hidden] {
+  display: none !important;
+}
 .controls legend { padding: 0 4px; font-size: 0.75rem; color: var(--muted); }
 .controls label { display: grid; gap: 4px; font-size: 0.75rem; color: var(--muted); }
 .controls select {

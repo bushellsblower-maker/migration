@@ -51,8 +51,8 @@ const ITL_RE = /^TL[C-N]$/i;
 const REGION_GSS_RE = /^E12/;
 
 const PALETTES = {
-  ink: ["#d2c4a6", "#b08958", "#7a5a32", "#4a341f", "#1f160f"],
-  teal: ["#9cbcb4", "#5d9188", "#2f6b64", "#184843", "#0b2f2d"],
+  ink: ["#f0e6d2", "#c9a06a", "#8a5a28", "#5a3216", "#1f140c"],
+  teal: ["#c5ddd8", "#5d9188", "#2f6b64", "#184843", "#0b2f2d"],
   diverging: ["#8a3d1c", "#c98962", "#eee6d6", "#6a9a8d", "#0f4c4a"],
   print: ["#c8c2b4", "#8d8778", "#534e44", "#3a362f", "#221f1b"],
 };
@@ -66,7 +66,7 @@ const state = {
   layerId: "p1-mye-total",
   metricId: null,
   viz: "absolute",
-  palette: "ink",
+  palette: "teal",
   year: 2021,
   geoLevel: "nation",
   playing: false,
@@ -523,12 +523,13 @@ function styleFeature(feature) {
   const { min, max, diverging } = mapDomain(used);
   const fill = v == null ? "var" : colorFor(v, min, max, state.palette, diverging);
   const selected = aliasesFor(state.selectedGeo).includes(id) || state.selectedGeo === id;
+  const la = state.geoLevel === "la";
   return {
-    color: "#4a443a",
-    weight: selected ? 2.4 : 1,
-    fillColor: v == null ? "#c8c1b2" : fill,
-    fillOpacity: v == null ? 0.22 : 0.86,
-    opacity: 0.9,
+    color: selected ? "#1c1917" : "#3a362f",
+    weight: selected ? 2.2 : la ? 0.7 : 1.15,
+    fillColor: v == null ? "#c5c0b4" : fill,
+    fillOpacity: v == null ? 0.2 : 0.78,
+    opacity: 1,
   };
 }
 
@@ -567,7 +568,17 @@ function updateReadout(geoId) {
   }
   const title = used ? `${used.label} · ${state.year}` : l.title;
   const level = GEO_LEVELS.find((g) => g.id === state.geoLevel)?.label || state.geoLevel;
-  el.innerHTML = `<strong>${title}</strong><div class="cite">${level}</div>${rows.map((r) => `<div>${r}</div>`).join("")}`;
+  let extra = "";
+  if (l.id === "p2-identity-compare") {
+    const place = pick || (state.geoLevel === "nation" ? "UK" : null);
+    const cob = identityValue("p1-cob-stock", "share-non-uk", place || "UK", state.year);
+    const nat = identityValue("p1-nationality-stock", "share-non-british", place || "UK", state.year);
+    const eth = identityValue("p1-ethnicity-census", "pct-white", place || "EW", state.year);
+    extra = `<div class="cite">Birthplace non-UK-born: ${formatValue(cob.format, cob.value)}</div>
+      <div class="cite">Nationality non-British: ${formatValue(nat.format, nat.value)}</div>
+      <div class="cite">Ethnic group White (high-level): ${formatValue(eth.format, eth.value)}</div>`;
+  }
+  el.innerHTML = `<strong>${title}</strong><div class="cite">${level}</div>${rows.map((r) => `<div>${r}</div>`).join("")}${extra}`;
 }
 
 function bannerText() {
@@ -650,6 +661,7 @@ function bindMap() {
     maxZoom: 12,
   }).addTo(state.map);
   bindGeoLayer();
+  setTimeout(() => state.map.invalidateSize(), 80);
 }
 
 function bindGeoLayer() {
@@ -684,12 +696,7 @@ function bindGeoLayer() {
       });
     },
   }).addTo(state.map);
-  try {
-    const b = state.geoLayer.getBounds();
-    if (b.isValid()) state.map.fitBounds(b, { padding: [12, 12], maxZoom: state.geoLevel === "la" ? 6.2 : 6 });
-  } catch {
-    /* keep current view */
-  }
+  state.map.setView([54.6, -2.2], state.geoLevel === "la" ? 5.6 : 5.4);
 }
 
 function seriesForChart(l, m) {

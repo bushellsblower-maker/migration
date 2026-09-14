@@ -45,24 +45,19 @@
     <div class="app">
       <aside class="rail" id="layer-rail">
         <h2>Layers</h2>
-        <div id="layer-list" class="layer-list"></div>
-        <fieldset class="controls">
-          <legend>Map geography</legend>
-          <div id="geo-levels" class="seg" role="group" aria-label="Geography level"></div>
-          <p id="geo-level-note" class="cite"></p>
-        </fieldset>
-        <fieldset class="controls" id="identity-box">
+        <fieldset class="controls" id="identity-box" hidden>
           <legend>Identity question</legend>
           <div id="identity-modes" class="seg" role="group" aria-label="Identity question"></div>
           <p class="cite">These are three different published questions. They are never added together or labelled “native”.</p>
         </fieldset>
+        <div id="layer-list" class="layer-list"></div>
         <fieldset class="controls">
           <legend>Colour</legend>
           <label>
             Palette
             <select id="palette">
+              <option value="teal" selected>Teal (sequential)</option>
               <option value="ink">Ink (sequential)</option>
-              <option value="teal">Teal (sequential)</option>
               <option value="diverging">Diverging (net / change)</option>
               <option value="print">Print greys</option>
             </select>
@@ -89,8 +84,10 @@
           <div class="year-row">
             <button type="button" id="play" aria-pressed="false">Play</button>
             <strong id="year-label">2021</strong>
+            <div id="geo-levels" class="seg geo-seg" role="group" aria-label="Geography level"></div>
             <span id="year-status" class="year-status"></span>
           </div>
+          <p id="geo-level-note" class="cite geo-note"></p>
           <input id="year" type="range" min="1940" max="2025" value="2021" />
           <div class="ticks" aria-hidden="true">
             <span>1940</span><span>1964</span><span>1991</span><span>2012</span><span>2025</span>

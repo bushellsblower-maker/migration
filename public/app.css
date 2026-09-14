@@ -154,7 +154,7 @@ a.skip:focus { top: 8px; }
 }
 
 .stage { display: flex; flex-direction: column; min-width: 0; min-height: 560px; background: #dfd8c8; }
-.map-wrap { position: relative; flex: 1.2; min-height: 280px; }
+.map-wrap { position: relative; flex: 1.1; min-height: 320px; }
 #map { height: 100%; background: #d4cdb8; }
 .leaflet-container { font-family: var(--font); background: #d4cdb8; }
 .leaflet-tooltip.map-tip {
@@ -201,7 +201,9 @@ a.skip:focus { top: 8px; }
   background: #f8f3e9;
   padding: 8px 14px 10px;
 }
-.year-row { display: flex; align-items: baseline; gap: 12px; }
+.year-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.geo-seg { flex: 1 1 auto; }
+.geo-note { margin: 2px 0 0; }
 #play {
   width: 44px;
   height: 36px;

@@ -1632,6 +1632,7 @@ function main() {
         cobAgeScot: scotEilr?.cobAge || null,
         cobAgeNi: niCobAge || null,
       },
+      snapshotYears: [2021, 2022],
       defaultMetric: "persons",
       mapMetric: "persons",
       vizModes: ["pyramid"],
@@ -1899,8 +1900,8 @@ function main() {
 
   const catalog = {
     generated: new Date().toISOString(),
-    title: "Migration — Phase 4 catalog",
-    phase: 4,
+    title: "Migration — Phase 5 catalog",
+    phase: 5,
     yearMin: 1940,
     yearMax: 2026,
     concordance: concordanceNotes(),

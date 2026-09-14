@@ -1325,9 +1325,11 @@ function cobAgeBandRows(pack, caption) {
 
 function cobAgeTablesHtml(l) {
   const nation = aliasesFor(state.selectedGeo || "UK").find((id) => ["S", "NI", "E", "W", "EW", "UK"].includes(id));
-  const showRm = l.extras?.cobAge?.bands?.length && (state.year === l.extras.cobAge.year || nation === "EW" || nation === "E" || nation === "W" || !nation);
-  const showScot = l.extras?.cobAgeScot?.bands?.length && (state.year === 2022 || nation === "S" || nation === "UK");
-  const showNi = l.extras?.cobAgeNi?.bands?.length && (state.year === 2021 || nation === "NI" || nation === "UK");
+  // Census cob×age tables are snapshots. Show them whenever the pack exists so E&W
+  // RM011 persons is not hidden behind a MYE pyramid year (2024/2025).
+  const showRm = Boolean(l.extras?.cobAge?.bands?.length) && (nation !== "S" && nation !== "NI");
+  const showScot = Boolean(l.extras?.cobAgeScot?.bands?.length) && (nation === "S" || nation === "UK" || !nation);
+  const showNi = Boolean(l.extras?.cobAgeNi?.bands?.length) && (nation === "NI" || nation === "UK" || !nation);
   const parts = [];
   if (showRm) {
     const pack =

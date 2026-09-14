@@ -27,9 +27,10 @@
     <a class="skip" href="#map">Skip to map</a>
     <header class="top">
       <div class="brand">
-        <p class="kicker">Cybush · Phase 5</p>
+        <p class="kicker">Cybush · Phase 6</p>
         <h1>Migration</h1>
         <p class="tagline">UK population and migration, as published — not as argued.</p>
+        <p id="refresh-badge" class="site-badge" hidden></p>
         <p id="data-stamp" class="data-stamp"></p>
       </div>
       <p class="guard">
@@ -41,6 +42,7 @@
         <button type="button" id="btn-share" class="nav-btn" title="Copy a link that restores this view">Copy link</button>
         <button type="button" id="btn-export-csv" class="nav-btn" title="Download published rows for this view as CSV">Export CSV</button>
         <button type="button" id="btn-export-png" class="nav-btn" title="Download the current chart canvas as PNG">Export chart</button>
+        <button type="button" id="btn-print" class="nav-btn" title="Print a one-pager of this year and layer">Print one-pager</button>
         <a href="#sources">Sources</a>
       </nav>
     </header>
@@ -103,6 +105,7 @@
           </div>
           <p id="geo-level-note" class="cite geo-note"></p>
           <div id="compare-year-box" class="compare-year-box" hidden></div>
+          <div id="compare-area-box" class="compare-year-box"></div>
           <input id="year" type="range" min="1940" max="2026" value="2021" />
           <div id="year-ticks" class="ticks" aria-hidden="true">
             <span>1940</span><span>1964</span><span>1991</span><span>2012</span><span>2026</span>
@@ -146,16 +149,17 @@
         Years and places without a comparable published series are marked
         <strong>no comparable data</strong> and the map is dimmed.
       </p>
-      <h3>What this Phase 5 build can and cannot show</h3>
+        <h3>What this Phase 6 build can and cannot show</h3>
       <ul>
         <li>The map has three official geography levels: UK nations (Natural Earth), ITL1 regions (ONS Open Geography January 2021 BUC), and local authority districts (ONS Open Geography December 2021 BUC). A year or layer without a published figure at the selected level is dimmed and labelled <strong>no comparable data</strong>.</li>
         <li>Country of birth, nationality, and ethnic group are separate layers, plus a side-by-side compare view. None of them is labelled “native”. Census national identity (Scotland Figure 9 / NISRA MS-B15) is listed separately — it is not citizenship.</li>
-        <li>The view is shareable: <code>?layer=&amp;year=&amp;year2=&amp;geo=&amp;metric=</code> restores layer, year, optional comparison year, geography (level or area code), and series.</li>
+        <li>The view is shareable: <code>?layer=&amp;year=&amp;year2=&amp;geo=&amp;geo2=&amp;metric=</code> restores layer, year, optional comparison year, primary geography, optional second area, and series.</li>
         <li>Scotland Census 2022 (EILR chart data) and NISRA Census 2021 main-statistics tables are ingested where they align with existing country-of-birth, ethnicity, religion, and nationality stocks. Categories are not remapped onto England &amp; Wales headings — see the concordance notes.</li>
         <li>Ethnicity cannot be mapped before 1991. This extract has E&amp;W 2011 and 2021 high-level groups, Scotland 2011 and 2022 headings, and NISRA MS-B01 2021. Those White percentages are three different published categories.</li>
         <li>Modern religion affiliation cannot be mapped before 2001. This extract has E&amp;W 2011/2021, Scotland 2011/2022, and NISRA MS-B19 2021. MS-B23 (religion brought up in) is not mixed into affiliation maps. NISRA has no standalone Muslim column.</li>
-        <li>Scotland council-area census stocks for 2022 are the official Area Overviews (published equivalents of UV201 ethnic group, UV204 country of birth, UV205 religion). Categories stay in NRS wording. They are not remapped onto E&amp;W or NISRA headings.</li>
-        <li>Age–sex pyramids: mid-2025 E&amp;W and mid-2024 UK nations (ONS MYE2). Country-of-birth-by-age tables are census snapshots: ONS RM011 (E&amp;W, <em>persons</em>, not a sex split), Scotland Figure 8, NISRA MS-A31. They are not MYE pyramids.</li>
+        <li>Scotland council-area census stocks for 2022 are the official Area Overviews (published equivalents of UV201 ethnic group, UV204 country of birth, UV205 religion). UKDS UV201/UV204/UV205 bulk CSVs were still datastore-pending or login-walled when probed — no invented council counts. Categories stay in NRS wording. They are not remapped onto E&amp;W or NISRA headings.</li>
+        <li>Age–sex pyramids: mid-2025 E&amp;W and mid-2024 UK nations (ONS MYE2). Country-of-birth-by-age: ONS RM011 (E&amp;W persons) plus commissioned table <strong>CT21_0433</strong> (E&amp;W male/female × age × birthplace). Scotland Figure 8 and NISRA MS-A31 remain persons — no sex split is invented where none is published.</li>
+        <li>A failed monthly refresh keeps the last good catalog and shows a red site badge. <code>public/data/source-health.json</code> lists last OK vs last fail and checksum match per feed.</li>
         <li>Births by mother’s country of birth are three vital-registration systems (ONS E&amp;W, NRS, NISRA), not one UK line. The E&amp;W regional 2016–22 figure is <em>either parent</em> born outside the UK.</li>
         <li>Long-term migration flows are a UK series. IPS-era (1964–2015) and admin-based LTIM (2012–, YE December) are drawn separately and must not be read as one line.</li>
         <li>Asylum and detection summaries include year-ending June 2026 points where the Home Office tables publish them. Small-boat and illegal-entry figures are <em>detections</em>. They are not a count of people in the UK without permission.</li>
@@ -164,6 +168,8 @@
       <div id="source-index"></div>
       <p class="cite">Inventory: <a href="https://github.com/bushellsblower-maker/migration/blob/main/docs/inventory.md">docs/inventory.md</a>. File list: <code>data/SOURCES.md</code>.</p>
     </section>
+
+    <section id="print-sheet" class="print-sheet" hidden></section>
 
     <footer class="foot">
       <p>Migration · evidence-led explorer · not a campaign site.</p>

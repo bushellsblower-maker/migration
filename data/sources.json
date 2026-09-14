@@ -6,10 +6,12 @@
     "download": "npm run download  (or bash scripts/download-raw.sh). Resume-safe unless FORCE=1 / --force.",
     "build": "npm run build  (normalise geo + ingest). Fails if a critical file is missing or a required sheet/column cannot be parsed.",
     "refresh": "npm run refresh  = download + build + refresh-status stamp. Use npm run refresh:force to re-fetch even when files exist.",
-    "schedule": "GitHub Action .github/workflows/refresh.yml runs npm run refresh on a monthly cron and on workflow_dispatch. A failed run is a failed check; it does not invent series. On success the Action commits catalog.json + refresh-status.json if they changed.",
+    "schedule": "GitHub Action .github/workflows/refresh.yml runs npm run refresh on a monthly cron and on workflow_dispatch. A failed run is a failed check; it does not invent series. On success the Action commits catalog.json + refresh-status.json + source-health.json + checksum pins if they changed. On failure it commits only the fail stamp and source-health (last-good catalog stays).",
     "partial": "Optional files only warn. Default: any SCHEMA ERROR exits 1 and leaves the previous catalog.json in place. MIG_ALLOW_PARTIAL=1 is a local debug escape — ingest still prints SCHEMA ERROR but writes catalog.json anyway (it may be incomplete).",
     "schemaBreak": "ingest.mjs prints SCHEMA ERROR for a missing critical file, missing sheet, or a series with too few parseable points. Without MIG_ALLOW_PARTIAL=1 the previous public/data/catalog.json is not overwritten.",
-    "scheduledRefresh": "Prefer `npm run refresh` locally or `.github/workflows/refresh.yml` (monthly cron `17 6 1 * *` plus workflow_dispatch). A failed run is a failed check and writes refresh-status.json without overwriting catalog.json. A Cloudflare Cron Trigger is not shipped."
+    "checksums": "data/checksums.json pins SHA-256 of last ingest-validated extracts. A download whose hash differs is recorded on public/data/source-health.json. Ingest must still parse before catalog.json is replaced — a silent file swap that breaks schema does not go live.",
+    "sourceHealth": "public/data/source-health.json lists last OK vs last fail and hash match per feed. The site header shows a red badge when the last refresh failed.",
+    "scheduledRefresh": "Prefer `npm run refresh` locally or `.github/workflows/refresh.yml` (monthly cron `17 6 1 * *` plus workflow_dispatch). A failed run is a failed check, writes refresh-status.json + source-health.json, and does not overwrite catalog.json. A Cloudflare Cron Trigger is not shipped."
   },
   "files": [
     {
@@ -173,6 +175,24 @@
       "critical": false,
       "stableUrl": true,
       "usedFor": "E&W Census 2021 country of birth by age (persons, not sex)"
+    },
+    {
+      "id": "ons-ct21-0433",
+      "dest": "ons/census-ct21-0433-cob-age-sex.xlsx",
+      "url": "https://www.ons.gov.uk/file?uri=/peoplepopulationandcommunity/populationandmigration/populationestimates/adhocs/3102ct210433census2021/ct210433census2021.xlsx",
+      "producer": "ONS",
+      "critical": false,
+      "stableUrl": true,
+      "usedFor": "E&W Census 2021 sex × single year of age × bespoke country of birth (CT21_0433). Official sex split; RM011 remains persons."
+    },
+    {
+      "id": "nrs-uv-bulk-status",
+      "dest": "nrs/uv-bulk-status.json",
+      "url": "https://statistics.ukdataservice.ac.uk/dataset/scotland-s-census-2022-uv204-country-of-birth",
+      "producer": "UKDS / NRS",
+      "critical": false,
+      "stableUrl": true,
+      "usedFor": "Probe record: UV201/UV204/UV205 bulk still pending or login-walled — not a statistics table"
     },
     {
       "id": "nrs-census2022-area-overviews",

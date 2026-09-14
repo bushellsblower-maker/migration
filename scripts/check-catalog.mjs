@@ -1,5 +1,5 @@
 /**
- * Post-ingest checks for Phase 5. Reads public/data/catalog.json.
+ * Post-ingest checks for Phase 6. Reads public/data/catalog.json.
  * Fails if a committed extract parsed empty — never invents a substitute figure.
  */
 import fs from "node:fs";
@@ -47,11 +47,40 @@ assert.ok(uk0.uk > 0 && uk0.nonUk > 0 && uk0.total >= uk0.uk + uk0.nonUk - 1, "R
 assert.ok(age.extras?.cobAgeE?.bands?.length >= 6, "RM011 England pack");
 assert.ok(age.extras?.cobAgeW?.bands?.length >= 6, "RM011 Wales pack");
 
+const cobAgeSex = age.extras?.cobAgeSex;
+assert.ok(cobAgeSex?.female?.bands?.length >= 6, "CT21_0433 female bands");
+assert.ok(cobAgeSex?.male?.bands?.length >= 6, "CT21_0433 male bands");
+assert.ok(cobAgeSex?.persons?.bands?.length >= 6, "CT21_0433 persons bands");
+assert.equal(cobAgeSex.female.sex, "female");
+assert.equal(cobAgeSex.male.sex, "male");
+assert.equal(cobAgeSex.geography, "EW");
+const f0 = cobAgeSex.female.bands[0];
+const m0 = cobAgeSex.male.bands[0];
+assert.ok(f0.uk > 0 && f0.nonUk > 0, "CT21_0433 female UK/non-UK");
+assert.ok(m0.uk > 0 && m0.nonUk > 0, "CT21_0433 male UK/non-UK");
+assert.ok(Math.abs((f0.uk + m0.uk) - (cobAgeSex.persons.bands[0].uk || 0)) < 5, "CT21 female+male UK ≈ persons UK (disclosure-control slack)");
+
+assert.equal(age.extras?.cobAgeScot?.source && /persons/i.test(age.extras.cobAgeScot.source), true, "Scotland cob×age stays persons");
+assert.ok(!age.extras?.cobAgeScot?.female, "no invented Scotland sex split");
+assert.ok(/persons/i.test(age.extras?.cobAgeNi?.source || ""), "NI cob×age stays persons");
+
+const uv = catalog.phase6?.scotlandUvBulk || age.extras?.scotlandUvBulk;
+assert.ok(uv, "Scotland UV bulk status recorded");
+if (uv.downloadableWithoutLogin) {
+  console.warn("UV bulk probe says public CSVs exist — ingest them before treating Area Overviews as the only council source");
+} else {
+  assert.ok(uv.blocker || uv.status === "blocked" || uv.status === "not-probed", "UV blocker documented when CSVs are not public");
+}
+
 assert.ok(catalog.provenance?.refreshSchedule, "refresh schedule recorded on catalog");
+assert.ok(catalog.provenance?.checksums, "checksum pin path recorded");
 assert.ok(fs.existsSync(path.join(ROOT, "public", "data", "refresh-status.json")), "refresh-status.json present");
+assert.ok(fs.existsSync(path.join(ROOT, "data", "checksums.json")), "checksums.json present");
 
 console.log("check-catalog OK", {
   scotLas: scotCob.length,
   rm011Bands: cobAge.bands.length,
   rm011Sex: cobAge.sex,
+  ct21Female: cobAgeSex.female.bands.length,
+  uvBulk: uv.status,
 });

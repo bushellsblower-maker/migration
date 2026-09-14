@@ -112,6 +112,14 @@ export function concordanceNotes() {
         theme: "Nationality vs national identity",
         text: "APS Table 2.1 is self-reported citizenship (British / non-British). Scotland Figure 9 and NISRA MS-B15 are national identity (feeling of attachment), not passports and not citizenship. They are never written onto the nationality stock layer.",
       },
+      {
+        theme: "Age × birthplace × sex",
+        text: "ONS RM011 is persons only. The published E&W sex split is commissioned table CT21_0433 (sex × single year of age × bespoke country of birth) for England & Wales as a whole — not local authorities. UK-born there is the four UK country columns; ‘Rest of UK; Channel Islands; Isle of Man’ is excluded. Scotland Figure 8 and NISRA MS-A31 are persons. They are not remapped onto CT21_0433 bands or onto each other.",
+      },
+      {
+        theme: "Scotland UV bulk",
+        text: "UKDS UV201 / UV204 / UV205 council CSVs were still datastore-pending or not fetchable without a login wall when last probed. NRS multivariate bulk zips are OA/parish/island files, not those UV tables. Council colours stay on Area Overviews. Categories are not silently merged with E&W or NISRA headings.",
+      },
     ],
   };
 }

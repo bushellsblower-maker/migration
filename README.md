@@ -7,7 +7,7 @@ Evidence-led explorer of UK population and migration, as published — not as ar
 - Source inventory: [`docs/inventory.md`](docs/inventory.md)
 - Downloaded files: [`data/SOURCES.md`](data/SOURCES.md)
 
-Phase 5 extends the Phase 1–4 static HTML/CSS/JS app served by a thin Cloudflare Worker (`wrangler.toml` assets + `src/worker.js` audit hit). The Worker name and route are unchanged. Do not treat this as a rewrite.
+Phase 6 extends the Phase 1–5 static HTML/CSS/JS app served by a thin Cloudflare Worker (`wrangler.toml` assets + `src/worker.js` audit hit). The Worker name and route are unchanged. Do not treat this as a rewrite.
 
 ## Principles
 
@@ -39,7 +39,7 @@ npm run download
 npm run build
 ```
 
-**If a critical source fetch or schema breaks:** `scripts/download-raw.sh` exits 1 when a critical URL fails (unless `MIG_ALLOW_PARTIAL=1`). `scripts/ingest.mjs` prints `SCHEMA ERROR` and exits 1 without overwriting `catalog.json` if a required file, sheet, or series is missing or too short. Optional files (Scotland Area Overviews / EILR, NISRA, UK MYE2, RM011) only warn. The registry and this contract live in [`data/sources.json`](data/sources.json) (`howRefreshWorks`). Scheduled refresh: [`docs/refresh.md`](docs/refresh.md). A monthly GitHub Actions cron runs `npm run refresh` and writes `public/data/refresh-status.json` on success or failure.
+**If a critical source fetch or schema breaks:** `scripts/download-raw.sh` exits 1 when a critical URL fails (unless `MIG_ALLOW_PARTIAL=1`). `scripts/ingest.mjs` prints `SCHEMA ERROR` and exits 1 without overwriting `catalog.json` if a required file, sheet, or series is missing or too short. Optional files (Scotland Area Overviews / EILR, NISRA, UK MYE2, RM011, CT21_0433) only warn. Checksums of last-good extracts live in [`data/checksums.json`](data/checksums.json); per-feed last OK vs last fail is [`public/data/source-health.json`](public/data/source-health.json). The registry and this contract live in [`data/sources.json`](data/sources.json) (`howRefreshWorks`). Scheduled refresh: [`docs/refresh.md`](docs/refresh.md). A monthly GitHub Actions cron runs `npm run refresh`. On success it commits the catalog, pins, and health stamp. On failure it commits only the fail stamp + source-health so the live header can show a red badge without replacing the last good catalog.
 
 Large Home Office detail workbooks are fetched for local inspection but gitignored. The committed catalog is built from the summary tables listed in `data/SOURCES.md`. Cited fiscal comparison figures (not official mapped series) are in [`data/fiscal-citations.json`](data/fiscal-citations.json).
 
@@ -65,18 +65,28 @@ Refresh and share restore explorer state from the query string:
 | `year` | Integer year on the slider |
 | `year2` | Optional second published year for the compare control. Nothing is interpolated between `year` and `year2`. |
 | `geo` | `nation` · `region` (ITL1) · `la` · or a feature code (`E` / `E12000007` / `TLL` / `E06000001`) |
+| `geo2` | Optional second area (same encoding as `geo`) for side-by-side compare |
 | `metric` | Series id on the selected layer (`share-non-uk`, `share-non-british`, `pct-white`, …) |
 
-Example: `https://migration.cybush.uk/?layer=p1-cob-stock&year=2021&year2=2011&geo=region&metric=share-non-uk`
+Example: `https://migration.cybush.uk/?layer=p1-cob-stock&year=2021&year2=2011&geo=E12000007&geo2=S92000003&metric=share-non-uk`
 
-## What Phase 5 adds
+## What Phase 6 adds
+
+- **Scotland UV bulk still blocked.** UKDS UV201 / UV204 / UV205 resources remain datastore-pending or return 403 / login-walled from a no-account fetch. NRS “bulk download — multivariate” zips are Output Area / Civil Parish / Island files, not those UV council univariate tables. Council colours stay on Area Overviews. Concordance notes stay; headings are not remapped onto E&W or NISRA. Probe record: `data/raw/nrs/uv-bulk-status.json`.
+- **E&W sex × age × birthplace** from official commissioned table [CT21_0433](https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationestimates/adhocs/3102ct210433census2021) (29 Oct 2025): sex by single year of age by bespoke country of birth, England & Wales only. Rolled into the six RM011 age bands for reading. UK-born is the four UK country columns; Channel Islands / Isle of Man are not added. **RM011 stays persons.** Scotland Figure 8 and NISRA MS-A31 stay persons — no sex split is invented. NISRA Flexible Table Builder DT-0014 is interactive and is not scraped.
+- **Operational hardening.** `data/checksums.json` pins SHA-256 of last ingest-validated extracts. `public/data/source-health.json` lists last OK vs last fail and hash match per feed. A failed refresh shows a red site badge and keeps the last good catalog. The monthly Action commits the fail stamp (not a bad catalog) so the live Worker can show the badge.
+- **Low-cost polish (no visual QA required).** Side-by-side two-area compare (`geo2` / Shift-click); method-break year pins on the chart and year ticks; HTML print CSS one-pager for the selected year/layer.
+
+Honest gaps still remaining: UKDS/NRS UV201/204/205 council CSVs when that datastore is populated; Scotland/NI published static age×birthplace sex splits if they appear; NISRA still has no standalone Muslim column; no invented irregular-migrant stock; no pre-1991 ethnicity or pre-2001 religion continuous maps; no single net fiscal cost.
+
+## What Phase 5 already added
 
 - **Scotland council-area census stocks (2022)** from official [Scotland’s Census Area Overviews](https://www.scotlandscensus.gov.uk/search-the-census) (`EILR_cob` / `EILR_ethnic` / `EILR_religion`). These are the published equivalents of UV204 / UV201 / UV205. The 32 S12 councils colour the LA map on those layers for 2022. Categories stay in NRS wording — White includes Irish/Polish/Other White; Christian is Church of Scotland + Roman Catholic + Other Christian; UK-born is the four UK countries only. They are not remapped onto E&W or NISRA headings. UKDS bulk UV CSVs were still “datastore pending” when this extract was taken.
 - **England & Wales age × birthplace** from ONS Census 2021 **RM011** (`download.ons.gov.uk/downloads/datasets/RM011/editions/2021/versions/1.csv`). The old `api.beta.ons.gov.uk/.../RM011/.../csv` URL 404s. The official file is **persons** (usual residents by six age bands), not a male/female split. UK-born is the published `Europe: United Kingdom` heading. England, Wales and E&W totals are sums of the published lower-tier local authority observations. No sex split is invented.
 - **Hands-off refresh:** [`.github/workflows/refresh.yml`](.github/workflows/refresh.yml) runs `npm run refresh` on a monthly cron (`17 6 1 * *`) and on `workflow_dispatch`. Success commits the catalog + `public/data/refresh-status.json`. Failure fails the workflow and records a fail stamp without overwriting the last good catalog. The header and sources page show **data as of** (manifest) vs **catalog built** vs **last successful refresh**. No Cloudflare cron Worker is shipped.
 - **Optional polish:** guided year jumps (1991 / 2004 / 2012 / 2021) that only open existing layers and say when the extract has no count for that year; CSV of the current published rows; chart-canvas PNG. No map PNG export.
 
-Honest gaps still remaining: UKDS/NRS bulk UV201/204/205 CSVs when that datastore is populated; RM011 sex split if ONS republishes it; NISRA has no standalone Muslim column; no invented irregular-migrant stock; no pre-1991 ethnicity or pre-2001 religion continuous maps; no single net fiscal cost.
+Phase 5 honest gaps that Phase 6 now fills in part: CT21_0433 is the official E&W sex × age × birthplace table (RM011 remains persons). UV bulk CSVs were still blocked.
 
 ## What Phase 4 already added
 

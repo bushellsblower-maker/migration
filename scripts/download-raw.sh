@@ -111,6 +111,11 @@ dl "$RAW/ons/births-cob-map.xlsx" \
 dl "$RAW/ons/census-rm011-cob-age.csv" \
   "https://download.ons.gov.uk/downloads/datasets/RM011/editions/2021/versions/1.csv"
 
+# Official E&W sex × age × bespoke country of birth (commissioned table CT21_0433).
+# RM011 has no sex dimension. This is E&W only — not a local-authority table.
+dl "$RAW/ons/census-ct21-0433-cob-age-sex.xlsx" \
+  "https://www.ons.gov.uk/file?uri=/peoplepopulationandcommunity/populationandmigration/populationestimates/adhocs/3102ct210433census2021/ct210433census2021.xlsx"
+
 # --- optional UK-nations extracts (Phase 4). Missing files only warn at ingest. ---
 dl "$RAW/ons/mye24tablesuk.xlsx" \
   "https://www.ons.gov.uk/file?uri=/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/populationestimatesforukenglandandwalesscotlandandnorthernireland/mid2024/mye24tablesuk.xlsx"
@@ -131,6 +136,17 @@ if [[ -f "$ROOT/scripts/download-scotland-overviews.mjs" ]]; then
     echo "OK $RAW/nrs/census2022-area-overviews.json"
   else
     echo "FAIL (optional) $RAW/nrs/census2022-area-overviews.json"
+    FAILED=1
+  fi
+fi
+
+# UKDS/NRS UV201/UV204/UV205 bulk — ingest only if a public CSV appears. Status is recorded either way.
+if [[ -f "$ROOT/scripts/probe-scotland-uv.mjs" ]]; then
+  echo "PROBE Scotland UV201/UV204/UV205 bulk (no login wall)"
+  if node "$ROOT/scripts/probe-scotland-uv.mjs"; then
+    echo "OK $RAW/nrs/uv-bulk-status.json"
+  else
+    echo "FAIL (optional) Scotland UV bulk probe"
     FAILED=1
   fi
 fi

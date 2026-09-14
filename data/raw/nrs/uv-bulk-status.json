@@ -1,0 +1,118 @@
+{
+  "title": "Scotland Census 2022 UV201 / UV204 / UV205 bulk probe",
+  "producer": "UK Data Service / National Records of Scotland",
+  "probed": "2026-09-14T20:25:43.951Z",
+  "status": "blocked",
+  "downloadableWithoutLogin": false,
+  "fallback": "Scotland’s Census 2022 Area Overviews (32 councils) remain the ingested council-level COB / ethnicity / religion source. Categories stay in NRS wording.",
+  "blocker": "UKDS UV201 / UV204 / UV205 resources are still datastore-pending or not fetchable without a login wall. NRS public bulk zips are multivariate OA/parish/island files, not the UV council univariate tables. No council counts are invented from the pending datastore.",
+  "urls": {
+    "uv201": "https://statistics.ukdataservice.ac.uk/dataset/scotland-s-census-2022-uv201-ethnic-group",
+    "uv204": "https://statistics.ukdataservice.ac.uk/dataset/scotland-s-census-2022-uv204-country-of-birth",
+    "uv205": "https://statistics.ukdataservice.ac.uk/dataset/scotland-s-census-2022-uv205-religion",
+    "nrsBulk": "https://www.scotlandscensus.gov.uk/documents/bulk-download-files-multivariate-data/",
+    "areaOverviews": "https://www.scotlandscensus.gov.uk/search-the-census"
+  },
+  "probes": [
+    {
+      "id": "ukds-uv201",
+      "table": "UV201",
+      "theme": "ethnic group",
+      "url": "https://statistics.ukdataservice.ac.uk/dataset/scotland-s-census-2022-uv201-ethnic-group",
+      "http": {
+        "status": 403,
+        "ok": false,
+        "bytes": 118,
+        "error": null
+      },
+      "apiHttp": {
+        "status": 403,
+        "ok": false,
+        "bytes": 118,
+        "error": null
+      },
+      "resources": null,
+      "notes": [
+        "UKDS CKAN API 403 — cannot confirm a public CSV.",
+        "HTTP 403 from this environment (WAF/login). Public listings last seen still marked datastore pending — no CSV ingested."
+      ],
+      "downloadableWithoutLogin": false
+    },
+    {
+      "id": "ukds-uv204",
+      "table": "UV204",
+      "theme": "country of birth",
+      "url": "https://statistics.ukdataservice.ac.uk/dataset/scotland-s-census-2022-uv204-country-of-birth",
+      "http": {
+        "status": 403,
+        "ok": false,
+        "bytes": 118,
+        "error": null
+      },
+      "apiHttp": {
+        "status": 403,
+        "ok": false,
+        "bytes": 118,
+        "error": null
+      },
+      "resources": null,
+      "notes": [
+        "UKDS CKAN API 403 — cannot confirm a public CSV.",
+        "HTTP 403 from this environment (WAF/login). Public listings last seen still marked datastore pending — no CSV ingested."
+      ],
+      "downloadableWithoutLogin": false
+    },
+    {
+      "id": "ukds-uv205",
+      "table": "UV205",
+      "theme": "religion",
+      "url": "https://statistics.ukdataservice.ac.uk/dataset/scotland-s-census-2022-uv205-religion",
+      "http": {
+        "status": 403,
+        "ok": false,
+        "bytes": 118,
+        "error": null
+      },
+      "apiHttp": {
+        "status": 403,
+        "ok": false,
+        "bytes": 118,
+        "error": null
+      },
+      "resources": null,
+      "notes": [
+        "UKDS CKAN API 403 — cannot confirm a public CSV.",
+        "HTTP 403 from this environment (WAF/login). Public listings last seen still marked datastore pending — no CSV ingested."
+      ],
+      "downloadableWithoutLogin": false
+    },
+    {
+      "id": "nrs-bulk-multivariate",
+      "table": null,
+      "theme": "NRS multivariate bulk (not UV univariate)",
+      "url": "https://www.scotlandscensus.gov.uk/documents/bulk-download-files-multivariate-data/",
+      "http": {
+        "status": 200,
+        "ok": true,
+        "bytes": 49459,
+        "error": null
+      },
+      "apiHttp": null,
+      "resources": null,
+      "notes": [
+        "NRS multivariate bulk page lists Output Area / Civil Parish / Inhabited Island group zips. It does not publish UV201 / UV204 / UV205 council univariate CSVs."
+      ],
+      "downloadableWithoutLogin": false,
+      "html": {
+        "pendingHits": 0,
+        "loginWall": false,
+        "mentionsUv": false
+      },
+      "nrsZips": [
+        "/media/zz8620250326_10_44_kfutoikgulhiulksdufgkguoiu68kg/OutputArea.zip",
+        "/media/zz8620250326_10_44_kfutoikgulhiulksdufgkguoiu68kg/CivilParish.zip",
+        "/media/media/zz8620250316_07_24_kfutoikgulhiulksdufgkguoiu68kg/IslandGroups.zip"
+      ]
+    }
+  ]
+}

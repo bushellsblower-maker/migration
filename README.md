@@ -7,7 +7,7 @@ Evidence-led explorer of UK population and migration, as published — not as ar
 - Source inventory: [`docs/inventory.md`](docs/inventory.md)
 - Downloaded files: [`data/SOURCES.md`](data/SOURCES.md)
 
-Phase 4 extends the Phase 1–3 static HTML/CSS/JS app served by a thin Cloudflare Worker (`wrangler.toml` assets + `src/worker.js` audit hit). The Worker name and route are unchanged. Do not treat this as a rewrite.
+Phase 5 extends the Phase 1–4 static HTML/CSS/JS app served by a thin Cloudflare Worker (`wrangler.toml` assets + `src/worker.js` audit hit). The Worker name and route are unchanged. Do not treat this as a rewrite.
 
 ## Principles
 
@@ -39,7 +39,7 @@ npm run download
 npm run build
 ```
 
-**If a critical source fetch or schema breaks:** `scripts/download-raw.sh` exits 1 when a critical URL fails (unless `MIG_ALLOW_PARTIAL=1`). `scripts/ingest.mjs` prints `SCHEMA ERROR` and exits 1 without overwriting `catalog.json` if a required file, sheet, or series is missing or too short. Optional files (Scotland / NISRA / UK MYE2 / RM011) only warn. The registry and this contract live in [`data/sources.json`](data/sources.json) (`howRefreshWorks`). Scheduled refresh: [`docs/refresh.md`](docs/refresh.md).
+**If a critical source fetch or schema breaks:** `scripts/download-raw.sh` exits 1 when a critical URL fails (unless `MIG_ALLOW_PARTIAL=1`). `scripts/ingest.mjs` prints `SCHEMA ERROR` and exits 1 without overwriting `catalog.json` if a required file, sheet, or series is missing or too short. Optional files (Scotland Area Overviews / EILR, NISRA, UK MYE2, RM011) only warn. The registry and this contract live in [`data/sources.json`](data/sources.json) (`howRefreshWorks`). Scheduled refresh: [`docs/refresh.md`](docs/refresh.md). A monthly GitHub Actions cron runs `npm run refresh` and writes `public/data/refresh-status.json` on success or failure.
 
 Large Home Office detail workbooks are fetched for local inspection but gitignored. The committed catalog is built from the summary tables listed in `data/SOURCES.md`. Cited fiscal comparison figures (not official mapped series) are in [`data/fiscal-citations.json`](data/fiscal-citations.json).
 
@@ -53,7 +53,7 @@ GitHub → Workers Builds should use this repo’s `wrangler.toml`:
 - `[assets] directory = "./public"`
 - `AUDIT_HITS` dataset `cybush`
 
-Build command: `npm run build` (manifest + geo + ingest). Critical raw files are committed; if a required sheet/column cannot be parsed the build fails and the previous catalog is left in place. Optional downloads (Nomis zips, RM011) only warn.
+Build command: `npm run build` (manifest + geo + ingest). Critical raw files are committed; if a required sheet/column cannot be parsed the build fails and the previous catalog is left in place. Optional downloads (Nomis zips, Scotland Area Overviews, RM011) only warn — they do not invent a series.
 
 ## Deep-link contract
 
@@ -69,7 +69,16 @@ Refresh and share restore explorer state from the query string:
 
 Example: `https://migration.cybush.uk/?layer=p1-cob-stock&year=2021&year2=2011&geo=region&metric=share-non-uk`
 
-## What Phase 4 adds
+## What Phase 5 adds
+
+- **Scotland council-area census stocks (2022)** from official [Scotland’s Census Area Overviews](https://www.scotlandscensus.gov.uk/search-the-census) (`EILR_cob` / `EILR_ethnic` / `EILR_religion`). These are the published equivalents of UV204 / UV201 / UV205. The 32 S12 councils colour the LA map on those layers for 2022. Categories stay in NRS wording — White includes Irish/Polish/Other White; Christian is Church of Scotland + Roman Catholic + Other Christian; UK-born is the four UK countries only. They are not remapped onto E&W or NISRA headings. UKDS bulk UV CSVs were still “datastore pending” when this extract was taken.
+- **England & Wales age × birthplace** from ONS Census 2021 **RM011** (`download.ons.gov.uk/downloads/datasets/RM011/editions/2021/versions/1.csv`). The old `api.beta.ons.gov.uk/.../RM011/.../csv` URL 404s. The official file is **persons** (usual residents by six age bands), not a male/female split. UK-born is the published `Europe: United Kingdom` heading. England, Wales and E&W totals are sums of the published lower-tier local authority observations. No sex split is invented.
+- **Hands-off refresh:** [`.github/workflows/refresh.yml`](.github/workflows/refresh.yml) runs `npm run refresh` on a monthly cron (`17 6 1 * *`) and on `workflow_dispatch`. Success commits the catalog + `public/data/refresh-status.json`. Failure fails the workflow and records a fail stamp without overwriting the last good catalog. The header and sources page show **data as of** (manifest) vs **catalog built** vs **last successful refresh**. No Cloudflare cron Worker is shipped.
+- **Optional polish:** guided year jumps (1991 / 2004 / 2012 / 2021) that only open existing layers and say when the extract has no count for that year; CSV of the current published rows; chart-canvas PNG. No map PNG export.
+
+Honest gaps still remaining: UKDS/NRS bulk UV201/204/205 CSVs when that datastore is populated; RM011 sex split if ONS republishes it; NISRA has no standalone Muslim column; no invented irregular-migrant stock; no pre-1991 ethnicity or pre-2001 religion continuous maps; no single net fiscal cost.
+
+## What Phase 4 already added
 
 - **Scotland Census 2022** from the published EILR chart workbook: country of birth (Figure 8, including age bands), ethnic-group headings (Figures 4–5), religion (Figure 2), national identity (Figure 9). 2022 is Scotland’s census year — it is not spliced onto an E&W/NI 2021 UK-wide census map.
 - **NISRA Census 2021** main-statistics tables: MS-A16 country of birth (NI + 11 LGDs), MS-A31 COB × broad age, MS-B01 ethnic group, MS-B19 current religion, MS-B15 national identity, MS-B23 religion-brought-up-in as a cited extra only.
@@ -77,9 +86,7 @@ Example: `https://migration.cybush.uk/?layer=p1-cob-stock&year=2021&year2=2011&g
 - **Vital events:** NRS Table 3.13 / 3.09 and NISRA Table 3.18 sit beside the ONS E&W mother’s-COB series. Three systems, not one UK births line. Scotland 2024 council shares colour the LA map.
 - **Age–sex:** ONS UK MYE2 mid-2024 pyramids for UK nations (so Scotland and NI are no longer missing from the pyramid view). COB×age tables are census snapshots, not MYE.
 - **Product polish:** year slider through 2026 (Home Office YE June 2026 asylum / detections kept as mid-year points); dual-year compare (`year2`); mobile tap targets for fiscal filters and the nations / ITL1 / LA switcher.
-- **Refresh:** `npm run refresh` plus [`docs/refresh.md`](docs/refresh.md) and a `workflow_dispatch` GitHub Action. No Cloudflare cron Worker is shipped.
-
-Honest gaps still remaining: no Scotland council UV201/UV204/UV205 bulk extract; ONS RM011 E&W birthplace pyramid only if that optional CSV downloaded; NISRA has no standalone Muslim column; no invented irregular-migrant stock; no pre-1991 ethnicity or pre-2001 religion continuous maps; no single net fiscal cost.
+- **Refresh:** `npm run refresh` plus [`docs/refresh.md`](docs/refresh.md) and a `workflow_dispatch` GitHub Action. Phase 5 enables the monthly cron on that same workflow.
 
 ## What Phase 3 already added
 
@@ -90,7 +97,7 @@ Honest gaps still remaining: no Scotland council UV201/UV204/UV205 bulk extract;
 - **Detections** — small-boat vs other IER_01 methods as separate series. Terminology: detections ≠ illegal stock.
 - **Context charts** on the fiscal panel: EMP06 employment by country of birth and by nationality; housing affordability remains on the labour layer.
 
-Phase 3 honest gaps that Phase 4 now fills in part: Scotland 2022 / NISRA census stocks are ingested with concordance, not spliced onto APS as if they were the same table. RM011 remains optional. Still no invented irregular population.
+Phase 3 honest gaps that Phase 4–5 now fill in part: Scotland 2022 / NISRA census stocks are ingested with concordance; Scotland councils colour from Area Overviews; RM011 persons (not sex) fills the E&W birthplace×age table. Still no invented irregular population.
 
 ## What Phase 2 already showed
 
@@ -98,12 +105,12 @@ Phase 3 honest gaps that Phase 4 now fills in part: Scotland 2022 / NISRA census
 | --- | --- | --- |
 | Mid-year population | 1838–2025 (UK/nations from 1971; GB wartime ad hoc 1937–) | Nations where a figure exists |
 | Immigration / emigration / net | IPS-era 1964–2015 and admin LTIM YE Dec 2012–2025 | National series only; emigration also has `p3-emigration` |
-| UK-born / non-UK-born (country of birth) | APS YE June 2021; census LA % 2011 & 2021; Scotland Census 2022 Figure 8; NISRA MS-A16 2021 | Nations & ITL1 (2021 APS + 2022 Scotland / 2021 NI census); E&W LAs 2011 & 2021; NI LGDs 2021 |
+| UK-born / non-UK-born (country of birth) | APS YE June 2021; census LA % 2011 & 2021; Scotland Census 2022 Figure 8 + Area Overviews; NISRA MS-A16 2021 | Nations & ITL1 (2021 APS + 2022 Scotland / 2021 NI census); E&W LAs 2011 & 2021; NI LGDs 2021; Scotland councils 2022 |
 | Nationality (British / non-British) | APS YE June 2021 Table 2.1 | Nations, ITL1, LAs (sample-size limited). Census national identity is not this layer. |
 | Identity compare | Same three questions, side by side; optional `year2` delta | Never labelled “native” |
-| Ethnicity | E&W 2011 & 2021; Scotland 2011 & 2022; NISRA MS-B01 2021 | Nation headings as published; 2021 ITL1 (E&W LA sums + Scotland/NI nation totals); E&W LAs + NI LGDs 2021 |
-| Religion | E&W 2011 & 2021; Scotland 2011 & 2022; NISRA MS-B19 2021 | Same. MS-B23 not mixed in. |
-| Age–sex | Mid-2025 E&W pyramids; mid-2024 UK MYE2 | UK nations (2024); E&W / English regions (2025) |
+| Ethnicity | E&W 2011 & 2021; Scotland 2011 & 2022; NISRA MS-B01 2021 | Nation headings as published; 2021 ITL1 (E&W LA sums + Scotland/NI nation totals); E&W LAs + NI LGDs 2021; Scotland councils 2022 (NRS White heading) |
+| Religion | E&W 2011 & 2021; Scotland 2011 & 2022; NISRA MS-B19 2021 | Same. MS-B23 not mixed in. Scotland councils 2022 (CoS + RC + Other Christian). |
+| Age–sex | Mid-2025 E&W pyramids; mid-2024 UK MYE2; RM011 persons 2021 | UK nations (2024); E&W / English regions (2025). Birthplace×age: RM011 persons (E&W), Figure 8 (Scotland), MS-A31 (NI). |
 | Births by mother’s country of birth | E&W 2008–2025; NRS Table 3.13 selected years; NISRA Table 3.18 2014–2024 | Nations; E&W either-parent regions 2016–22; Scotland councils 2024 |
 | Asylum | UK 2010–2026 people / decisions / awaiting (YE June 2026 kept as a mid-year point) | National series only |
 | Small-boat / illegal-entry **detections** | 2018–2026 | National series only |

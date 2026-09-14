@@ -50,6 +50,49 @@ const LAD_RE = /^[EW]0[6-9]|^S12|^N0[9]/;
 const ITL_RE = /^TL[C-N]$/i;
 const REGION_GSS_RE = /^E12/;
 
+const TOURS = [
+  {
+    id: "1991",
+    label: "1991",
+    title: "1991 — first ethnicity question",
+    layer: "p1-ethnicity-census",
+    year: 2011,
+    geo: "nation",
+    metric: "pct-white",
+    text: "The UK ethnicity question begins in 1991. This extract has no 1991 counts and does not invent a pre-1991 ethnicity map. The first published snapshot here is 2011 (E&W high-level White; Scotland Figure 5). Categories change again in 2021/22 — they are not one continuous series.",
+  },
+  {
+    id: "2004",
+    label: "2004",
+    title: "2004 — APS country-of-birth stocks",
+    layer: "p1-cob-stock",
+    year: 2021,
+    geo: "nation",
+    metric: "share-non-uk",
+    text: "The Annual Population Survey country-of-birth / nationality series is the modern household-survey stock from 2004. The downloaded workbook here is YE June 2021 only — 2004–2020 points are not invented. Census 2011/2021 (and Scotland 2022) remain the LA snapshots.",
+  },
+  {
+    id: "2012",
+    label: "2012",
+    title: "2012 — admin-based LTIM",
+    layer: "p1-ltim-net",
+    year: 2012,
+    geo: "nation",
+    metric: "emig-admin",
+    text: "Admin-based long-term international migration starts around YE June 2012. It is not the IPS-era line. Immigration, emigration and net are drawn separately; do not splice 1964–2015 onto 2012–.",
+  },
+  {
+    id: "2021",
+    label: "2021",
+    title: "2021 — census stocks (Scotland 2022)",
+    layer: "p1-cob-stock",
+    year: 2021,
+    geo: "nation",
+    metric: "share-non-uk",
+    text: "Census Day 2021 for E&W and NI; Scotland’s Census is 2022. Country of birth, nationality and ethnic group remain three different questions. Detections are still not an illegal-entry stock.",
+  },
+];
+
 const PALETTES = {
   ink: ["#f0e6d2", "#c9a06a", "#8a5a28", "#5a3216", "#1f140c"],
   teal: ["#c5ddd8", "#5d9188", "#2f6b64", "#184843", "#0b2f2d"],
@@ -126,10 +169,16 @@ function extraValue(l, m, geoId, year) {
   if (l.id === "p1-cob-stock" || l.id === "p2-identity-compare") {
     if (mid === "share-non-uk" || l.id === "p2-identity-compare" && mid === "share-non-uk") {
       const census = cobLas.find((r) => r.code === geoId);
-      const field = year === 2011 ? "y2011" : "y2021";
-      if (census && census[field] != null) return { value: census[field], note: `census ${year} % non-UK-born (country of birth, E&W)` };
+      if (year === 2011 || year === 2021) {
+        const field = year === 2011 ? "y2011" : "y2021";
+        if (census && census[field] != null) return { value: census[field], note: `census ${year} % non-UK-born (country of birth, E&W)` };
+      }
       const ni = (l.extras?.niLas || l.extras?.niCobLas || []).find((r) => r.code === geoId);
       if (year === 2021 && ni?.shareNonUk != null) return { value: ni.shareNonUk, note: ni.note || "NISRA MS-A16 % non-UK-born (four UK countries only)" };
+      const scot = (l.extras?.scotLas || []).find((r) => r.code === geoId);
+      if (year === 2022 && scot?.shareNonUk != null) {
+        return { value: scot.shareNonUk, note: "Scotland Census 2022 Area Overview % non-UK-born (four UK countries only; UV204 equivalent)" };
+      }
       const aps = cobAps.find((r) => r.code === geoId);
       if (year === 2021 && aps?.shareNonUk != null) return { value: aps.shareNonUk, note: "APS YE Jun 2021 % non-UK-born (country of birth)" };
     }
@@ -158,6 +207,10 @@ function extraValue(l, m, geoId, year) {
     if (year === 2021 && niEth?.pctWhite != null) {
       return { value: niEth.pctWhite, note: niEth.note || "NISRA MS-B01 % White (excludes Irish Traveller and Roma)" };
     }
+    const scotEth = (l.extras?.scotLas || l.extras?.scotEthLas || []).find((r) => r.code === geoId && r.pctWhite != null);
+    if (year === 2022 && scotEth?.pctWhite != null) {
+      return { value: scotEth.pctWhite, note: "Scotland Census 2022 Area Overview White heading (includes Irish/Polish/Other White; UV201 equivalent)" };
+    }
   }
   if (l.id === "p1-religion-census") {
     const row = l.extras?.las?.find((r) => r.code === geoId);
@@ -169,6 +222,11 @@ function extraValue(l, m, geoId, year) {
     if (year === 2021 && niRel) {
       const v = mid === "none" ? niRel.pctNone : mid === "muslim" ? niRel.pctMuslim : niRel.pctChristian;
       if (v != null) return { value: v, note: niRel.note || "NISRA MS-B19 current religion %" };
+    }
+    const scotRel = (l.extras?.scotLas || []).find((r) => r.code === geoId && (r.pctChristian != null || r.pctNone != null));
+    if (year === 2022 && scotRel) {
+      const v = mid === "none" ? scotRel.pctNone : mid === "muslim" ? scotRel.pctMuslim : scotRel.pctChristian;
+      if (v != null) return { value: v, note: "Scotland Census 2022 Area Overview current religion (UV205 equivalent; not remapped onto E&W)" };
     }
   }
   return { value: null, note: "" };
@@ -514,10 +572,17 @@ function renderDataStamp() {
   const el = $("data-stamp");
   if (!el || !state.catalog) return;
   const p = state.catalog.provenance || {};
+  const r = state.refreshStatus || {};
   const built = (p.catalogBuilt || state.catalog.generated || "").slice(0, 10);
   const asOf = (p.dataAsOf || state.catalog.generated || "").slice(0, 10);
+  const lastOk = (r.lastSuccess || p.lastRefreshSuccess || "").slice(0, 10);
   const warn = p.ingestWarnings?.length ? ` · ${p.ingestWarnings.length} ingest warning(s)` : "";
-  el.innerHTML = `Data as of ${asOf || "unknown"} · catalog ${built || "—"}${warn} · <a href="#sources">OGL attribution</a>`;
+  const fail =
+    r.ok === false
+      ? ` · <a href="${r.workflowRun || r.workflow || "#sources"}">last refresh failed</a> (catalog not overwritten)`
+      : "";
+  const refreshBit = lastOk ? ` · last successful refresh ${lastOk}` : " · scheduled refresh not yet recorded";
+  el.innerHTML = `Data as of ${asOf || "unknown"} · catalog ${built || "—"}${refreshBit}${warn}${fail} · <a href="#sources">OGL attribution</a>`;
 }
 
 function renderCompareYearControl(l) {
@@ -708,7 +773,9 @@ function bannerText() {
     return "Map colour is the selected identity series only. The panel shows country of birth, nationality, and ethnic group as three different questions. Census national identity is listed separately — it is not citizenship.";
   }
   if (l.id === "p1-cob-stock" && state.year === 2022) {
-    return "2022 is Scotland’s Census year (Figure 8). E&W and NI have no 2022 census country-of-birth stock in this extract.";
+    return state.geoLevel === "la"
+      ? "2022 Scotland council colours are Census Area Overviews (UV204 equivalent). E&W and NI local authorities have no 2022 census country-of-birth stock."
+      : "2022 is Scotland’s Census year (Figure 8). E&W and NI have no 2022 census country-of-birth stock in this extract.";
   }
   return spec?.note || "";
 }
@@ -1258,15 +1325,24 @@ function cobAgeBandRows(pack, caption) {
 
 function cobAgeTablesHtml(l) {
   const nation = aliasesFor(state.selectedGeo || "UK").find((id) => ["S", "NI", "E", "W", "EW", "UK"].includes(id));
-  const showRm = l.extras?.cobAge?.bands?.length && (state.year === l.extras.cobAge.year || nation === "EW" || nation === "E" || nation === "W" || !nation);
-  const showScot = l.extras?.cobAgeScot?.bands?.length && (state.year === 2022 || nation === "S" || nation === "UK");
-  const showNi = l.extras?.cobAgeNi?.bands?.length && (state.year === 2021 || nation === "NI" || nation === "UK");
+  // Census cob×age tables are snapshots. Show them whenever the pack exists so E&W
+  // RM011 persons is not hidden behind a MYE pyramid year (2024/2025).
+  const showRm = Boolean(l.extras?.cobAge?.bands?.length) && (nation !== "S" && nation !== "NI");
+  const showScot = Boolean(l.extras?.cobAgeScot?.bands?.length) && (nation === "S" || nation === "UK" || !nation);
+  const showNi = Boolean(l.extras?.cobAgeNi?.bands?.length) && (nation === "NI" || nation === "UK" || !nation);
   const parts = [];
   if (showRm) {
+    const pack =
+      nation === "E" && l.extras?.cobAgeE?.bands?.length
+        ? l.extras.cobAgeE
+        : nation === "W" && l.extras?.cobAgeW?.bands?.length
+          ? l.extras.cobAgeW
+          : l.extras.cobAge;
+    const where = pack.geography === "E" ? "England" : pack.geography === "W" ? "Wales" : "England &amp; Wales";
     parts.push(
       cobAgeBandRows(
-        l.extras.cobAge,
-        "England &amp; Wales Census 2021 RM011 — usual residents by age and UK-born / non-UK-born (categories summed as published)"
+        pack,
+        `${where} Census 2021 RM011 — usual residents <em>by age, persons</em> (not a male/female split). UK-born = published ‘Europe: United Kingdom’.`
       )
     );
   }
@@ -1288,7 +1364,7 @@ function cobAgeTablesHtml(l) {
   }
   if (!showRm && l.extras?.cobAge == null && (nation === "EW" || nation === "E" || nation === "W") && state.year === 2021) {
     parts.push(
-      `<p class="cite">ONS RM011 (E&amp;W age × country of birth) was not retrieved — the optional Nomis/ONS CSV 404’d. No E&amp;W birthplace pyramid is invented.</p>`
+      `<p class="cite">ONS RM011 (E&amp;W age × country of birth, persons) was not retrieved. No E&amp;W birthplace pyramid is invented.</p>`
     );
   }
   return parts.join("");
@@ -1410,6 +1486,7 @@ function areaRows(l) {
       let value = null;
       let note = "local authority";
       if (r.y2011 != null || r.y2021 != null) {
+        if (state.year !== 2011 && state.year !== 2021) continue;
         value = state.year === 2011 ? r.y2011 : r.y2021;
         note = "census % non-UK-born (E&W)";
       } else if (r.pctWhite != null && (l.id === "p1-ethnicity-census")) {
@@ -1440,6 +1517,29 @@ function areaRows(l) {
         const mid = metric()?.id;
         value = mid === "none" ? r.pctNone : mid === "muslim" ? r.pctMuslim : r.pctChristian;
         note = "NISRA MS-B19 current religion";
+      }
+      if (value != null) rows.push({ code: r.code, name: r.name, value, note });
+    }
+  }
+  const scotLas = [...(l.extras?.scotLas || []), ...(l.extras?.scotEthLas || [])];
+  if (scotLas.length && state.year === 2022) {
+    const seen = new Set();
+    for (const r of scotLas) {
+      const key = `${r.code}:${r.shareNonUk != null ? "cob" : r.pctWhite != null ? "eth" : "rel"}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      let value = null;
+      let note = "Scotland Census 2022 Area Overview (NRS headings)";
+      if (r.shareNonUk != null && (l.id === "p1-cob-stock" || l.id === "p2-identity-compare") && (m?.id === "share-non-uk" || !m || m.id === "share-non-uk")) {
+        value = r.shareNonUk;
+        note = "Scotland 2022 Area Overview % non-UK-born (four UK countries only)";
+      } else if (r.pctWhite != null && (l.id === "p1-ethnicity-census" || (l.id === "p2-identity-compare" && m?.id === "pct-white"))) {
+        value = r.pctWhite;
+        note = "Scotland 2022 Area Overview White heading (includes Irish/Polish/Other White)";
+      } else if (l.id === "p1-religion-census") {
+        const mid = metric()?.id;
+        value = mid === "none" ? r.pctNone : mid === "muslim" ? r.pctMuslim : r.pctChristian;
+        note = "Scotland 2022 Area Overview current religion";
       }
       if (value != null) rows.push({ code: r.code, name: r.name, value, note });
     }
@@ -1492,6 +1592,75 @@ function renderNotes() {
       .join("")}</tbody></table>`;
 }
 
+function applyTour(id) {
+  const tour = TOURS.find((t) => t.id === id);
+  if (!tour) return;
+  const note = $("tour-note");
+  if (note) {
+    note.hidden = false;
+    note.innerHTML = `<strong>${tour.title}</strong> ${tour.text}`;
+  }
+  state.geoLevel = tour.geo;
+  state.selectedGeo = "UK";
+  state.compareYear = null;
+  state.year = tour.year;
+  setLayer(tour.layer, true, false);
+  if (tour.metric && layer().metrics?.some((m) => m.id === tour.metric)) state.metricId = tour.metric;
+  renderChrome();
+  bindGeoLayer();
+  renderAll();
+}
+
+function renderTours() {
+  const host = $("tour-list");
+  if (!host) return;
+  host.innerHTML = TOURS.map((t) => `<button type="button" data-tour="${t.id}">${t.label}</button>`).join("");
+  host.querySelectorAll("button").forEach((btn) => {
+    btn.addEventListener("click", () => applyTour(btn.dataset.tour));
+  });
+}
+
+function exportViewCsv() {
+  const l = layer();
+  const m = usedMetric(l);
+  const rows = areaRows(l);
+  const lines = [["area_code", "area_name", "year", "layer", "metric", "value", "note"].join(",")];
+  const push = (code, name, value, note) => {
+    const esc = (s) => `"${String(s ?? "").replace(/"/g, '""')}"`;
+    lines.push([esc(code), esc(name), state.year, esc(l.id), esc(m?.id || ""), value ?? "", esc(note || "")].join(","));
+  };
+  if (rows.length) {
+    for (const r of rows) push(r.code, r.name, r.value, r.note);
+  } else if (m) {
+    for (const [geo, pts] of Object.entries(m.series || {})) {
+      const p = pts.find((x) => x.year === state.year);
+      if (p) push(geo, geoName(geo) || geo, p.value, p.note || "");
+    }
+  }
+  if (lines.length < 2) {
+    window.alert("No published rows for this year and layer — nothing to export.");
+    return;
+  }
+  const blob = new Blob([`${lines.join("\n")}\n`], { type: "text/csv;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `migration-${l.id}-${state.year}-${state.geoLevel}.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function exportChartPng() {
+  const canvas = $("chart");
+  if (!canvas || canvas.hidden) {
+    window.alert("No chart canvas for this view. Composition / pyramid HTML tables can be exported as CSV.");
+    return;
+  }
+  const a = document.createElement("a");
+  a.href = canvas.toDataURL("image/png");
+  a.download = `migration-${state.layerId}-${state.year}-chart.png`;
+  a.click();
+}
+
 function renderSourcesPage() {
   const el = $("source-index");
   const rows = state.catalog.layers.map((l) => {
@@ -1506,7 +1675,10 @@ function renderSourcesPage() {
         `<tr><td>${f.id}<div class="cite">${f.dest}</div></td><td>${f.present ? "present" : "missing"}</td><td>${f.critical ? "critical" : "optional"}</td><td class="cite">${f.sha256 ? f.sha256.slice(0, 12) : "—"}</td></tr>`
     )
     .join("");
-  el.innerHTML = `<p><strong>Data as of</strong> ${(p.dataAsOf || state.catalog.generated || "").slice(0, 19)}. Catalog built ${(p.catalogBuilt || state.catalog.generated || "").slice(0, 19)}. Refresh: <code>npm run refresh</code>. Schema breaks fail ingest unless <code>MIG_ALLOW_PARTIAL=1</code> — see <code>data/sources.json</code>.</p>
+  const refresh = state.refreshStatus || {};
+  const lastOk = refresh.lastSuccess || p.lastRefreshSuccess;
+  const lastFail = refresh.lastFailure;
+  el.innerHTML = `<p><strong>Data as of</strong> (source files in the last ingest) ${(p.dataAsOf || state.catalog.generated || "").slice(0, 19)}. <strong>Catalog built</strong> ${(p.catalogBuilt || state.catalog.generated || "").slice(0, 19)}. <strong>Last successful refresh</strong> ${lastOk ? String(lastOk).slice(0, 19) : "not yet recorded"}${refresh.ok === false ? `. <strong>Last refresh failed</strong> ${lastFail ? String(lastFail).slice(0, 19) : ""} — the catalog was not overwritten.` : ""}. Scheduled run: <a href="${refresh.workflow || "https://github.com/bushellsblower-maker/migration/actions/workflows/refresh.yml"}">refresh.yml</a>. Local: <code>npm run refresh</code>. Schema breaks fail ingest unless <code>MIG_ALLOW_PARTIAL=1</code>.</p>
   <p>Most official files: <a href="${p.ogl || "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/"}">Open Government Licence v3.0</a>.</p>
   <table>
     <thead><tr><th>Layer</th><th>Years in extract</th><th>Confidence</th><th>Cited sources</th></tr></thead>
@@ -1570,6 +1742,11 @@ function bindUi() {
     renderAll();
   });
   $("play").addEventListener("click", togglePlay);
+  $("btn-export-csv")?.addEventListener("click", exportViewCsv);
+  $("btn-export-png")?.addEventListener("click", exportChartPng);
+  $("btn-export-csv-chart")?.addEventListener("click", exportViewCsv);
+  $("btn-export-png-chart")?.addEventListener("click", exportChartPng);
+  renderTours();
   $("btn-share").addEventListener("click", async () => {
     writeUrl();
     const url = location.href;
@@ -1623,13 +1800,15 @@ async function loadJson(url, label) {
 }
 
 async function main() {
-  const [catalog, nation, region, la, lookups] = await Promise.all([
+  const [catalog, nation, region, la, lookups, refreshStatus] = await Promise.all([
     loadJson("./data/catalog.json", "catalog.json"),
     loadJson("./geo/uk-nations.geojson", "uk-nations.geojson"),
     loadJson("./geo/uk-itl1.geojson", "uk-itl1.geojson"),
     loadJson("./geo/uk-lad.geojson", "uk-lad.geojson"),
     loadJson("./geo/lookups.json", "lookups.json"),
+    fetch("./data/refresh-status.json").then((r) => (r.ok ? r.json() : {})).catch(() => ({})),
   ]);
+  state.refreshStatus = refreshStatus || {};
   if (region.features?.length !== 12) throw new Error("ITL1 GeoJSON does not contain 12 official regions");
   if ((la.features?.length || 0) < 360) throw new Error("LAD GeoJSON is incomplete");
   state.catalog = catalog;

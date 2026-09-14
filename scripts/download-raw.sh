@@ -106,9 +106,10 @@ dl "$RAW/ons/census-cob-fig4.xlsx" \
 dl "$RAW/ons/births-cob-map.xlsx" \
   "https://www.ons.gov.uk/visualisations/dvc3090/map/datadownload.xlsx"
 
-# Census 2021 E&W country of birth by age (ONS RM011) — optional; vintage-specific API
+# Census 2021 E&W country of birth by age (ONS RM011). The beta /csv API 404s;
+# download.ons.gov.uk is the current official machine-readable file (persons, not sex).
 dl "$RAW/ons/census-rm011-cob-age.csv" \
-  "https://api.beta.ons.gov.uk/v1/datasets/RM011/editions/2021/versions/1/csv"
+  "https://download.ons.gov.uk/downloads/datasets/RM011/editions/2021/versions/1.csv"
 
 # --- optional UK-nations extracts (Phase 4). Missing files only warn at ingest. ---
 dl "$RAW/ons/mye24tablesuk.xlsx" \
@@ -122,6 +123,17 @@ dl "$RAW/nrs/vital-events-2024-chapter-3.xlsx" \
 
 dl "$RAW/nrs/mye-scotland-2024.xlsx" \
   "https://www.nrscotland.gov.uk/media/txvdnee4/data-mid-year-population-estimates-2024.xlsx"
+
+# Scotland Census 2022 council-area COB / ethnicity / religion (Area Overviews = UV201/UV204/UV205 published equivalents)
+if [[ -f "$ROOT/scripts/download-scotland-overviews.mjs" ]]; then
+  echo "GET Scotland Census 2022 Area Overviews (32 councils)"
+  if node "$ROOT/scripts/download-scotland-overviews.mjs" ${FORCE:+--force}; then
+    echo "OK $RAW/nrs/census2022-area-overviews.json"
+  else
+    echo "FAIL (optional) $RAW/nrs/census2022-area-overviews.json"
+    FAILED=1
+  fi
+fi
 
 dl "$RAW/nisra/census2021-ms-a16-cob.xlsx" \
   "https://www.nisra.gov.uk/system/files/statistics/census-2021-ms-a16.xlsx"

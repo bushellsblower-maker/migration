@@ -1,0 +1,10 @@
+{
+  "lastAttempt": null,
+  "lastSuccess": null,
+  "lastFailure": null,
+  "ok": null,
+  "source": "not-yet-run",
+  "workflow": "https://github.com/bushellsblower-maker/migration/actions/workflows/refresh.yml",
+  "workflowRun": null,
+  "note": "No scheduled refresh has been recorded yet. Catalog data as of is the ingest stamp. A failed Action is a failed check and does not invent figures."
+}

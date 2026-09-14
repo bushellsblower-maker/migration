@@ -1,0 +1,3059 @@
+{
+  "title": "Scotland\u2019s Census 2022 Area Overviews \u2014 council area identity tables",
+  "producer": "National Records of Scotland / Scotland\u2019s Census",
+  "license": "OGL v3.0",
+  "year": 2022,
+  "geography": "Council Area 2019 (S12, matching ONS LAD December 2021)",
+  "source": "Scotland\u2019s Census Search the Census Area Overviews API",
+  "url": "https://www.scotlandscensus.gov.uk/search-the-census",
+  "api": "https://www.scotlandscensus.gov.uk/search-the-census/api/profiles",
+  "equivalentTables": [
+    "UV204 country of birth",
+    "UV201 ethnic group",
+    "UV205 religion"
+  ],
+  "note": "Copied from the official Area Overviews JSON. Percentages are NRS published headings, not remapped onto England & Wales groups. UK-born is Scotland+England+Wales+Northern Ireland only. White is the sum of published White-* headings (includes Irish, Polish, Other White).",
+  "retrieved": "2026-09-14T10:59:24Z",
+  "areas": [
+    {
+      "code": "S12000005",
+      "name": "Clackmannanshire",
+      "areaType": "CA2019",
+      "countryOfBirth": [
+        {
+          "label": "% Scotland",
+          "value": 84.27
+        },
+        {
+          "label": "% England",
+          "value": 8.73
+        },
+        {
+          "label": "% Wales",
+          "value": 0.36
+        },
+        {
+          "label": "% Northern Ireland",
+          "value": 0.58
+        },
+        {
+          "label": "% Republic of Ireland",
+          "value": 0.26
+        }
+      ],
+      "ethnicGroup": [
+        {
+          "label": "All people",
+          "value": 51778.0
+        },
+        {
+          "label": "% White - Scottish",
+          "value": 84.11
+        },
+        {
+          "label": "% White - Other British",
+          "value": 8.92
+        },
+        {
+          "label": "% White - Irish",
+          "value": 0.65
+        },
+        {
+          "label": "% White - Polish",
+          "value": 1.3
+        },
+        {
+          "label": "% White - Other",
+          "value": 1.92
+        },
+        {
+          "label": "% Asian, Asian Scottish or Asian British",
+          "value": 1.5
+        },
+        {
+          "label": "% Other ethnic groups",
+          "value": 1.61
+        }
+      ],
+      "religion": [
+        {
+          "label": "All people",
+          "value": 51778.0
+        },
+        {
+          "label": "% Church of Scotland",
+          "value": 21.72
+        },
+        {
+          "label": "% Roman Catholic",
+          "value": 8.09
+        },
+        {
+          "label": "% Other Christian",
+          "value": 4.22
+        },
+        {
+          "label": "% Muslim",
+          "value": 1.21
+        },
+        {
+          "label": "% Other religions",
+          "value": 0.99
+        },
+        {
+          "label": "% No religion",
+          "value": 58.33
+        },
+        {
+          "label": "% Not stated",
+          "value": 5.44
+        }
+      ]
+    },
+    {
+      "code": "S12000006",
+      "name": "Dumfries and Galloway",
+      "areaType": "CA2019",
+      "countryOfBirth": [
+        {
+          "label": "% Scotland",
+          "value": 74.59
+        },
+        {
+          "label": "% England",
+          "value": 19.91
+        },
+        {
+          "label": "% Wales",
+          "value": 0.43
+        },
+        {
+          "label": "% Northern Ireland",
+          "value": 0.92
+        },
+        {
+          "label": "% Republic of Ireland",
+          "value": 0.29
+        }
+      ],
+      "ethnicGroup": [
+        {
+          "label": "All people",
+          "value": 145895.0
+        },
+        {
+          "label": "% White - Scottish",
+          "value": 76.27
+        },
+        {
+          "label": "% White - Other British",
+          "value": 19.1
+        },
+        {
+          "label": "% White - Irish",
+          "value": 0.73
+        },
+        {
+          "label": "% White - Polish",
+          "value": 0.7
+        },
+        {
+          "label": "% White - Other",
+          "value": 1.27
+        },
+        {
+          "label": "% Asian, Asian Scottish or Asian British",
+          "value": 0.74
+        },
+        {
+          "label": "% Other ethnic groups",
+          "value": 1.19
+        }
+      ],
+      "religion": [
+        {
+          "label": "All people",
+          "value": 145895.0
+        },
+        {
+          "label": "% Church of Scotland",
+          "value": 28.92
+        },
+        {
+          "label": "% Roman Catholic",
+          "value": 5.52
+        },
+        {
+          "label": "% Other Christian",
+          "value": 5.78
+        },
+        {
+          "label": "% Muslim",
+          "value": 0.41
+        },
+        {
+          "label": "% Other religions",
+          "value": 1.09
+        },
+        {
+          "label": "% No religion",
+          "value": 52.19
+        },
+        {
+          "label": "% Not stated",
+          "value": 6.09
+        }
+      ]
+    },
+    {
+      "code": "S12000008",
+      "name": "East Ayrshire",
+      "areaType": "CA2019",
+      "countryOfBirth": [
+        {
+          "label": "% Scotland",
+          "value": 89.78
+        },
+        {
+          "label": "% England",
+          "value": 6.21
+        },
+        {
+          "label": "% Wales",
+          "value": 0.23
+        },
+        {
+          "label": "% Northern Ireland",
+          "value": 0.58
+        },
+        {
+          "label": "% Republic of Ireland",
+          "value": 0.2
+        }
+      ],
+      "ethnicGroup": [
+        {
+          "label": "All people",
+          "value": 120324.0
+        },
+        {
+          "label": "% White - Scottish",
+          "value": 89.73
+        },
+        {
+          "label": "% White - Other British",
+          "value": 6.28
+        },
+        {
+          "label": "% White - Irish",
+          "value": 0.52
+        },
+        {
+          "label": "% White - Polish",
+          "value": 0.41
+        },
+        {
+          "label": "% White - Other",
+          "value": 0.89
+        },
+        {
+          "label": "% Asian, Asian Scottish or Asian British",
+          "value": 1.04
+        },
+        {
+          "label": "% Other ethnic groups",
+          "value": 1.13
+        }
+      ],
+      "religion": [
+        {
+          "label": "All people",
+          "value": 120324.0
+        },
+        {
+          "label": "% Church of Scotland",
+          "value": 26.69
+        },
+        {
+          "label": "% Roman Catholic",
+          "value": 8.12
+        },
+        {
+          "label": "% Other Christian",
+          "value": 3.33
+        },
+        {
+          "label": "% Muslim",
+          "value": 0.59
+        },
+        {
+          "label": "% Other religions",
+          "value": 0.88
+        },
+        {
+          "label": "% No religion",
+          "value": 54.85
+        },
+        {
+          "label": "% Not stated",
+          "value": 5.54
+        }
+      ]
+    },
+    {
+      "code": "S12000010",
+      "name": "East Lothian",
+      "areaType": "CA2019",
+      "countryOfBirth": [
+        {
+          "label": "% Scotland",
+          "value": 80.09
+        },
+        {
+          "label": "% England",
+          "value": 11.24
+        },
+        {
+          "label": "% Wales",
+          "value": 0.43
+        },
+        {
+          "label": "% Northern Ireland",
+          "value": 0.83
+        },
+        {
+          "label": "% Republic of Ireland",
+          "value": 0.48
+        }
+      ],
+      "ethnicGroup": [
+        {
+          "label": "All people",
+          "value": 112284.0
+        },
+        {
+          "label": "% White - Scottish",
+          "value": 79.49
+        },
+        {
+          "label": "% White - Other British",
+          "value": 12.03
+        },
+        {
+          "label": "% White - Irish",
+          "value": 1.06
+        },
+        {
+          "label": "% White - Polish",
+          "value": 1.33
+        },
+        {
+          "label": "% White - Other",
+          "value": 3.03
+        },
+        {
+          "label": "% Asian, Asian Scottish or Asian British",
+          "value": 1.22
+        },
+        {
+          "label": "% Other ethnic groups",
+          "value": 1.85
+        }
+      ],
+      "religion": [
+        {
+          "label": "All people",
+          "value": 112284.0
+        },
+        {
+          "label": "% Church of Scotland",
+          "value": 22.05
+        },
+        {
+          "label": "% Roman Catholic",
+          "value": 8.09
+        },
+        {
+          "label": "% Other Christian",
+          "value": 4.84
+        },
+        {
+          "label": "% Muslim",
+          "value": 0.76
+        },
+        {
+          "label": "% Other religions",
+          "value": 1.07
+        },
+        {
+          "label": "% No religion",
+          "value": 57.51
+        },
+        {
+          "label": "% Not stated",
+          "value": 5.68
+        }
+      ]
+    },
+    {
+      "code": "S12000011",
+      "name": "East Renfrewshire",
+      "areaType": "CA2019",
+      "countryOfBirth": [
+        {
+          "label": "% Scotland",
+          "value": 85.57
+        },
+        {
+          "label": "% England",
+          "value": 5.47
+        },
+        {
+          "label": "% Wales",
+          "value": 0.21
+        },
+        {
+          "label": "% Northern Ireland",
+          "value": 0.63
+        },
+        {
+          "label": "% Republic of Ireland",
+          "value": 0.46
+        }
+      ],
+      "ethnicGroup": [
+        {
+          "label": "All people",
+          "value": 96817.0
+        },
+        {
+          "label": "% White - Scottish",
+          "value": 78.22
+        },
+        {
+          "label": "% White - Other British",
+          "value": 5.7
+        },
+        {
+          "label": "% White - Irish",
+          "value": 1.65
+        },
+        {
+          "label": "% White - Polish",
+          "value": 0.46
+        },
+        {
+          "label": "% White - Other",
+          "value": 1.44
+        },
+        {
+          "label": "% Asian, Asian Scottish or Asian British",
+          "value": 9.46
+        },
+        {
+          "label": "% Other ethnic groups",
+          "value": 3.07
+        }
+      ],
+      "religion": [
+        {
+          "label": "All people",
+          "value": 96817.0
+        },
+        {
+          "label": "% Church of Scotland",
+          "value": 21.04
+        },
+        {
+          "label": "% Roman Catholic",
+          "value": 20.64
+        },
+        {
+          "label": "% Other Christian",
+          "value": 3.88
+        },
+        {
+          "label": "% Muslim",
+          "value": 5.46
+        },
+        {
+          "label": "% Other religions",
+          "value": 4.07
+        },
+        {
+          "label": "% No religion",
+          "value": 38.02
+        },
+        {
+          "label": "% Not stated",
+          "value": 6.88
+        }
+      ]
+    },
+    {
+      "code": "S12000013",
+      "name": "Na h-Eileanan Siar",
+      "areaType": "CA2019",
+      "countryOfBirth": [
+        {
+          "label": "% Scotland",
+          "value": 82.58
+        },
+        {
+          "label": "% England",
+          "value": 12.82
+        },
+        {
+          "label": "% Wales",
+          "value": 0.49
+        },
+        {
+          "label": "% Northern Ireland",
+          "value": 0.24
+        },
+        {
+          "label": "% Republic of Ireland",
+          "value": 0.25
+        }
+      ],
+      "ethnicGroup": [
+        {
+          "label": "All people",
+          "value": 26140.0
+        },
+        {
+          "label": "% White - Scottish",
+          "value": 83.44
+        },
+        {
+          "label": "% White - Other British",
+          "value": 12.7
+        },
+        {
+          "label": "% White - Irish",
+          "value": 0.49
+        },
+        {
+          "label": "% White - Polish",
+          "value": 0.3
+        },
+        {
+          "label": "% White - Other",
+          "value": 1.4
+        },
+        {
+          "label": "% Asian, Asian Scottish or Asian British",
+          "value": 0.6
+        },
+        {
+          "label": "% Other ethnic groups",
+          "value": 1.1
+        }
+      ],
+      "religion": [
+        {
+          "label": "All people",
+          "value": 26140.0
+        },
+        {
+          "label": "% Church of Scotland",
+          "value": 35.34
+        },
+        {
+          "label": "% Roman Catholic",
+          "value": 12.08
+        },
+        {
+          "label": "% Other Christian",
+          "value": 16.2
+        },
+        {
+          "label": "% Muslim",
+          "value": 0.22
+        },
+        {
+          "label": "% Other religions",
+          "value": 1.06
+        },
+        {
+          "label": "% No religion",
+          "value": 29.95
+        },
+        {
+          "label": "% Not stated",
+          "value": 5.15
+        }
+      ]
+    },
+    {
+      "code": "S12000014",
+      "name": "Falkirk",
+      "areaType": "CA2019",
+      "countryOfBirth": [
+        {
+          "label": "% Scotland",
+          "value": 87.69
+        },
+        {
+          "label": "% England",
+          "value": 5.79
+        },
+        {
+          "label": "% Wales",
+          "value": 0.26
+        },
+        {
+          "label": "% Northern Ireland",
+          "value": 0.5
+        },
+        {
+          "label": "% Republic of Ireland",
+          "value": 0.26
+        }
+      ],
+      "ethnicGroup": [
+        {
+          "label": "All people",
+          "value": 158404.0
+        },
+        {
+          "label": "% White - Scottish",
+          "value": 86.74
+        },
+        {
+          "label": "% White - Other British",
+          "value": 5.96
+        },
+        {
+          "label": "% White - Irish",
+          "value": 0.65
+        },
+        {
+          "label": "% White - Polish",
+          "value": 1.33
+        },
+        {
+          "label": "% White - Other",
+          "value": 1.84
+        },
+        {
+          "label": "% Asian, Asian Scottish or Asian British",
+          "value": 2.05
+        },
+        {
+          "label": "% Other ethnic groups",
+          "value": 1.43
+        }
+      ],
+      "religion": [
+        {
+          "label": "All people",
+          "value": 158404.0
+        },
+        {
+          "label": "% Church of Scotland",
+          "value": 22.7
+        },
+        {
+          "label": "% Roman Catholic",
+          "value": 11.07
+        },
+        {
+          "label": "% Other Christian",
+          "value": 4.03
+        },
+        {
+          "label": "% Muslim",
+          "value": 1.3
+        },
+        {
+          "label": "% Other religions",
+          "value": 1.01
+        },
+        {
+          "label": "% No religion",
+          "value": 54.53
+        },
+        {
+          "label": "% Not stated",
+          "value": 5.37
+        }
+      ]
+    },
+    {
+      "code": "S12000017",
+      "name": "Highland",
+      "areaType": "CA2019",
+      "countryOfBirth": [
+        {
+          "label": "% Scotland",
+          "value": 74.59
+        },
+        {
+          "label": "% England",
+          "value": 16.81
+        },
+        {
+          "label": "% Wales",
+          "value": 0.56
+        },
+        {
+          "label": "% Northern Ireland",
+          "value": 0.56
+        },
+        {
+          "label": "% Republic of Ireland",
+          "value": 0.3
+        }
+      ],
+      "ethnicGroup": [
+        {
+          "label": "All people",
+          "value": 235351.0
+        },
+        {
+          "label": "% White - Scottish",
+          "value": 75.89
+        },
+        {
+          "label": "% White - Other British",
+          "value": 16.21
+        },
+        {
+          "label": "% White - Irish",
+          "value": 0.66
+        },
+        {
+          "label": "% White - Polish",
+          "value": 1.91
+        },
+        {
+          "label": "% White - Other",
+          "value": 2.74
+        },
+        {
+          "label": "% Asian, Asian Scottish or Asian British",
+          "value": 1.16
+        },
+        {
+          "label": "% Other ethnic groups",
+          "value": 1.43
+        }
+      ],
+      "religion": [
+        {
+          "label": "All people",
+          "value": 235351.0
+        },
+        {
+          "label": "% Church of Scotland",
+          "value": 23.44
+        },
+        {
+          "label": "% Roman Catholic",
+          "value": 6.26
+        },
+        {
+          "label": "% Other Christian",
+          "value": 7.62
+        },
+        {
+          "label": "% Muslim",
+          "value": 0.48
+        },
+        {
+          "label": "% Other religions",
+          "value": 1.28
+        },
+        {
+          "label": "% No religion",
+          "value": 54.33
+        },
+        {
+          "label": "% Not stated",
+          "value": 6.59
+        }
+      ]
+    },
+    {
+      "code": "S12000018",
+      "name": "Inverclyde",
+      "areaType": "CA2019",
+      "countryOfBirth": [
+        {
+          "label": "% Scotland",
+          "value": 91.51
+        },
+        {
+          "label": "% England",
+          "value": 4.31
+        },
+        {
+          "label": "% Wales",
+          "value": 0.18
+        },
+        {
+          "label": "% Northern Ireland",
+          "value": 0.45
+        },
+        {
+          "label": "% Republic of Ireland",
+          "value": 0.22
+        }
+      ],
+      "ethnicGroup": [
+        {
+          "label": "All people",
+          "value": 78426.0
+        },
+        {
+          "label": "% White - Scottish",
+          "value": 90.99
+        },
+        {
+          "label": "% White - Other British",
+          "value": 4.46
+        },
+        {
+          "label": "% White - Irish",
+          "value": 0.75
+        },
+        {
+          "label": "% White - Polish",
+          "value": 0.24
+        },
+        {
+          "label": "% White - Other",
+          "value": 0.9
+        },
+        {
+          "label": "% Asian, Asian Scottish or Asian British",
+          "value": 1.14
+        },
+        {
+          "label": "% Other ethnic groups",
+          "value": 1.52
+        }
+      ],
+      "religion": [
+        {
+          "label": "All people",
+          "value": 78426.0
+        },
+        {
+          "label": "% Church of Scotland",
+          "value": 23.66
+        },
+        {
+          "label": "% Roman Catholic",
+          "value": 33.44
+        },
+        {
+          "label": "% Other Christian",
+          "value": 3.55
+        },
+        {
+          "label": "% Muslim",
+          "value": 0.64
+        },
+        {
+          "label": "% Other religions",
+          "value": 0.72
+        },
+        {
+          "label": "% No religion",
+          "value": 32.22
+        },
+        {
+          "label": "% Not stated",
+          "value": 5.78
+        }
+      ]
+    },
+    {
+      "code": "S12000019",
+      "name": "Midlothian",
+      "areaType": "CA2019",
+      "countryOfBirth": [
+        {
+          "label": "% Scotland",
+          "value": 83.77
+        },
+        {
+          "label": "% England",
+          "value": 7.49
+        },
+        {
+          "label": "% Wales",
+          "value": 0.3
+        },
+        {
+          "label": "% Northern Ireland",
+          "value": 0.69
+        },
+        {
+          "label": "% Republic of Ireland",
+          "value": 0.38
+        }
+      ],
+      "ethnicGroup": [
+        {
+          "label": "All people",
+          "value": 96527.0
+        },
+        {
+          "label": "% White - Scottish",
+          "value": 82.43
+        },
+        {
+          "label": "% White - Other British",
+          "value": 7.82
+        },
+        {
+          "label": "% White - Irish",
+          "value": 0.77
+        },
+        {
+          "label": "% White - Polish",
+          "value": 1.92
+        },
+        {
+          "label": "% White - Other",
+          "value": 2.52
+        },
+        {
+          "label": "% Asian, Asian Scottish or Asian British",
+          "value": 2.3
+        },
+        {
+          "label": "% Other ethnic groups",
+          "value": 2.24
+        }
+      ],
+      "religion": [
+        {
+          "label": "All people",
+          "value": 96527.0
+        },
+        {
+          "label": "% Church of Scotland",
+          "value": 19.22
+        },
+        {
+          "label": "% Roman Catholic",
+          "value": 8.55
+        },
+        {
+          "label": "% Other Christian",
+          "value": 4.04
+        },
+        {
+          "label": "% Muslim",
+          "value": 1.2
+        },
+        {
+          "label": "% Other religions",
+          "value": 1.1
+        },
+        {
+          "label": "% No religion",
+          "value": 60.54
+        },
+        {
+          "label": "% Not stated",
+          "value": 5.35
+        }
+      ]
+    },
+    {
+      "code": "S12000020",
+      "name": "Moray",
+      "areaType": "CA2019",
+      "countryOfBirth": [
+        {
+          "label": "% Scotland",
+          "value": 72.67
+        },
+        {
+          "label": "% England",
+          "value": 19.23
+        },
+        {
+          "label": "% Wales",
+          "value": 0.9
+        },
+        {
+          "label": "% Northern Ireland",
+          "value": 0.65
+        },
+        {
+          "label": "% Republic of Ireland",
+          "value": 0.23
+        }
+      ],
+      "ethnicGroup": [
+        {
+          "label": "All people",
+          "value": 93293.0
+        },
+        {
+          "label": "% White - Scottish",
+          "value": 73.73
+        },
+        {
+          "label": "% White - Other British",
+          "value": 20.02
+        },
+        {
+          "label": "% White - Irish",
+          "value": 0.55
+        },
+        {
+          "label": "% White - Polish",
+          "value": 1.16
+        },
+        {
+          "label": "% White - Other",
+          "value": 2.15
+        },
+        {
+          "label": "% Asian, Asian Scottish or Asian British",
+          "value": 0.98
+        },
+        {
+          "label": "% Other ethnic groups",
+          "value": 1.43
+        }
+      ],
+      "religion": [
+        {
+          "label": "All people",
+          "value": 93293.0
+        },
+        {
+          "label": "% Church of Scotland",
+          "value": 22.06
+        },
+        {
+          "label": "% Roman Catholic",
+          "value": 5.03
+        },
+        {
+          "label": "% Other Christian",
+          "value": 7.21
+        },
+        {
+          "label": "% Muslim",
+          "value": 0.32
+        },
+        {
+          "label": "% Other religions",
+          "value": 1.26
+        },
+        {
+          "label": "% No religion",
+          "value": 58.14
+        },
+        {
+          "label": "% Not stated",
+          "value": 5.99
+        }
+      ]
+    },
+    {
+      "code": "S12000021",
+      "name": "North Ayrshire",
+      "areaType": "CA2019",
+      "countryOfBirth": [
+        {
+          "label": "% Scotland",
+          "value": 88.93
+        },
+        {
+          "label": "% England",
+          "value": 6.81
+        },
+        {
+          "label": "% Wales",
+          "value": 0.26
+        },
+        {
+          "label": "% Northern Ireland",
+          "value": 0.58
+        },
+        {
+          "label": "% Republic of Ireland",
+          "value": 0.23
+        }
+      ],
+      "ethnicGroup": [
+        {
+          "label": "All people",
+          "value": 133413.0
+        },
+        {
+          "label": "% White - Scottish",
+          "value": 89.04
+        },
+        {
+          "label": "% White - Other British",
+          "value": 6.85
+        },
+        {
+          "label": "% White - Irish",
+          "value": 0.62
+        },
+        {
+          "label": "% White - Polish",
+          "value": 0.37
+        },
+        {
+          "label": "% White - Other",
+          "value": 1.04
+        },
+        {
+          "label": "% Asian, Asian Scottish or Asian British",
+          "value": 0.88
+        },
+        {
+          "label": "% Other ethnic groups",
+          "value": 1.2
+        }
+      ],
+      "religion": [
+        {
+          "label": "All people",
+          "value": 133413.0
+        },
+        {
+          "label": "% Church of Scotland",
+          "value": 26.79
+        },
+        {
+          "label": "% Roman Catholic",
+          "value": 12.24
+        },
+        {
+          "label": "% Other Christian",
+          "value": 3.5
+        },
+        {
+          "label": "% Muslim",
+          "value": 0.45
+        },
+        {
+          "label": "% Other religions",
+          "value": 1.08
+        },
+        {
+          "label": "% No religion",
+          "value": 49.91
+        },
+        {
+          "label": "% Not stated",
+          "value": 6.03
+        }
+      ]
+    },
+    {
+      "code": "S12000023",
+      "name": "Orkney Islands",
+      "areaType": "CA2019",
+      "countryOfBirth": [
+        {
+          "label": "% Scotland",
+          "value": 74.3
+        },
+        {
+          "label": "% England",
+          "value": 20.26
+        },
+        {
+          "label": "% Wales",
+          "value": 0.62
+        },
+        {
+          "label": "% Northern Ireland",
+          "value": 0.4
+        },
+        {
+          "label": "% Republic of Ireland",
+          "value": 0.2
+        }
+      ],
+      "ethnicGroup": [
+        {
+          "label": "All people",
+          "value": 21958.0
+        },
+        {
+          "label": "% White - Scottish",
+          "value": 75.08
+        },
+        {
+          "label": "% White - Other British",
+          "value": 20.51
+        },
+        {
+          "label": "% White - Irish",
+          "value": 0.57
+        },
+        {
+          "label": "% White - Polish",
+          "value": 0.45
+        },
+        {
+          "label": "% White - Other",
+          "value": 1.79
+        },
+        {
+          "label": "% Asian, Asian Scottish or Asian British",
+          "value": 0.49
+        },
+        {
+          "label": "% Other ethnic groups",
+          "value": 1.12
+        }
+      ],
+      "religion": [
+        {
+          "label": "All people",
+          "value": 21958.0
+        },
+        {
+          "label": "% Church of Scotland",
+          "value": 26.66
+        },
+        {
+          "label": "% Roman Catholic",
+          "value": 2.67
+        },
+        {
+          "label": "% Other Christian",
+          "value": 6.94
+        },
+        {
+          "label": "% Muslim",
+          "value": 0.16
+        },
+        {
+          "label": "% Other religions",
+          "value": 1.56
+        },
+        {
+          "label": "% No religion",
+          "value": 56.34
+        },
+        {
+          "label": "% Not stated",
+          "value": 5.67
+        }
+      ]
+    },
+    {
+      "code": "S12000026",
+      "name": "Scottish Borders",
+      "areaType": "CA2019",
+      "countryOfBirth": [
+        {
+          "label": "% Scotland",
+          "value": 72.83
+        },
+        {
+          "label": "% England",
+          "value": 19.9
+        },
+        {
+          "label": "% Wales",
+          "value": 0.54
+        },
+        {
+          "label": "% Northern Ireland",
+          "value": 0.72
+        },
+        {
+          "label": "% Republic of Ireland",
+          "value": 0.32
+        }
+      ],
+      "ethnicGroup": [
+        {
+          "label": "All people",
+          "value": 116821.0
+        },
+        {
+          "label": "% White - Scottish",
+          "value": 74.56
+        },
+        {
+          "label": "% White - Other British",
+          "value": 19.23
+        },
+        {
+          "label": "% White - Irish",
+          "value": 0.74
+        },
+        {
+          "label": "% White - Polish",
+          "value": 1.37
+        },
+        {
+          "label": "% White - Other",
+          "value": 2.19
+        },
+        {
+          "label": "% Asian, Asian Scottish or Asian British",
+          "value": 0.69
+        },
+        {
+          "label": "% Other ethnic groups",
+          "value": 1.22
+        }
+      ],
+      "religion": [
+        {
+          "label": "All people",
+          "value": 116821.0
+        },
+        {
+          "label": "% Church of Scotland",
+          "value": 24.9
+        },
+        {
+          "label": "% Roman Catholic",
+          "value": 5.28
+        },
+        {
+          "label": "% Other Christian",
+          "value": 6.42
+        },
+        {
+          "label": "% Muslim",
+          "value": 0.31
+        },
+        {
+          "label": "% Other religions",
+          "value": 1.09
+        },
+        {
+          "label": "% No religion",
+          "value": 55.26
+        },
+        {
+          "label": "% Not stated",
+          "value": 6.74
+        }
+      ]
+    },
+    {
+      "code": "S12000027",
+      "name": "Shetland Islands",
+      "areaType": "CA2019",
+      "countryOfBirth": [
+        {
+          "label": "% Scotland",
+          "value": 80.35
+        },
+        {
+          "label": "% England",
+          "value": 13.49
+        },
+        {
+          "label": "% Wales",
+          "value": 0.65
+        },
+        {
+          "label": "% Northern Ireland",
+          "value": 0.28
+        },
+        {
+          "label": "% Republic of Ireland",
+          "value": 0.25
+        }
+      ],
+      "ethnicGroup": [
+        {
+          "label": "All people",
+          "value": 22986.0
+        },
+        {
+          "label": "% White - Scottish",
+          "value": 78.86
+        },
+        {
+          "label": "% White - Other British",
+          "value": 15.25
+        },
+        {
+          "label": "% White - Irish",
+          "value": 0.5
+        },
+        {
+          "label": "% White - Polish",
+          "value": 0.68
+        },
+        {
+          "label": "% White - Other",
+          "value": 2.26
+        },
+        {
+          "label": "% Asian, Asian Scottish or Asian British",
+          "value": 1.1
+        },
+        {
+          "label": "% Other ethnic groups",
+          "value": 1.35
+        }
+      ],
+      "religion": [
+        {
+          "label": "All people",
+          "value": 22986.0
+        },
+        {
+          "label": "% Church of Scotland",
+          "value": 18.99
+        },
+        {
+          "label": "% Roman Catholic",
+          "value": 2.83
+        },
+        {
+          "label": "% Other Christian",
+          "value": 8.6
+        },
+        {
+          "label": "% Muslim",
+          "value": 0.18
+        },
+        {
+          "label": "% Other religions",
+          "value": 1.34
+        },
+        {
+          "label": "% No religion",
+          "value": 62.75
+        },
+        {
+          "label": "% Not stated",
+          "value": 5.3
+        }
+      ]
+    },
+    {
+      "code": "S12000028",
+      "name": "South Ayrshire",
+      "areaType": "CA2019",
+      "countryOfBirth": [
+        {
+          "label": "% Scotland",
+          "value": 85.99
+        },
+        {
+          "label": "% England",
+          "value": 8.32
+        },
+        {
+          "label": "% Wales",
+          "value": 0.32
+        },
+        {
+          "label": "% Northern Ireland",
+          "value": 1.04
+        },
+        {
+          "label": "% Republic of Ireland",
+          "value": 0.32
+        }
+      ],
+      "ethnicGroup": [
+        {
+          "label": "All people",
+          "value": 111519.0
+        },
+        {
+          "label": "% White - Scottish",
+          "value": 86.2
+        },
+        {
+          "label": "% White - Other British",
+          "value": 8.9
+        },
+        {
+          "label": "% White - Irish",
+          "value": 0.85
+        },
+        {
+          "label": "% White - Polish",
+          "value": 0.42
+        },
+        {
+          "label": "% White - Other",
+          "value": 1.39
+        },
+        {
+          "label": "% Asian, Asian Scottish or Asian British",
+          "value": 1.14
+        },
+        {
+          "label": "% Other ethnic groups",
+          "value": 1.1
+        }
+      ],
+      "religion": [
+        {
+          "label": "All people",
+          "value": 111519.0
+        },
+        {
+          "label": "% Church of Scotland",
+          "value": 29.15
+        },
+        {
+          "label": "% Roman Catholic",
+          "value": 8.5
+        },
+        {
+          "label": "% Other Christian",
+          "value": 4.17
+        },
+        {
+          "label": "% Muslim",
+          "value": 0.39
+        },
+        {
+          "label": "% Other religions",
+          "value": 1.16
+        },
+        {
+          "label": "% No religion",
+          "value": 50.38
+        },
+        {
+          "label": "% Not stated",
+          "value": 6.25
+        }
+      ]
+    },
+    {
+      "code": "S12000029",
+      "name": "South Lanarkshire",
+      "areaType": "CA2019",
+      "countryOfBirth": [
+        {
+          "label": "% Scotland",
+          "value": 89.28
+        },
+        {
+          "label": "% England",
+          "value": 5.05
+        },
+        {
+          "label": "% Wales",
+          "value": 0.21
+        },
+        {
+          "label": "% Northern Ireland",
+          "value": 0.44
+        },
+        {
+          "label": "% Republic of Ireland",
+          "value": 0.3
+        }
+      ],
+      "ethnicGroup": [
+        {
+          "label": "All people",
+          "value": 327056.0
+        },
+        {
+          "label": "% White - Scottish",
+          "value": 87.32
+        },
+        {
+          "label": "% White - Other British",
+          "value": 5.47
+        },
+        {
+          "label": "% White - Irish",
+          "value": 0.94
+        },
+        {
+          "label": "% White - Polish",
+          "value": 0.68
+        },
+        {
+          "label": "% White - Other",
+          "value": 1.34
+        },
+        {
+          "label": "% Asian, Asian Scottish or Asian British",
+          "value": 2.48
+        },
+        {
+          "label": "% Other ethnic groups",
+          "value": 1.77
+        }
+      ],
+      "religion": [
+        {
+          "label": "All people",
+          "value": 327056.0
+        },
+        {
+          "label": "% Church of Scotland",
+          "value": 22.96
+        },
+        {
+          "label": "% Roman Catholic",
+          "value": 19.3
+        },
+        {
+          "label": "% Other Christian",
+          "value": 3.91
+        },
+        {
+          "label": "% Muslim",
+          "value": 1.44
+        },
+        {
+          "label": "% Other religions",
+          "value": 1.09
+        },
+        {
+          "label": "% No religion",
+          "value": 45.37
+        },
+        {
+          "label": "% Not stated",
+          "value": 5.94
+        }
+      ]
+    },
+    {
+      "code": "S12000030",
+      "name": "Stirling",
+      "areaType": "CA2019",
+      "countryOfBirth": [
+        {
+          "label": "% Scotland",
+          "value": 76.75
+        },
+        {
+          "label": "% England",
+          "value": 11.99
+        },
+        {
+          "label": "% Wales",
+          "value": 0.42
+        },
+        {
+          "label": "% Northern Ireland",
+          "value": 1.26
+        },
+        {
+          "label": "% Republic of Ireland",
+          "value": 0.58
+        }
+      ],
+      "ethnicGroup": [
+        {
+          "label": "All people",
+          "value": 92604.0
+        },
+        {
+          "label": "% White - Scottish",
+          "value": 76.62
+        },
+        {
+          "label": "% White - Other British",
+          "value": 12.6
+        },
+        {
+          "label": "% White - Irish",
+          "value": 1.4
+        },
+        {
+          "label": "% White - Polish",
+          "value": 0.87
+        },
+        {
+          "label": "% White - Other",
+          "value": 3.71
+        },
+        {
+          "label": "% Asian, Asian Scottish or Asian British",
+          "value": 2.57
+        },
+        {
+          "label": "% Other ethnic groups",
+          "value": 2.23
+        }
+      ],
+      "religion": [
+        {
+          "label": "All people",
+          "value": 92604.0
+        },
+        {
+          "label": "% Church of Scotland",
+          "value": 22.2
+        },
+        {
+          "label": "% Roman Catholic",
+          "value": 10.36
+        },
+        {
+          "label": "% Other Christian",
+          "value": 5.56
+        },
+        {
+          "label": "% Muslim",
+          "value": 1.02
+        },
+        {
+          "label": "% Other religions",
+          "value": 1.61
+        },
+        {
+          "label": "% No religion",
+          "value": 53.11
+        },
+        {
+          "label": "% Not stated",
+          "value": 6.16
+        }
+      ]
+    },
+    {
+      "code": "S12000033",
+      "name": "Aberdeen City",
+      "areaType": "CA2019",
+      "countryOfBirth": [
+        {
+          "label": "% Scotland",
+          "value": 70.71
+        },
+        {
+          "label": "% England",
+          "value": 7.39
+        },
+        {
+          "label": "% Wales",
+          "value": 0.28
+        },
+        {
+          "label": "% Northern Ireland",
+          "value": 0.53
+        },
+        {
+          "label": "% Republic of Ireland",
+          "value": 0.47
+        }
+      ],
+      "ethnicGroup": [
+        {
+          "label": "All people",
+          "value": 224021.0
+        },
+        {
+          "label": "% White - Scottish",
+          "value": 67.78
+        },
+        {
+          "label": "% White - Other British",
+          "value": 7.45
+        },
+        {
+          "label": "% White - Irish",
+          "value": 0.88
+        },
+        {
+          "label": "% White - Polish",
+          "value": 4.41
+        },
+        {
+          "label": "% White - Other",
+          "value": 6.05
+        },
+        {
+          "label": "% Asian, Asian Scottish or Asian British",
+          "value": 5.84
+        },
+        {
+          "label": "% Other ethnic groups",
+          "value": 7.59
+        }
+      ],
+      "religion": [
+        {
+          "label": "All people",
+          "value": 224021.0
+        },
+        {
+          "label": "% Church of Scotland",
+          "value": 14.57
+        },
+        {
+          "label": "% Roman Catholic",
+          "value": 8.59
+        },
+        {
+          "label": "% Other Christian",
+          "value": 7.54
+        },
+        {
+          "label": "% Muslim",
+          "value": 2.89
+        },
+        {
+          "label": "% Other religions",
+          "value": 2.61
+        },
+        {
+          "label": "% No religion",
+          "value": 57.98
+        },
+        {
+          "label": "% Not stated",
+          "value": 5.82
+        }
+      ]
+    },
+    {
+      "code": "S12000034",
+      "name": "Aberdeenshire",
+      "areaType": "CA2019",
+      "countryOfBirth": [
+        {
+          "label": "% Scotland",
+          "value": 79.98
+        },
+        {
+          "label": "% England",
+          "value": 11.64
+        },
+        {
+          "label": "% Wales",
+          "value": 0.47
+        },
+        {
+          "label": "% Northern Ireland",
+          "value": 0.56
+        },
+        {
+          "label": "% Republic of Ireland",
+          "value": 0.26
+        }
+      ],
+      "ethnicGroup": [
+        {
+          "label": "All people",
+          "value": 263723.0
+        },
+        {
+          "label": "% White - Scottish",
+          "value": 79.83
+        },
+        {
+          "label": "% White - Other British",
+          "value": 12.33
+        },
+        {
+          "label": "% White - Irish",
+          "value": 0.57
+        },
+        {
+          "label": "% White - Polish",
+          "value": 1.52
+        },
+        {
+          "label": "% White - Other",
+          "value": 2.84
+        },
+        {
+          "label": "% Asian, Asian Scottish or Asian British",
+          "value": 1.11
+        },
+        {
+          "label": "% Other ethnic groups",
+          "value": 1.81
+        }
+      ],
+      "religion": [
+        {
+          "label": "All people",
+          "value": 263723.0
+        },
+        {
+          "label": "% Church of Scotland",
+          "value": 23.21
+        },
+        {
+          "label": "% Roman Catholic",
+          "value": 4.3
+        },
+        {
+          "label": "% Other Christian",
+          "value": 6.31
+        },
+        {
+          "label": "% Muslim",
+          "value": 0.44
+        },
+        {
+          "label": "% Other religions",
+          "value": 0.93
+        },
+        {
+          "label": "% No religion",
+          "value": 58.96
+        },
+        {
+          "label": "% Not stated",
+          "value": 5.84
+        }
+      ]
+    },
+    {
+      "code": "S12000035",
+      "name": "Argyll and Bute",
+      "areaType": "CA2019",
+      "countryOfBirth": [
+        {
+          "label": "% Scotland",
+          "value": 72.62
+        },
+        {
+          "label": "% England",
+          "value": 19.47
+        },
+        {
+          "label": "% Wales",
+          "value": 0.72
+        },
+        {
+          "label": "% Northern Ireland",
+          "value": 0.74
+        },
+        {
+          "label": "% Republic of Ireland",
+          "value": 0.37
+        }
+      ],
+      "ethnicGroup": [
+        {
+          "label": "All people",
+          "value": 85970.0
+        },
+        {
+          "label": "% White - Scottish",
+          "value": 74.05
+        },
+        {
+          "label": "% White - Other British",
+          "value": 19.36
+        },
+        {
+          "label": "% White - Irish",
+          "value": 0.99
+        },
+        {
+          "label": "% White - Polish",
+          "value": 0.77
+        },
+        {
+          "label": "% White - Other",
+          "value": 2.54
+        },
+        {
+          "label": "% Asian, Asian Scottish or Asian British",
+          "value": 0.88
+        },
+        {
+          "label": "% Other ethnic groups",
+          "value": 1.4
+        }
+      ],
+      "religion": [
+        {
+          "label": "All people",
+          "value": 85970.0
+        },
+        {
+          "label": "% Church of Scotland",
+          "value": 26.97
+        },
+        {
+          "label": "% Roman Catholic",
+          "value": 9.17
+        },
+        {
+          "label": "% Other Christian",
+          "value": 6.64
+        },
+        {
+          "label": "% Muslim",
+          "value": 0.38
+        },
+        {
+          "label": "% Other religions",
+          "value": 1.34
+        },
+        {
+          "label": "% No religion",
+          "value": 48.46
+        },
+        {
+          "label": "% Not stated",
+          "value": 7.04
+        }
+      ]
+    },
+    {
+      "code": "S12000036",
+      "name": "City of Edinburgh",
+      "areaType": "CA2019",
+      "countryOfBirth": [
+        {
+          "label": "% Scotland",
+          "value": 61.47
+        },
+        {
+          "label": "% England",
+          "value": 13.3
+        },
+        {
+          "label": "% Wales",
+          "value": 0.46
+        },
+        {
+          "label": "% Northern Ireland",
+          "value": 1.22
+        },
+        {
+          "label": "% Republic of Ireland",
+          "value": 0.93
+        }
+      ],
+      "ethnicGroup": [
+        {
+          "label": "All people",
+          "value": 514543.0
+        },
+        {
+          "label": "% White - Scottish",
+          "value": 58.02
+        },
+        {
+          "label": "% White - Other British",
+          "value": 13.57
+        },
+        {
+          "label": "% White - Irish",
+          "value": 2.01
+        },
+        {
+          "label": "% White - Polish",
+          "value": 3.18
+        },
+        {
+          "label": "% White - Other",
+          "value": 8.11
+        },
+        {
+          "label": "% Asian, Asian Scottish or Asian British",
+          "value": 8.56
+        },
+        {
+          "label": "% Other ethnic groups",
+          "value": 6.56
+        }
+      ],
+      "religion": [
+        {
+          "label": "All people",
+          "value": 514543.0
+        },
+        {
+          "label": "% Church of Scotland",
+          "value": 13.48
+        },
+        {
+          "label": "% Roman Catholic",
+          "value": 10.1
+        },
+        {
+          "label": "% Other Christian",
+          "value": 6.53
+        },
+        {
+          "label": "% Muslim",
+          "value": 3.5
+        },
+        {
+          "label": "% Other religions",
+          "value": 3.42
+        },
+        {
+          "label": "% No religion",
+          "value": 56.35
+        },
+        {
+          "label": "% Not stated",
+          "value": 6.62
+        }
+      ]
+    },
+    {
+      "code": "S12000038",
+      "name": "Renfrewshire",
+      "areaType": "CA2019",
+      "countryOfBirth": [
+        {
+          "label": "% Scotland",
+          "value": 87.73
+        },
+        {
+          "label": "% England",
+          "value": 4.46
+        },
+        {
+          "label": "% Wales",
+          "value": 0.19
+        },
+        {
+          "label": "% Northern Ireland",
+          "value": 0.5
+        },
+        {
+          "label": "% Republic of Ireland",
+          "value": 0.37
+        }
+      ],
+      "ethnicGroup": [
+        {
+          "label": "All people",
+          "value": 183874.0
+        },
+        {
+          "label": "% White - Scottish",
+          "value": 85.59
+        },
+        {
+          "label": "% White - Other British",
+          "value": 4.84
+        },
+        {
+          "label": "% White - Irish",
+          "value": 0.97
+        },
+        {
+          "label": "% White - Polish",
+          "value": 1.35
+        },
+        {
+          "label": "% White - Other",
+          "value": 1.79
+        },
+        {
+          "label": "% Asian, Asian Scottish or Asian British",
+          "value": 2.71
+        },
+        {
+          "label": "% Other ethnic groups",
+          "value": 2.75
+        }
+      ],
+      "religion": [
+        {
+          "label": "All people",
+          "value": 183874.0
+        },
+        {
+          "label": "% Church of Scotland",
+          "value": 20.81
+        },
+        {
+          "label": "% Roman Catholic",
+          "value": 19.12
+        },
+        {
+          "label": "% Other Christian",
+          "value": 4.08
+        },
+        {
+          "label": "% Muslim",
+          "value": 1.41
+        },
+        {
+          "label": "% Other religions",
+          "value": 1.44
+        },
+        {
+          "label": "% No religion",
+          "value": 47.23
+        },
+        {
+          "label": "% Not stated",
+          "value": 5.91
+        }
+      ]
+    },
+    {
+      "code": "S12000039",
+      "name": "West Dunbartonshire",
+      "areaType": "CA2019",
+      "countryOfBirth": [
+        {
+          "label": "% Scotland",
+          "value": 90.39
+        },
+        {
+          "label": "% England",
+          "value": 4.59
+        },
+        {
+          "label": "% Wales",
+          "value": 0.16
+        },
+        {
+          "label": "% Northern Ireland",
+          "value": 0.39
+        },
+        {
+          "label": "% Republic of Ireland",
+          "value": 0.41
+        }
+      ],
+      "ethnicGroup": [
+        {
+          "label": "All people",
+          "value": 88399.0
+        },
+        {
+          "label": "% White - Scottish",
+          "value": 89.43
+        },
+        {
+          "label": "% White - Other British",
+          "value": 4.42
+        },
+        {
+          "label": "% White - Irish",
+          "value": 1.14
+        },
+        {
+          "label": "% White - Polish",
+          "value": 0.81
+        },
+        {
+          "label": "% White - Other",
+          "value": 1.02
+        },
+        {
+          "label": "% Asian, Asian Scottish or Asian British",
+          "value": 1.33
+        },
+        {
+          "label": "% Other ethnic groups",
+          "value": 1.85
+        }
+      ],
+      "religion": [
+        {
+          "label": "All people",
+          "value": 88399.0
+        },
+        {
+          "label": "% Church of Scotland",
+          "value": 19.54
+        },
+        {
+          "label": "% Roman Catholic",
+          "value": 28.17
+        },
+        {
+          "label": "% Other Christian",
+          "value": 2.72
+        },
+        {
+          "label": "% Muslim",
+          "value": 0.77
+        },
+        {
+          "label": "% Other religions",
+          "value": 0.87
+        },
+        {
+          "label": "% No religion",
+          "value": 41.87
+        },
+        {
+          "label": "% Not stated",
+          "value": 6.06
+        }
+      ]
+    },
+    {
+      "code": "S12000040",
+      "name": "West Lothian",
+      "areaType": "CA2019",
+      "countryOfBirth": [
+        {
+          "label": "% Scotland",
+          "value": 82.97
+        },
+        {
+          "label": "% England",
+          "value": 6.98
+        },
+        {
+          "label": "% Wales",
+          "value": 0.27
+        },
+        {
+          "label": "% Northern Ireland",
+          "value": 0.61
+        },
+        {
+          "label": "% Republic of Ireland",
+          "value": 0.3
+        }
+      ],
+      "ethnicGroup": [
+        {
+          "label": "All people",
+          "value": 181278.0
+        },
+        {
+          "label": "% White - Scottish",
+          "value": 81.13
+        },
+        {
+          "label": "% White - Other British",
+          "value": 7.15
+        },
+        {
+          "label": "% White - Irish",
+          "value": 0.71
+        },
+        {
+          "label": "% White - Polish",
+          "value": 3.07
+        },
+        {
+          "label": "% White - Other",
+          "value": 2.72
+        },
+        {
+          "label": "% Asian, Asian Scottish or Asian British",
+          "value": 2.79
+        },
+        {
+          "label": "% Other ethnic groups",
+          "value": 2.43
+        }
+      ],
+      "religion": [
+        {
+          "label": "All people",
+          "value": 181278.0
+        },
+        {
+          "label": "% Church of Scotland",
+          "value": 19.79
+        },
+        {
+          "label": "% Roman Catholic",
+          "value": 13.52
+        },
+        {
+          "label": "% Other Christian",
+          "value": 4.28
+        },
+        {
+          "label": "% Muslim",
+          "value": 1.6
+        },
+        {
+          "label": "% Other religions",
+          "value": 1.22
+        },
+        {
+          "label": "% No religion",
+          "value": 54.14
+        },
+        {
+          "label": "% Not stated",
+          "value": 5.45
+        }
+      ]
+    },
+    {
+      "code": "S12000041",
+      "name": "Angus",
+      "areaType": "CA2019",
+      "countryOfBirth": [
+        {
+          "label": "% Scotland",
+          "value": 84.36
+        },
+        {
+          "label": "% England",
+          "value": 8.97
+        },
+        {
+          "label": "% Wales",
+          "value": 0.32
+        },
+        {
+          "label": "% Northern Ireland",
+          "value": 0.58
+        },
+        {
+          "label": "% Republic of Ireland",
+          "value": 0.21
+        }
+      ],
+      "ethnicGroup": [
+        {
+          "label": "All people",
+          "value": 114342.0
+        },
+        {
+          "label": "% White - Scottish",
+          "value": 85.04
+        },
+        {
+          "label": "% White - Other British",
+          "value": 8.9
+        },
+        {
+          "label": "% White - Irish",
+          "value": 0.5
+        },
+        {
+          "label": "% White - Polish",
+          "value": 1.25
+        },
+        {
+          "label": "% White - Other",
+          "value": 2.11
+        },
+        {
+          "label": "% Asian, Asian Scottish or Asian British",
+          "value": 0.99
+        },
+        {
+          "label": "% Other ethnic groups",
+          "value": 1.19
+        }
+      ],
+      "religion": [
+        {
+          "label": "All people",
+          "value": 114342.0
+        },
+        {
+          "label": "% Church of Scotland",
+          "value": 25.99
+        },
+        {
+          "label": "% Roman Catholic",
+          "value": 5.69
+        },
+        {
+          "label": "% Other Christian",
+          "value": 4.34
+        },
+        {
+          "label": "% Muslim",
+          "value": 0.48
+        },
+        {
+          "label": "% Other religions",
+          "value": 0.9
+        },
+        {
+          "label": "% No religion",
+          "value": 57.1
+        },
+        {
+          "label": "% Not stated",
+          "value": 5.5
+        }
+      ]
+    },
+    {
+      "code": "S12000042",
+      "name": "Dundee City",
+      "areaType": "CA2019",
+      "countryOfBirth": [
+        {
+          "label": "% Scotland",
+          "value": 79.45
+        },
+        {
+          "label": "% England",
+          "value": 6.51
+        },
+        {
+          "label": "% Wales",
+          "value": 0.24
+        },
+        {
+          "label": "% Northern Ireland",
+          "value": 0.87
+        },
+        {
+          "label": "% Republic of Ireland",
+          "value": 0.36
+        }
+      ],
+      "ethnicGroup": [
+        {
+          "label": "All people",
+          "value": 148697.0
+        },
+        {
+          "label": "% White - Scottish",
+          "value": 77.21
+        },
+        {
+          "label": "% White - Other British",
+          "value": 6.13
+        },
+        {
+          "label": "% White - Irish",
+          "value": 0.9
+        },
+        {
+          "label": "% White - Polish",
+          "value": 2.12
+        },
+        {
+          "label": "% White - Other",
+          "value": 3.5
+        },
+        {
+          "label": "% Asian, Asian Scottish or Asian British",
+          "value": 5.92
+        },
+        {
+          "label": "% Other ethnic groups",
+          "value": 4.22
+        }
+      ],
+      "religion": [
+        {
+          "label": "All people",
+          "value": 148697.0
+        },
+        {
+          "label": "% Church of Scotland",
+          "value": 14.55
+        },
+        {
+          "label": "% Roman Catholic",
+          "value": 13.75
+        },
+        {
+          "label": "% Other Christian",
+          "value": 4.87
+        },
+        {
+          "label": "% Muslim",
+          "value": 4.19
+        },
+        {
+          "label": "% Other religions",
+          "value": 2.08
+        },
+        {
+          "label": "% No religion",
+          "value": 54.56
+        },
+        {
+          "label": "% Not stated",
+          "value": 5.99
+        }
+      ]
+    },
+    {
+      "code": "S12000045",
+      "name": "East Dunbartonshire",
+      "areaType": "CA2019",
+      "countryOfBirth": [
+        {
+          "label": "% Scotland",
+          "value": 86.59
+        },
+        {
+          "label": "% England",
+          "value": 6.21
+        },
+        {
+          "label": "% Wales",
+          "value": 0.26
+        },
+        {
+          "label": "% Northern Ireland",
+          "value": 0.73
+        },
+        {
+          "label": "% Republic of Ireland",
+          "value": 0.42
+        }
+      ],
+      "ethnicGroup": [
+        {
+          "label": "All people",
+          "value": 108937.0
+        },
+        {
+          "label": "% White - Scottish",
+          "value": 83.41
+        },
+        {
+          "label": "% White - Other British",
+          "value": 6.84
+        },
+        {
+          "label": "% White - Irish",
+          "value": 1.29
+        },
+        {
+          "label": "% White - Polish",
+          "value": 0.25
+        },
+        {
+          "label": "% White - Other",
+          "value": 1.65
+        },
+        {
+          "label": "% Asian, Asian Scottish or Asian British",
+          "value": 4.33
+        },
+        {
+          "label": "% Other ethnic groups",
+          "value": 2.22
+        }
+      ],
+      "religion": [
+        {
+          "label": "All people",
+          "value": 108937.0
+        },
+        {
+          "label": "% Church of Scotland",
+          "value": 23.38
+        },
+        {
+          "label": "% Roman Catholic",
+          "value": 18.85
+        },
+        {
+          "label": "% Other Christian",
+          "value": 4.38
+        },
+        {
+          "label": "% Muslim",
+          "value": 1.32
+        },
+        {
+          "label": "% Other religions",
+          "value": 2.24
+        },
+        {
+          "label": "% No religion",
+          "value": 43.26
+        },
+        {
+          "label": "% Not stated",
+          "value": 6.57
+        }
+      ]
+    },
+    {
+      "code": "S12000047",
+      "name": "Fife",
+      "areaType": "CA2019",
+      "countryOfBirth": [
+        {
+          "label": "% Scotland",
+          "value": 81.09
+        },
+        {
+          "label": "% England",
+          "value": 9.91
+        },
+        {
+          "label": "% Wales",
+          "value": 0.38
+        },
+        {
+          "label": "% Northern Ireland",
+          "value": 0.61
+        },
+        {
+          "label": "% Republic of Ireland",
+          "value": 0.3
+        }
+      ],
+      "ethnicGroup": [
+        {
+          "label": "All people",
+          "value": 371781.0
+        },
+        {
+          "label": "% White - Scottish",
+          "value": 81.25
+        },
+        {
+          "label": "% White - Other British",
+          "value": 9.69
+        },
+        {
+          "label": "% White - Irish",
+          "value": 0.71
+        },
+        {
+          "label": "% White - Polish",
+          "value": 1.48
+        },
+        {
+          "label": "% White - Other",
+          "value": 2.86
+        },
+        {
+          "label": "% Asian, Asian Scottish or Asian British",
+          "value": 2.16
+        },
+        {
+          "label": "% Other ethnic groups",
+          "value": 1.85
+        }
+      ],
+      "religion": [
+        {
+          "label": "All people",
+          "value": 371781.0
+        },
+        {
+          "label": "% Church of Scotland",
+          "value": 19.23
+        },
+        {
+          "label": "% Roman Catholic",
+          "value": 7.17
+        },
+        {
+          "label": "% Other Christian",
+          "value": 4.82
+        },
+        {
+          "label": "% Muslim",
+          "value": 1.03
+        },
+        {
+          "label": "% Other religions",
+          "value": 1.32
+        },
+        {
+          "label": "% No religion",
+          "value": 60.55
+        },
+        {
+          "label": "% Not stated",
+          "value": 5.88
+        }
+      ]
+    },
+    {
+      "code": "S12000048",
+      "name": "Perth and Kinross",
+      "areaType": "CA2019",
+      "countryOfBirth": [
+        {
+          "label": "% Scotland",
+          "value": 76.68
+        },
+        {
+          "label": "% England",
+          "value": 13.06
+        },
+        {
+          "label": "% Wales",
+          "value": 0.46
+        },
+        {
+          "label": "% Northern Ireland",
+          "value": 0.75
+        },
+        {
+          "label": "% Republic of Ireland",
+          "value": 0.36
+        }
+      ],
+      "ethnicGroup": [
+        {
+          "label": "All people",
+          "value": 150953.0
+        },
+        {
+          "label": "% White - Scottish",
+          "value": 76.86
+        },
+        {
+          "label": "% White - Other British",
+          "value": 13.3
+        },
+        {
+          "label": "% White - Irish",
+          "value": 0.84
+        },
+        {
+          "label": "% White - Polish",
+          "value": 2.26
+        },
+        {
+          "label": "% White - Other",
+          "value": 3.51
+        },
+        {
+          "label": "% Asian, Asian Scottish or Asian British",
+          "value": 1.51
+        },
+        {
+          "label": "% Other ethnic groups",
+          "value": 1.72
+        }
+      ],
+      "religion": [
+        {
+          "label": "All people",
+          "value": 150953.0
+        },
+        {
+          "label": "% Church of Scotland",
+          "value": 24.69
+        },
+        {
+          "label": "% Roman Catholic",
+          "value": 7.83
+        },
+        {
+          "label": "% Other Christian",
+          "value": 6.59
+        },
+        {
+          "label": "% Muslim",
+          "value": 0.63
+        },
+        {
+          "label": "% Other religions",
+          "value": 1.24
+        },
+        {
+          "label": "% No religion",
+          "value": 52.48
+        },
+        {
+          "label": "% Not stated",
+          "value": 6.53
+        }
+      ]
+    },
+    {
+      "code": "S12000049",
+      "name": "Glasgow City",
+      "areaType": "CA2019",
+      "countryOfBirth": [
+        {
+          "label": "% Scotland",
+          "value": 73.8
+        },
+        {
+          "label": "% England",
+          "value": 6.07
+        },
+        {
+          "label": "% Wales",
+          "value": 0.2
+        },
+        {
+          "label": "% Northern Ireland",
+          "value": 0.77
+        },
+        {
+          "label": "% Republic of Ireland",
+          "value": 0.59
+        }
+      ],
+      "ethnicGroup": [
+        {
+          "label": "All people",
+          "value": 620756.0
+        },
+        {
+          "label": "% White - Scottish",
+          "value": 67.12
+        },
+        {
+          "label": "% White - Other British",
+          "value": 5.64
+        },
+        {
+          "label": "% White - Irish",
+          "value": 1.79
+        },
+        {
+          "label": "% White - Polish",
+          "value": 1.96
+        },
+        {
+          "label": "% White - Other",
+          "value": 4.2
+        },
+        {
+          "label": "% Asian, Asian Scottish or Asian British",
+          "value": 11.08
+        },
+        {
+          "label": "% Other ethnic groups",
+          "value": 8.21
+        }
+      ],
+      "religion": [
+        {
+          "label": "All people",
+          "value": 620756.0
+        },
+        {
+          "label": "% Church of Scotland",
+          "value": 13.3
+        },
+        {
+          "label": "% Roman Catholic",
+          "value": 20.74
+        },
+        {
+          "label": "% Other Christian",
+          "value": 4.67
+        },
+        {
+          "label": "% Muslim",
+          "value": 7.86
+        },
+        {
+          "label": "% Other religions",
+          "value": 3.1
+        },
+        {
+          "label": "% No religion",
+          "value": 43.23
+        },
+        {
+          "label": "% Not stated",
+          "value": 7.1
+        }
+      ]
+    },
+    {
+      "code": "S12000050",
+      "name": "North Lanarkshire",
+      "areaType": "CA2019",
+      "countryOfBirth": [
+        {
+          "label": "% Scotland",
+          "value": 91.03
+        },
+        {
+          "label": "% England",
+          "value": 3.4
+        },
+        {
+          "label": "% Wales",
+          "value": 0.14
+        },
+        {
+          "label": "% Northern Ireland",
+          "value": 0.34
+        },
+        {
+          "label": "% Republic of Ireland",
+          "value": 0.21
+        }
+      ],
+      "ethnicGroup": [
+        {
+          "label": "All people",
+          "value": 340973.0
+        },
+        {
+          "label": "% White - Scottish",
+          "value": 88.79
+        },
+        {
+          "label": "% White - Other British",
+          "value": 3.6
+        },
+        {
+          "label": "% White - Irish",
+          "value": 0.93
+        },
+        {
+          "label": "% White - Polish",
+          "value": 1.57
+        },
+        {
+          "label": "% White - Other",
+          "value": 1.07
+        },
+        {
+          "label": "% Asian, Asian Scottish or Asian British",
+          "value": 2.44
+        },
+        {
+          "label": "% Other ethnic groups",
+          "value": 1.59
+        }
+      ],
+      "religion": [
+        {
+          "label": "All people",
+          "value": 340973.0
+        },
+        {
+          "label": "% Church of Scotland",
+          "value": 20.5
+        },
+        {
+          "label": "% Roman Catholic",
+          "value": 29.92
+        },
+        {
+          "label": "% Other Christian",
+          "value": 3.21
+        },
+        {
+          "label": "% Muslim",
+          "value": 1.62
+        },
+        {
+          "label": "% Other religions",
+          "value": 0.82
+        },
+        {
+          "label": "% No religion",
+          "value": 38.2
+        },
+        {
+          "label": "% Not stated",
+          "value": 5.73
+        }
+      ]
+    }
+  ]
+}

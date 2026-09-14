@@ -1,5 +1,5 @@
 {
-  "generated": "2026-09-14T09:48:23.288Z",
+  "generated": "2026-09-14T11:32:03.938Z",
   "ogl": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
   "files": [
     {
@@ -203,8 +203,32 @@
       "stableUrl": false,
       "present": true,
       "bytes": 1062342,
-      "mtime": "2026-09-14T09:34:33.324Z",
+      "mtime": "2026-09-14T10:53:06.201Z",
       "sha256": "f78d50e8d77fe5ed9d04667d6875aefcf62b56380af7aceb2e90dce067981526"
+    },
+    {
+      "id": "ons-rm011",
+      "dest": "ons/census-rm011-cob-age.csv",
+      "url": "https://download.ons.gov.uk/downloads/datasets/RM011/editions/2021/versions/1.csv",
+      "producer": "ONS",
+      "critical": false,
+      "stableUrl": true,
+      "present": true,
+      "bytes": 1993601,
+      "mtime": "2026-09-14T10:55:02.682Z",
+      "sha256": "da64a74e1799baee7b39281799b320ca1b5cd7f7bbb6a5588b91058654526639"
+    },
+    {
+      "id": "nrs-census2022-area-overviews",
+      "dest": "nrs/census2022-area-overviews.json",
+      "url": "https://www.scotlandscensus.gov.uk/search-the-census/api/profiles",
+      "producer": "NRS / Scotland’s Census",
+      "critical": false,
+      "stableUrl": true,
+      "present": true,
+      "bytes": 63848,
+      "mtime": "2026-09-14T10:59:24.162Z",
+      "sha256": "69bb08ec2a558d0e4cbfa03470ee1c6f398ea9a5c2e43789cef523fbf8a4d048"
     },
     {
       "id": "nrs-census2022-eilr",
@@ -215,7 +239,7 @@
       "stableUrl": false,
       "present": true,
       "bytes": 55539,
-      "mtime": "2026-09-14T09:34:26.776Z",
+      "mtime": "2026-09-14T10:53:06.193Z",
       "sha256": "917b6ce55ba110edb2c10a5333682756efbc8b7aed6f877f4356c2070ce827a1"
     },
     {
@@ -227,7 +251,7 @@
       "stableUrl": false,
       "present": true,
       "bytes": 353138,
-      "mtime": "2026-09-14T09:34:27.324Z",
+      "mtime": "2026-09-14T10:53:06.193Z",
       "sha256": "bfdb94a2c8ecba432af74dc7a4f5d41eab5b52a77891b066db797ad64cb58419"
     },
     {
@@ -239,7 +263,7 @@
       "stableUrl": false,
       "present": true,
       "bytes": 147251,
-      "mtime": "2026-09-14T09:34:27.572Z",
+      "mtime": "2026-09-14T10:53:06.193Z",
       "sha256": "85e1f3bcf76b90f729fdec813de4bc43180d3f6f630865360c8c2a469a0cb74c"
     },
     {
@@ -251,7 +275,7 @@
       "stableUrl": true,
       "present": true,
       "bytes": 360906,
-      "mtime": "2026-09-14T09:34:28.396Z",
+      "mtime": "2026-09-14T10:53:06.185Z",
       "sha256": "5da7d30e1f8ca8c3580e49fb285ee28b6531bf4515701541b06d2098d4d30945"
     },
     {
@@ -263,7 +287,7 @@
       "stableUrl": true,
       "present": true,
       "bytes": 635414,
-      "mtime": "2026-09-14T09:34:29.300Z",
+      "mtime": "2026-09-14T10:53:06.189Z",
       "sha256": "f6e171217408b99c0a0de271728e482fa717487e9e483991394ced3f6814f3f6"
     },
     {
@@ -275,7 +299,7 @@
       "stableUrl": true,
       "present": true,
       "bytes": 347432,
-      "mtime": "2026-09-14T09:34:29.996Z",
+      "mtime": "2026-09-14T10:53:06.189Z",
       "sha256": "db6d0b27f5112d9ff891caa0aadbcc3fa333b738812f44db720283541cbe5bfb"
     },
     {
@@ -287,7 +311,7 @@
       "stableUrl": true,
       "present": true,
       "bytes": 321101,
-      "mtime": "2026-09-14T09:34:30.796Z",
+      "mtime": "2026-09-14T10:53:06.193Z",
       "sha256": "bb043ddeff66f4e96fbb5603bdf2571445ad9d2c9c362ec7b8dd1cea98a8241d"
     },
     {
@@ -299,7 +323,7 @@
       "stableUrl": true,
       "present": true,
       "bytes": 267493,
-      "mtime": "2026-09-14T09:34:31.520Z",
+      "mtime": "2026-09-14T10:53:06.193Z",
       "sha256": "578a992f7499e3e66e7896968695f51aaff9c3041e9fffafa33f3a1fbf631018"
     },
     {
@@ -311,7 +335,7 @@
       "stableUrl": true,
       "present": true,
       "bytes": 319390,
-      "mtime": "2026-09-14T09:34:32.336Z",
+      "mtime": "2026-09-14T10:53:06.189Z",
       "sha256": "618a64b11ed7cddc8444a3c11838798dc7f79def6e79c8e2865b6cccd637743b"
     },
     {
@@ -323,7 +347,7 @@
       "stableUrl": false,
       "present": true,
       "bytes": 453088,
-      "mtime": "2026-09-14T09:34:33.184Z",
+      "mtime": "2026-09-14T10:53:06.185Z",
       "sha256": "3374c302e36e0a68dbae4efc7df7d7a5770b7f198bac3ea7adb8b4a33e0e4c54"
     }
   ],

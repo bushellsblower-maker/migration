@@ -5,7 +5,7 @@
 **Domain:** https://migration.cybush.uk  
 **Coverage intent:** ~1940–present (as available)  
 **Compiled:** 2026-09-13 22:15 BST (Europe/London)  
-**Phase 4 extract (2026-09-14):** Scotland Census 2022 EILR chart data + NRS vital-events chapter 3 + NISRA MS-A16/A31/B01/B15/B19/B23 + ONS UK MYE2 mid-2024 are ingested where they align with existing COB / ethnicity / religion / nationality / births / age–sex layers. Concordance notes are required; do not silent-conflate E&W / Scotland / NI headings. Scotland council UV stocks were not retrieved as a stable bulk file. See `data/SOURCES.md` and `docs/refresh.md`.  
+**Phase 5 extract (2026-09-14):** Scotland Census 2022 Area Overviews colour the 32 council areas on COB / ethnicity / religion (published UV204 / UV201 / UV205 equivalents — not remapped onto E&W/NI). ONS RM011 persons (not sex) fills E&W age × birthplace; the beta `/csv` API 404s, so the official `download.ons.gov.uk` dataset file is used. Monthly GitHub Actions cron runs `npm run refresh` and stamps `public/data/refresh-status.json`. Concordance notes are required; do not silent-conflate E&W / Scotland / NI headings. UKDS bulk UV CSVs were still datastore-pending. See `data/SOURCES.md` and `docs/refresh.md`.  
 
 ## Principles
 

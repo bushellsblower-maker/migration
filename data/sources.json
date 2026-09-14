@@ -5,10 +5,11 @@
   "howRefreshWorks": {
     "download": "npm run download  (or bash scripts/download-raw.sh). Resume-safe unless FORCE=1 / --force.",
     "build": "npm run build  (normalise geo + ingest). Fails if a critical file is missing or a required sheet/column cannot be parsed.",
-    "refresh": "npm run refresh  = download + build. Use npm run refresh:force to re-fetch even when files exist.",
+    "refresh": "npm run refresh  = download + build + refresh-status stamp. Use npm run refresh:force to re-fetch even when files exist.",
+    "schedule": "GitHub Action .github/workflows/refresh.yml runs npm run refresh on a monthly cron and on workflow_dispatch. A failed run is a failed check; it does not invent series. On success the Action commits catalog.json + refresh-status.json if they changed.",
     "partial": "Optional files only warn. Default: any SCHEMA ERROR exits 1 and leaves the previous catalog.json in place. MIG_ALLOW_PARTIAL=1 is a local debug escape — ingest still prints SCHEMA ERROR but writes catalog.json anyway (it may be incomplete).",
     "schemaBreak": "ingest.mjs prints SCHEMA ERROR for a missing critical file, missing sheet, or a series with too few parseable points. Without MIG_ALLOW_PARTIAL=1 the previous public/data/catalog.json is not overwritten.",
-    "scheduledRefresh": "Prefer `npm run refresh` locally or `.github/workflows/refresh.yml` (workflow_dispatch; optional commented cron). A Cloudflare Cron Trigger is not shipped — it would need a secret-gated Worker endpoint and is heavier than a documented refresh command."
+    "scheduledRefresh": "Prefer `npm run refresh` locally or `.github/workflows/refresh.yml` (monthly cron `17 6 1 * *` plus workflow_dispatch). A failed run is a failed check and writes refresh-status.json without overwriting catalog.json. A Cloudflare Cron Trigger is not shipped."
   },
   "files": [
     {
@@ -163,6 +164,24 @@
       "critical": false,
       "stableUrl": false,
       "usedFor": "Mid-2024 UK/nation age–sex pyramids"
+    },
+    {
+      "id": "ons-rm011",
+      "dest": "ons/census-rm011-cob-age.csv",
+      "url": "https://download.ons.gov.uk/downloads/datasets/RM011/editions/2021/versions/1.csv",
+      "producer": "ONS",
+      "critical": false,
+      "stableUrl": true,
+      "usedFor": "E&W Census 2021 country of birth by age (persons, not sex)"
+    },
+    {
+      "id": "nrs-census2022-area-overviews",
+      "dest": "nrs/census2022-area-overviews.json",
+      "url": "https://www.scotlandscensus.gov.uk/search-the-census/api/profiles",
+      "producer": "NRS / Scotland’s Census",
+      "critical": false,
+      "stableUrl": true,
+      "usedFor": "Scotland 2022 council COB / ethnicity / religion (UV201/UV204/UV205 published equivalents)"
     },
     {
       "id": "nrs-census2022-eilr",

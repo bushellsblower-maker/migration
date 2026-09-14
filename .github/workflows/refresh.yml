@@ -2,9 +2,11 @@ name: Refresh catalog
 
 on:
   workflow_dispatch:
-  # Enable if maintainers want a monthly check that official URLs still parse.
-  # schedule:
-  #   - cron: "17 6 1 * *"
+  schedule:
+    - cron: "17 6 1 * *"
+
+permissions:
+  contents: write
 
 jobs:
   refresh:
@@ -18,10 +20,29 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Download official extracts and ingest
+        id: refresh
         run: npm run refresh
+      - name: Record failed refresh stamp
+        if: failure()
+        run: node scripts/write-refresh-status.mjs --fail
       - name: Upload rebuilt catalog
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: catalog-json
-          path: public/data/catalog.json
+          path: |
+            public/data/catalog.json
+            public/data/refresh-status.json
           if-no-files-found: error
+      - name: Commit catalog and refresh stamp
+        if: success()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/data/catalog.json public/data/refresh-status.json data/raw/manifest.json data/raw/nrs/census2022-area-overviews.json data/raw/ons/census-rm011-cob-age.csv
+          if git diff --cached --quiet; then
+            echo "No catalog changes to commit"
+            exit 0
+          fi
+          git commit -m "chore: scheduled catalog refresh"
+          git push

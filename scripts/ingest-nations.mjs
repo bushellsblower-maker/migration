@@ -538,6 +538,86 @@ export function parseUkMyePyramids(rel = "ons/mye24tablesuk.xlsx") {
   return pyramids;
 }
 
+function pctOf(items, testers) {
+  let sum = 0;
+  let hit = 0;
+  for (const it of items || []) {
+    if (it.value == null || typeof it.value !== "number") continue;
+    if (testers.some((re) => re.test(it.label))) {
+      sum += it.value;
+      hit += 1;
+    }
+  }
+  return hit ? sum : null;
+}
+
+export function parseScotlandCouncilOverviews(rel = "nrs/census2022-area-overviews.json") {
+  const abs = path.join(RAW, rel);
+  if (!fs.existsSync(abs) || fs.statSync(abs).size === 0) return null;
+  const raw = JSON.parse(fs.readFileSync(abs, "utf8"));
+  const areas = raw.areas || [];
+  if (areas.length < 30) return null;
+  const cob = [];
+  const ethnicity = [];
+  const religion = [];
+  const noteBase =
+    "Scotland’s Census 2022 Area Overview (Search the Census). Published NRS headings — not remapped onto E&W groups. Equivalent to UV201 / UV204 / UV205 council tables.";
+  for (const area of areas) {
+    const code = String(area.code || "").trim();
+    const name = String(area.name || "").trim();
+    if (!/^S12/.test(code)) continue;
+    const ukBornPct = pctOf(area.countryOfBirth, [
+      /^%?\s*Scotland$/i,
+      /^%?\s*England$/i,
+      /^%?\s*Wales$/i,
+      /^%?\s*Northern Ireland$/i,
+    ]);
+    const whitePct = pctOf(area.ethnicGroup, [/^%?\s*White/i]);
+    const christianPct = pctOf(area.religion, [
+      /church of scotland/i,
+      /roman catholic/i,
+      /other christian/i,
+    ]);
+    const nonePct = pctOf(area.religion, [/no religion/i]);
+    const muslimPct = pctOf(area.religion, [/^%?\s*Muslim$/i]);
+    if (ukBornPct != null) {
+      cob.push({
+        code,
+        name,
+        year: 2022,
+        shareNonUk: 100 - ukBornPct,
+        ukBornPct,
+        groups: area.countryOfBirth,
+        note: `${noteBase} UK-born = Scotland+England+Wales+Northern Ireland only.`,
+      });
+    }
+    if (whitePct != null) {
+      ethnicity.push({
+        code,
+        name,
+        year: 2022,
+        pctWhite: whitePct,
+        groups: area.ethnicGroup,
+        note: `${noteBase} White = sum of published White-* headings (includes Irish, Polish, Other White). Not E&W high-level White.`,
+      });
+    }
+    if (christianPct != null || nonePct != null || muslimPct != null) {
+      religion.push({
+        code,
+        name,
+        year: 2022,
+        pctChristian: christianPct,
+        pctNone: nonePct,
+        pctMuslim: muslimPct,
+        groups: area.religion,
+        note: `${noteBase} Christian = Church of Scotland + Roman Catholic + Other Christian. Not stated is a residual, not imputed.`,
+      });
+    }
+  }
+  if (cob.length < 30) return null;
+  return { cob, ethnicity, religion, source: raw };
+}
+
 export function scotlandCouncilLookup(rel = "nrs/mye-scotland-2024.xlsx") {
   const wb = readWb(rel);
   if (!wb) return {};

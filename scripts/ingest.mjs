@@ -347,56 +347,104 @@ function parseLtimAdmin(wb) {
   };
 }
 
-function parseAps(wb) {
-  const bornUk = {};
-  const bornNonUk = {};
-  const shareNonUk = {};
-  const rows = sheetAoa(wb, "1.1");
+function parseApsStock(wb, sheetName, yesRe, noRe) {
+  const yes = {};
+  const no = {};
+  const shareNo = {};
+  const rows = sheetAoa(wb, sheetName);
   const headerIdx = rows.findIndex((r) => String(r[0]).trim() === "Area Code");
   const header = (rows[headerIdx] || []).map((h) => String(h).replace(/\s+/g, " ").trim());
-  const ukCol = header.findIndex((h) => /^United Kingdom Estimate/i.test(h));
-  const nonCol = header.findIndex((h) => /^Non-United Kingdom Estimate/i.test(h));
-  const ukCi = header.findIndex((h) => /^United Kingdom \+\/- CI/i.test(h));
-  const nonCi = header.findIndex((h) => /^Non-United Kingdom \+\/- CI/i.test(h));
+  const yesCol = header.findIndex((h) => yesRe.test(h) && /Estimate/i.test(h) && !/\+\/-/.test(h));
+  const noCol = header.findIndex((h) => noRe.test(h) && /Estimate/i.test(h) && !/\+\/-/.test(h));
+  const yesCi = header.findIndex((h) => yesRe.test(h) && /\+\/-/.test(h));
+  const noCi = header.findIndex((h) => noRe.test(h) && /\+\/-/.test(h));
   const year = 2021;
   const las = [];
   for (const row of rows.slice(headerIdx + 1)) {
     const code = String(row[0] || "").trim();
     const name = String(row[1] || "").replace(/\[Note.*?\]/g, "").trim();
     const geoType = String(row[2] || "").trim();
-    const uk = num(row[ukCol]);
-    const non = num(row[nonCol]);
-    if (uk == null || non == null) continue;
-    const extra = { lo: null, hi: null };
+    const yv = num(row[yesCol]);
+    const nv = num(row[noCol]);
+    if (yv == null || nv == null) continue;
     const geo = GSS_TO_ID[code];
     if (geo) {
-      addPoint(bornUk, geo, year, uk, { ci: num(row[ukCi]) });
-      addPoint(bornNonUk, geo, year, non, { ci: num(row[nonCi]) });
-      addPoint(shareNonUk, geo, year, (100 * non) / (uk + non));
+      addPoint(yes, geo, year, yv, { ci: num(row[yesCi]) });
+      addPoint(no, geo, year, nv, { ci: num(row[noCi]) });
+      addPoint(shareNo, geo, year, (100 * nv) / (yv + nv));
     }
     if (REGIONS[code]) {
-      addPoint(bornUk, code, year, uk, { ci: num(row[ukCi]) });
-      addPoint(bornNonUk, code, year, non, { ci: num(row[nonCi]) });
-      addPoint(shareNonUk, code, year, (100 * non) / (uk + non));
+      addPoint(yes, code, year, yv, { ci: num(row[yesCi]) });
+      addPoint(no, code, year, nv, { ci: num(row[noCi]) });
+      addPoint(shareNo, code, year, (100 * nv) / (yv + nv));
     }
     if (/local authority|unitary|metropolitan district|london borough/i.test(geoType)) {
       las.push({
         code,
         name,
         year,
-        ukBorn: uk,
-        nonUkBorn: non,
-        shareNonUk: (100 * non) / (uk + non),
-        ciNonUk: num(row[nonCi]),
+        yes: yv,
+        no: nv,
+        shareNo: (100 * nv) / (yv + nv),
+        ciNo: num(row[noCi]),
       });
     }
   }
   return {
-    bornUk: sortSeries(bornUk),
-    bornNonUk: sortSeries(bornNonUk),
-    shareNonUk: sortSeries(shareNonUk),
+    yes: sortSeries(yes),
+    no: sortSeries(no),
+    shareNo: sortSeries(shareNo),
     las,
   };
+}
+
+function parseAps(wb) {
+  const cob = parseApsStock(wb, "1.1", /^United Kingdom\b/i, /^Non-United Kingdom\b/i);
+  return {
+    bornUk: cob.yes,
+    bornNonUk: cob.no,
+    shareNonUk: cob.shareNo,
+    las: cob.las.map((r) => ({
+      code: r.code,
+      name: r.name,
+      year: r.year,
+      ukBorn: r.yes,
+      nonUkBorn: r.no,
+      shareNonUk: r.shareNo,
+      ciNonUk: r.ciNo,
+    })),
+  };
+}
+
+function parseApsNationality(wb) {
+  const nat = parseApsStock(wb, "2.1", /^British\b/i, /^Non-British\b/i);
+  return {
+    british: nat.yes,
+    nonBritish: nat.no,
+    shareNonBritish: nat.shareNo,
+    las: nat.las.map((r) => ({
+      code: r.code,
+      name: r.name,
+      year: r.year,
+      british: r.yes,
+      nonBritish: r.no,
+      shareNonBritish: r.shareNo,
+      ciNonBritish: r.ciNo,
+    })),
+  };
+}
+
+function rollupLasToItl(las, ladToItl, fields) {
+  const buckets = {};
+  for (const row of las) {
+    const itl = ladToItl[row.code];
+    if (!itl) continue;
+    buckets[itl] ??= { code: itl };
+    for (const [src, dest] of Object.entries(fields)) {
+      buckets[itl][dest] = (buckets[itl][dest] || 0) + (row[src] || 0);
+    }
+  }
+  return Object.values(buckets);
 }
 
 function parseCensusCob(fig4) {
@@ -454,7 +502,7 @@ function parseEthnicity(grouped, mapWb) {
     }
     if (!total) continue;
     const pctWhite = (100 * white) / total;
-    las.push({ code, name, year: 2021, pctWhite, total, groups: cells });
+    las.push({ code, name, year: 2021, pctWhite, white, total, groups: cells });
   }
   addPoint(whiteShare, "EW", 2011, composition.EW[2011].find((g) => /^White$/i.test(g.group))?.pct);
   addPoint(whiteShare, "EW", 2021, composition.EW[2021].find((g) => /^White$/i.test(g.group))?.pct);
@@ -673,7 +721,17 @@ function mergePrefer(primary, fallback) {
   return out;
 }
 
+function loadLookups() {
+  const p = path.join(ROOT, "public", "geo", "lookups.json");
+  if (!fs.existsSync(p)) {
+    console.warn("missing public/geo/lookups.json — run scripts/normalize-geo.mjs first");
+    return { ladToItl: {}, itl1Names: {} };
+  }
+  return JSON.parse(fs.readFileSync(p, "utf8"));
+}
+
 function main() {
+  const lookups = loadLookups();
   const pop = parsePopCsv();
   const ewHist = parseEwHistorical(readWb("ons/ew-pop-1838-2025.xlsx"));
   const gb = parseGb1937(readWb("ons/gb-pop-1937-2014.xls"));
@@ -682,6 +740,7 @@ function main() {
   const ltimHist = parseLtimHistorical(readWb("ons/ltim-1964-2015.xls"));
   const ltimAdmin = parseLtimAdmin(readWb("ons/ltim-flows-may2026.xlsx"));
   const aps = parseAps(readWb("ons/aps-cob-nationality-2021.xls"));
+  const nationality = parseApsNationality(readWb("ons/aps-cob-nationality-2021.xls"));
   const cobCensus = parseCensusCob(readWb("ons/census-cob-fig4.xlsx"));
   const ethnicity = parseEthnicity(readWb("ons/census-ethnicity-grouped.xlsx"), readWb("ons/census-ethnicity-map.xlsx"));
   const religion = parseReligion(readWb("ons/census-religion-fig1.xlsx"), readWb("ons/census-religion-fig2.xlsx"));
@@ -693,6 +752,47 @@ function main() {
   const mac = parseMac(readWb("mac/fiscal_report_ods_tables.checked.ods"));
 
   const mye = mergePrefer(pop, mergePrefer(ewHist, gb));
+  // English ITL1 (E12*) sit in the regional workbook; Wales/Scotland/NI ITL1 = nation totals.
+  for (const [geo, pts] of Object.entries(regional)) {
+    mye[geo] = pts;
+  }
+  for (const nation of ["W", "S", "NI"]) {
+    const gss = NATIONS[nation].gss;
+    if (mye[nation]) mye[gss] = mye[nation];
+  }
+
+  const ethItl = rollupLasToItl(ethnicity.las, lookups.ladToItl || {}, { white: "white", total: "total" });
+  for (const row of ethItl) {
+    if (!row.total) continue;
+    addPoint(ethnicity.whiteShare, row.code, 2021, (100 * row.white) / row.total, {
+      note: "sum of published 2021 LA counts in this extract, assigned via ONS LAD21 centroids to ITL1",
+    });
+  }
+
+  const relItl = rollupLasToItl(
+    religion.las,
+    lookups.ladToItl || {},
+    { Christian: "Christian", "No religion": "none", Muslim: "Muslim", total: "total" }
+  );
+  for (const row of relItl) {
+    if (!row.total) continue;
+    const extra = { note: "sum of published 2021 LA counts in this extract, assigned via ONS LAD21 centroids to ITL1" };
+    if (row.Christian != null) addPoint(religion.christian, row.code, 2021, (100 * row.Christian) / row.total, extra);
+    if (row.none != null) addPoint(religion.none, row.code, 2021, (100 * row.none) / row.total, extra);
+    if (row.Muslim != null) addPoint(religion.muslim, row.code, 2021, (100 * row.Muslim) / row.total, extra);
+  }
+  sortSeries(ethnicity.whiteShare);
+  sortSeries(religion.christian);
+  sortSeries(religion.none);
+  sortSeries(religion.muslim);
+
+  const pyramidTotals = {};
+  for (const [key, bands] of Object.entries(age.pyramids || {})) {
+    const [geo, year] = key.split(":");
+    const persons = bands.reduce((n, b) => n + (b.persons || 0), 0);
+    addPoint(pyramidTotals, geo, Number(year), persons);
+  }
+  sortSeries(pyramidTotals);
 
   const layers = [
     {
@@ -701,6 +801,11 @@ function main() {
       short: "Population",
       coverage: { start: 1940, end: 2025 },
       mapGeos: ["E", "W", "S", "NI"],
+      mapLevels: {
+        nation: { available: true, yearsFrom: 1971, note: "UK/nation MYE from 1971 in this extract; earlier years are E&W or GB only." },
+        region: { available: true, yearsFrom: 1981, yearsTo: 2023, note: "English ITL1 from the regional MYE workbook; Wales/Scotland/NI ITL1 use the published nation totals." },
+        la: { available: false, reason: "No local-authority mid-year estimates in this extract. Nomis LA series exist but were not downloaded." },
+      },
       confidence: "accredited",
       badges: ["Accredited official statistics", "Wartime definition break 1940–47", "Census rebases"],
       breaks: [
@@ -738,6 +843,11 @@ function main() {
       short: "Migration flows",
       coverage: { start: 1964, end: 2025 },
       mapGeos: [],
+      mapLevels: {
+        nation: { available: false, reason: "LTIM in this extract is a UK total only — there is no nation-split flow map." },
+        region: { available: false, reason: "No comparable ITL1 LTIM series in this extract." },
+        la: { available: false, reason: "No comparable local-authority LTIM series in this extract." },
+      },
       noMapReason: "Official LTIM in this extract is a UK national series. There is no comparable historic local-authority flow map.",
       confidence: "mixed",
       badges: ["Method break 1991", "IPS vs admin (do not splice)", "Latest points provisional"],
@@ -774,12 +884,18 @@ function main() {
     },
     {
       id: "p1-cob-stock",
-      title: "UK-born and non-UK-born stock",
+      title: "Country of birth — UK-born and non-UK-born stock",
       short: "Country of birth",
+      identity: "country-of-birth",
       coverage: { start: 2011, end: 2021 },
       mapGeos: ["E", "W", "S", "NI"],
+      mapLevels: {
+        nation: { available: true, years: [2021], note: "APS YE June 2021 nation totals. 2011 nation totals are not in this extract." },
+        region: { available: true, years: [2021], note: "APS YE June 2021 ITL1 / English-region stocks. 2011 has no region table here." },
+        la: { available: true, years: [2011, 2021], note: "Census 2011 & 2021 E&W % non-UK-born; APS YE June 2021 LA estimates where the sample supports them." },
+      },
       confidence: "survey-and-census",
-      badges: ["UK-born ≠ nationality ≠ White British", "APS household survey", "Census 2021 LA snapshot"],
+      badges: ["Country of birth ≠ nationality ≠ ethnic group", "APS household survey", "Census LA snapshot"],
       breaks: [
         { year: 2011, label: "Census 2011 country-of-birth (E&W LA percentages)" },
         { year: 2021, label: "Census 2021 (E&W) and APS YE June 2021 (UK, nations, regions, LAs)" },
@@ -796,13 +912,13 @@ function main() {
         "Scotland’s Census was in 2022. Combining it with E&W/NI 2021 as a single UK census year would be a date mismatch.",
       ],
       definitions: [
-        "UK-born: usual residents born in England, Wales, Scotland or Northern Ireland.",
-        "Non-UK-born: usual residents born elsewhere, including the Crown Dependencies and the rest of the world.",
+        "Country of birth (this layer): where a usual resident was born. It is not a passport, not a nationality, and not an ethnic group.",
+        "APS Table 1.1 labels: ‘United Kingdom’ / ‘Non-United Kingdom’ country-of-birth groups as published (YE June 2021). The workbook’s Country Groupings sheet includes the Crown Dependencies in the UK-born group — that is the producer’s grouping, not a synonym for British nationality.",
       ],
       metrics: [
-        { id: "uk-born", label: "UK-born (APS YE Jun 2021)", unit: "people", format: "count", series: aps.bornUk },
-        { id: "non-uk-born", label: "Non-UK-born (APS YE Jun 2021)", unit: "people", format: "count", series: aps.bornNonUk },
-        { id: "share-non-uk", label: "Non-UK-born share (APS)", unit: "%", format: "percent", series: aps.shareNonUk },
+        { id: "uk-born", label: "UK-born usual residents (country of birth, APS YE Jun 2021)", unit: "people", format: "count", series: aps.bornUk },
+        { id: "non-uk-born", label: "Non-UK-born usual residents (country of birth, APS YE Jun 2021)", unit: "people", format: "count", series: aps.bornNonUk },
+        { id: "share-non-uk", label: "Non-UK-born share of usual residents (country of birth, APS)", unit: "%", format: "percent", series: aps.shareNonUk },
       ],
       extras: { las: cobCensus.las, apsLas: aps.las.slice(0, 400) },
       snapshotYears: [2011, 2021],
@@ -811,11 +927,104 @@ function main() {
       vizModes: ["share", "absolute"],
     },
     {
+      id: "p1-nationality-stock",
+      title: "Nationality — British and non-British stock",
+      short: "Nationality",
+      identity: "nationality",
+      coverage: { start: 2021, end: 2021 },
+      mapGeos: ["E", "W", "S", "NI"],
+      mapLevels: {
+        nation: { available: true, years: [2021], note: "APS YE June 2021 Table 2.1 nation totals." },
+        region: { available: true, years: [2021], note: "APS YE June 2021 ITL1 / English-region nationality stocks." },
+        la: { available: true, years: [2021], note: "APS YE June 2021 LA estimates where the sample is large enough; suppressed cells stay blank." },
+      },
+      confidence: "survey",
+      badges: ["Nationality ≠ country of birth ≠ ethnic group", "APS household survey", "YE June 2021 only"],
+      breaks: [{ year: 2021, label: "APS YE June 2021 nationality stocks (Table 2.1)" }],
+      sources: [
+        source("ons-aps-nat", "ONS population by country of birth and nationality (APS, YE June 2021), Table 2.1", "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/internationalmigration/datasets/populationoftheunitedkingdombycountryofbirthandnationality"),
+      ],
+      notes: [
+        "Nationality is self-reported citizenship in the APS. A British national may be born abroad; a UK-born resident may hold another nationality.",
+        "Do not read this layer as ‘native’ or as White British. Those are different questions.",
+        "APS excludes most communal establishments. Totals do not match mid-year estimates.",
+        "The main APS bulletin series ends YE June 2021. No later nationality stock is invented here.",
+      ],
+      definitions: [
+        "British: APS Table 2.1 ‘British Estimate’ — British nationality, not country of birth.",
+        "Non-British: APS Table 2.1 ‘Non-British Estimate’ — any other reported nationality.",
+      ],
+      metrics: [
+        { id: "british", label: "British nationality (APS YE Jun 2021)", unit: "people", format: "count", series: nationality.british },
+        { id: "non-british", label: "Non-British nationality (APS YE Jun 2021)", unit: "people", format: "count", series: nationality.nonBritish },
+        { id: "share-non-british", label: "Non-British nationality share (APS)", unit: "%", format: "percent", series: nationality.shareNonBritish },
+      ],
+      extras: { apsLas: nationality.las.slice(0, 400) },
+      snapshotYears: [2021],
+      defaultMetric: "share-non-british",
+      mapMetric: "share-non-british",
+      vizModes: ["share", "absolute"],
+    },
+    {
+      id: "p2-identity-compare",
+      title: "Identity compare — birthplace, nationality, ethnic group",
+      short: "Identity (compare)",
+      identity: "compare",
+      coverage: { start: 2021, end: 2021 },
+      mapGeos: ["E", "W", "S", "NI"],
+      mapLevels: {
+        nation: { available: true, years: [2021], note: "Side-by-side 2021 figures. Ethnicity is E&W only." },
+        region: { available: true, years: [2021], note: "APS birthplace and nationality at ITL1; ethnicity ITL1 is the sum of published E&W LA census counts." },
+        la: { available: true, years: [2021], note: "Census % non-UK-born (E&W), APS nationality, and census ethnic group where each source has a row." },
+      },
+      confidence: "mixed",
+      badges: ["Three different questions", "Never ‘native’", "Do not splice the three series"],
+      breaks: [{ year: 2021, label: "Only year in this extract with all three identity questions populated" }],
+      sources: [
+        source("ons-aps", "ONS APS YE June 2021 country of birth and nationality", "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/internationalmigration/datasets/populationoftheunitedkingdombycountryofbirthandnationality"),
+        source("census-eth", "Census 2021 ethnic group, England and Wales", "https://www.ons.gov.uk/peoplepopulationandcommunity/culturalidentity/ethnicity/bulletins/ethnicgroupenglandandwales/census2021"),
+        source("census-cob", "Census 2021 E&W country of birth figure data", "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/internationalmigration/bulletins/internationalmigrationenglandandwales/census2021"),
+      ],
+      notes: [
+        "These three columns answer different census/survey questions. A high non-UK-born share is not a non-British share and is not a non-White share.",
+        "The word ‘native’ is not used: it conflates birthplace, nationality, and ethnicity.",
+        "Ethnicity ITL1 values are sums of the published 2021 LA counts in this extract, assigned to ITL1 with ONS LAD21 centroids. They are not a separate ONS region table.",
+        "Scotland and Northern Ireland have no ethnicity percentages in this extract.",
+      ],
+      definitions: [
+        "Country of birth: where the person was born (APS / census).",
+        "Nationality: reported citizenship (APS Table 2.1).",
+        "Ethnic group: self-identified high-level group (Census 2021).",
+      ],
+      metrics: [
+        { id: "share-non-uk", label: "Non-UK-born share (country of birth, APS)", unit: "%", format: "percent", series: aps.shareNonUk },
+        { id: "share-non-british", label: "Non-British nationality share (APS)", unit: "%", format: "percent", series: nationality.shareNonBritish },
+        { id: "pct-white", label: "White high-level share (Census 2021 ethnic group)", unit: "%", format: "percent", series: ethnicity.whiteShare },
+      ],
+      extras: {
+        compare: true,
+        cobLas: cobCensus.las,
+        cobApsLas: aps.las.slice(0, 400),
+        natApsLas: nationality.las.slice(0, 400),
+        ethLas: ethnicity.las.map(({ groups, ...rest }) => rest),
+      },
+      snapshotYears: [2021],
+      defaultMetric: "share-non-uk",
+      mapMetric: "share-non-uk",
+      vizModes: ["share", "compare"],
+    },
+    {
       id: "p1-ethnicity-census",
-      title: "Ethnicity (census snapshots)",
-      short: "Ethnicity",
+      title: "Ethnic group (census snapshots)",
+      short: "Ethnic group",
+      identity: "ethnicity",
       coverage: { start: 2011, end: 2021 },
       mapGeos: ["E", "W"],
+      mapLevels: {
+        nation: { available: true, years: [2011, 2021], note: "E&W high-level percentages only. Scotland and NI are not in this extract." },
+        region: { available: true, years: [2021], note: "2021 ITL1 = sum of published E&W LA counts. 2011 has no LA file here, so regions stay dimmed." },
+        la: { available: true, years: [2021], note: "2021 E&W local authorities from the census map extract. 2011 LA ethnicity is not in this file." },
+      },
       noMapYearsOutside: "No comparable UK ethnicity question before 1991. This extract has E&W 2011 and 2021 high-level groups; 1991/2001 concordance is not in the downloaded files.",
       confidence: "census-snapshot",
       badges: ["No pre-1991 series", "Categories change between censuses", "E&W extract"],
@@ -838,7 +1047,7 @@ function main() {
         "High-level ethnic groups follow the ONS 2021 five-group presentation used in the cited bulletin figure.",
       ],
       metrics: [
-        { id: "pct-white", label: "White (high-level %, E&W)", unit: "%", format: "percent", series: ethnicity.whiteShare },
+        { id: "pct-white", label: "White high-level share (Census ethnic group, not UK-born)", unit: "%", format: "percent", series: ethnicity.whiteShare },
       ],
       extras: { composition: ethnicity.composition, las: ethnicity.las.map(({ groups, ...rest }) => rest) },
       defaultMetric: "pct-white",
@@ -851,6 +1060,11 @@ function main() {
       short: "Religion",
       coverage: { start: 2011, end: 2021 },
       mapGeos: ["E", "W"],
+      mapLevels: {
+        nation: { available: true, years: [2011, 2021], note: "E&W only." },
+        region: { available: true, years: [2021], note: "2021 ITL1 = sum of published E&W LA counts. 2011 has no LA religion file here." },
+        la: { available: true, years: [2021], note: "2021 E&W local authorities from the census map extract." },
+      },
       confidence: "census-snapshot",
       badges: ["Voluntary question", "No modern affiliation series before 2001", "E&W extract"],
       breaks: [
@@ -882,6 +1096,11 @@ function main() {
       short: "Age–sex",
       coverage: { start: 2025, end: 2025 },
       mapGeos: ["E", "W"],
+      mapLevels: {
+        nation: { available: true, years: [2025], note: "England and E&W pyramids only in this extract." },
+        region: { available: true, years: [2025], note: "English ITL1 pyramids from mid-2025 MYE2. Wales/Scotland/NI are not separately pyramid-mapped here." },
+        la: { available: false, reason: "No local-authority age–sex pyramid in this extract." },
+      },
       confidence: "accredited",
       badges: ["Mid-2025 E&W / regions", "Pyramid is latest year only in this extract"],
       breaks: [],
@@ -892,8 +1111,10 @@ function main() {
         "Pyramids are from the mid-2025 single-year-of-age tables (2023 LA boundaries). They are not birthplace- or nationality-specific.",
         "Age × country-of-birth cross-tabs are census or APS products, not this MYE file.",
       ],
-      metrics: [],
+      metrics: [{ id: "persons", label: "Usual residents (sum of mid-2025 age bands)", unit: "people", format: "count", series: pyramidTotals }],
       extras: { pyramids: age.pyramids },
+      defaultMetric: "persons",
+      mapMetric: "persons",
       vizModes: ["pyramid"],
     },
     {
@@ -902,6 +1123,11 @@ function main() {
       short: "Births",
       coverage: { start: 2008, end: 2025 },
       mapGeos: ["E", "W"],
+      mapLevels: {
+        nation: { available: true, yearsFrom: 2008, note: "E&W totals. Not a UK map." },
+        region: { available: true, yearsFrom: 2016, yearsTo: 2022, note: "Regional share from the 2023 bulletin figure (either parent born outside the UK). Not the same as mother’s birthplace alone." },
+        la: { available: false, reason: "No local-authority births-by-mother’s-birthplace table in this extract." },
+      },
       confidence: "accredited",
       badges: ["E&W vital registration", "Recorded since 1969; this extract 2008–2025", "Birthplace ≠ ethnicity"],
       breaks: [
@@ -933,6 +1159,11 @@ function main() {
       short: "Asylum",
       coverage: { start: 2010, end: 2025 },
       mapGeos: [],
+      mapLevels: {
+        nation: { available: false, reason: "UK totals only in this extract." },
+        region: { available: false, reason: "No ITL1 asylum series in this summary extract." },
+        la: { available: false, reason: "Local support tables exist in other HO files and are not mapped here." },
+      },
       noMapReason: "Home Office asylum summary tables in this extract are UK totals (people). Local support data exist in other HO files and are not mapped here.",
       confidence: "accredited",
       badges: ["People, not cases — labelled", "WIP / backlog definitions change", "Appeals incomplete after 2022"],
@@ -969,6 +1200,11 @@ function main() {
       short: "Detections",
       coverage: { start: 2018, end: 2025 },
       mapGeos: [],
+      mapLevels: {
+        nation: { available: false, reason: "National detection totals — not a stock map." },
+        region: { available: false, reason: "No regional detection map. Detections are not a local population." },
+        la: { available: false, reason: "No local-authority detection map." },
+      },
       noMapReason: "These are national operational detection counts, not a map of an undetected population.",
       confidence: "operational",
       badges: ["DETECTIONS only", "Not a stock of people without permission", "Not visa overstays"],
@@ -1003,6 +1239,11 @@ function main() {
       short: "Labour & housing",
       coverage: { start: 1997, end: 2025 },
       mapGeos: ["E", "W"],
+      mapLevels: {
+        nation: { available: true, note: "Employment rates are UK LFS. Affordability maps England & Wales." },
+        region: { available: true, note: "House-price-to-earnings ratios for English ITL1 and Wales." },
+        la: { available: false, reason: "The ingested affordability sheet (1c) is nations and regions only — no LA column set in this extract." },
+      },
       confidence: "accredited",
       badges: ["Context, not causation", "LFS quality caveats", "Affordability ≠ migration impact"],
       breaks: [
@@ -1033,6 +1274,11 @@ function main() {
       short: "Fiscal (contested)",
       coverage: { start: 1995, end: 2025 },
       mapGeos: [],
+      mapLevels: {
+        nation: { available: false, reason: "Contested model results — not a mapped official series." },
+        region: { available: false, reason: "No regional fiscal-impact official series." },
+        la: { available: false, reason: "No local-authority fiscal-impact official series." },
+      },
       noMapReason: "There is no official mapped ‘cost of migration’ series. This panel is methods and published model results, not a fact layer.",
       confidence: "modelled-contested",
       badges: ["Not a single cost", "Static ≠ dynamic", "Route- and assumption-specific"],
@@ -1079,11 +1325,35 @@ function main() {
 
   const catalog = {
     generated: new Date().toISOString(),
-    title: "Migration — Phase 1 catalog",
+    title: "Migration — Phase 2 catalog",
     yearMin: 1940,
     yearMax: 2025,
     nations: Object.values(NATIONS),
     regions: Object.entries(REGIONS).map(([id, name]) => ({ id, name, kind: "region" })),
+    geographies: {
+      nation: { id: "nation", label: "UK nations", file: "geo/uk-nations.geojson", source: "Natural Earth 50m admin-0 map subunits" },
+      region: {
+        id: "region",
+        label: "ITL1 regions",
+        file: "geo/uk-itl1.geojson",
+        source: "ONS Open Geography, International Territorial Level 1 (January 2021) UK BUC",
+        portal: "https://www.data.gov.uk/dataset/772cce9d-962b-477f-98bb-7f31dbe8b66a/international-territorial-level-1-january-2021-boundaries-uk-bgc",
+        license: "OGL v3.0 / OS + ONS IPR",
+      },
+      la: {
+        id: "la",
+        label: "Local authorities (Dec 2021)",
+        file: "geo/uk-lad.geojson",
+        source: "ONS Open Geography, Local Authority Districts (December 2021) UK BUC",
+        portal: "https://www.data.gov.uk/dataset/50fb9e41-01d4-4e12-b5a2-c9add02470a8/local-authority-districts-december-2021-boundaries-uk-buc",
+        license: "OGL v3.0 / OS + ONS IPR",
+      },
+    },
+    deepLink: {
+      params: ["layer", "year", "geo", "metric"],
+      geo: "nation | region | la | GSS or ITL1 code (E12… / E06… / W92… / TLC…)",
+      example: "?layer=p1-cob-stock&year=2021&geo=region&metric=share-non-uk",
+    },
     principles: [
       "No invented statistics.",
       "UK-born is not nationality and is not White British.",

@@ -116,9 +116,45 @@ a.skip:focus { top: 8px; }
   border-radius: 6px;
   padding: 6px 8px;
 }
+.seg {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.seg button {
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 6px;
+  padding: 5px 8px;
+  cursor: pointer;
+  font-size: 0.75rem;
+}
+.seg button[aria-pressed="true"] { background: #fff; border-color: var(--accent); color: var(--accent); font-weight: 600; }
+.seg button:disabled { opacity: 0.45; cursor: not-allowed; }
+.compare-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 8px;
+}
+.compare-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: #fff;
+  min-width: 0;
+}
+.compare-card h3 { margin: 0 0 4px; font-size: 0.82rem; font-family: var(--serif); }
+.compare-card .big { font-size: 1.25rem; font-variant-numeric: tabular-nums; }
+.compare-card .q { color: var(--muted); font-size: 0.72rem; margin: 0 0 6px; }
+.share-toast { font-size: 0.75rem; color: var(--ok); margin: 0; }
+
+@media (max-width: 720px) {
+  .compare-grid { grid-template-columns: 1fr; }
+}
 
 .stage { display: flex; flex-direction: column; min-width: 0; min-height: 560px; background: #dfd8c8; }
-.map-wrap { position: relative; flex: 1.2; min-height: 280px; }
+.map-wrap { position: relative; flex: 1.1; min-height: 320px; }
 #map { height: 100%; background: #d4cdb8; }
 .leaflet-container { font-family: var(--font); background: #d4cdb8; }
 .leaflet-tooltip.map-tip {
@@ -165,7 +201,9 @@ a.skip:focus { top: 8px; }
   background: #f8f3e9;
   padding: 8px 14px 10px;
 }
-.year-row { display: flex; align-items: baseline; gap: 12px; }
+.year-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.geo-seg { flex: 1 1 auto; }
+.geo-note { margin: 2px 0 0; }
 #play {
   width: 44px;
   height: 36px;

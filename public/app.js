@@ -1,6 +1,6 @@
 /**
- * Phase 1 explorer. Renders only values present in catalog.json.
- * Never interpolates missing years or places.
+ * Phase 2 explorer. Renders only values present in catalog.json.
+ * Never interpolates missing years or places. Never invents geometries.
  */
 const GSS_TO_ID = {
   E92000001: "E",
@@ -33,9 +33,26 @@ const NATION_NAMES = {
   EW: "England and Wales",
 };
 
+const GEO_LEVELS = [
+  { id: "nation", label: "Nations" },
+  { id: "region", label: "ITL1 regions" },
+  { id: "la", label: "Local authorities" },
+];
+
+const IDENTITY_MODES = [
+  { id: "p1-cob-stock", label: "Country of birth", q: "Where was this person born?" },
+  { id: "p1-nationality-stock", label: "Nationality", q: "What citizenship did they report?" },
+  { id: "p1-ethnicity-census", label: "Ethnic group", q: "Which ethnic group did they identify with?" },
+  { id: "p2-identity-compare", label: "Compare all three", q: "Same place and year; three different questions." },
+];
+
+const LAD_RE = /^[EW]0[6-9]|^S12|^N0[9]/;
+const ITL_RE = /^TL[C-N]$/i;
+const REGION_GSS_RE = /^E12/;
+
 const PALETTES = {
-  ink: ["#d2c4a6", "#b08958", "#7a5a32", "#4a341f", "#1f160f"],
-  teal: ["#9cbcb4", "#5d9188", "#2f6b64", "#184843", "#0b2f2d"],
+  ink: ["#f0e6d2", "#c9a06a", "#8a5a28", "#5a3216", "#1f140c"],
+  teal: ["#c5ddd8", "#5d9188", "#2f6b64", "#184843", "#0b2f2d"],
   diverging: ["#8a3d1c", "#c98962", "#eee6d6", "#6a9a8d", "#0f4c4a"],
   print: ["#c8c2b4", "#8d8778", "#534e44", "#3a362f", "#221f1b"],
 };
@@ -44,17 +61,20 @@ const $ = (id) => document.getElementById(id);
 
 const state = {
   catalog: null,
-  geo: null,
+  geos: { nation: null, region: null, la: null },
+  lookups: null,
   layerId: "p1-mye-total",
   metricId: null,
   viz: "absolute",
-  palette: "ink",
+  palette: "teal",
   year: 2021,
+  geoLevel: "nation",
   playing: false,
   playTimer: null,
   map: null,
   geoLayer: null,
   selectedGeo: "UK",
+  skipHistory: false,
 };
 
 function layer() {
@@ -84,24 +104,169 @@ function valueAt(series, geo, year) {
   return pointAt(series, geo, year)?.value ?? null;
 }
 
-/** Honest fallback only when the published series is explicitly that grouping. */
-function mapValue(m, nationId, year) {
-  if (!m) return null;
-  const direct = valueAt(m.series, nationId, year);
-  if (direct != null) return direct;
-  if ((nationId === "E" || nationId === "W") && valueAt(m.series, "EW", year) != null) {
-    return valueAt(m.series, "EW", year);
+function aliasesFor(geoId) {
+  const ids = [geoId];
+  if (GSS_TO_ID[geoId]) ids.push(GSS_TO_ID[geoId]);
+  if (ID_TO_GSS[geoId]) ids.push(ID_TO_GSS[geoId]);
+  const itl = state.lookups?.gssToItl1?.[geoId] || (ITL_RE.test(geoId) ? geoId.toUpperCase() : null);
+  if (itl) ids.push(itl, state.lookups?.itl1ToGss?.[itl]);
+  return [...new Set(ids.filter(Boolean))];
+}
+
+function extraValue(l, m, geoId, year) {
+  if (!l || !LAD_RE.test(geoId)) return { value: null, note: "" };
+  const mid = m?.id;
+  const cobLas = l.extras?.las || l.extras?.cobLas || [];
+  const cobAps = l.extras?.apsLas || l.extras?.cobApsLas || [];
+  const natAps = l.extras?.natApsLas || (l.id === "p1-nationality-stock" ? l.extras?.apsLas : []) || [];
+  const ethLas = l.extras?.ethLas || (l.id === "p1-ethnicity-census" ? l.extras?.las : []) || [];
+
+  if (l.id === "p1-cob-stock" || l.id === "p2-identity-compare") {
+    if (mid === "share-non-uk" || l.id === "p2-identity-compare" && mid === "share-non-uk") {
+      const census = cobLas.find((r) => r.code === geoId);
+      const field = year === 2011 ? "y2011" : "y2021";
+      if (census && census[field] != null) return { value: census[field], note: `census ${year} % non-UK-born (country of birth, E&W)` };
+      const aps = cobAps.find((r) => r.code === geoId);
+      if (year === 2021 && aps?.shareNonUk != null) return { value: aps.shareNonUk, note: "APS YE Jun 2021 % non-UK-born (country of birth)" };
+    }
+    if (mid === "uk-born" || mid === "non-uk-born") {
+      const aps = cobAps.find((r) => r.code === geoId);
+      if (year === 2021 && aps) {
+        const v = mid === "uk-born" ? aps.ukBorn : aps.nonUkBorn;
+        if (v != null) return { value: v, note: "APS YE Jun 2021 (country of birth)" };
+      }
+    }
   }
-  return null;
+  if (l.id === "p1-nationality-stock" || (l.id === "p2-identity-compare" && mid === "share-non-british")) {
+    const aps = (l.id === "p1-nationality-stock" ? l.extras?.apsLas : natAps)?.find((r) => r.code === geoId);
+    if (year === 2021 && aps) {
+      if (mid === "british" && aps.british != null) return { value: aps.british, note: "APS YE Jun 2021 (nationality)" };
+      if (mid === "non-british" && aps.nonBritish != null) return { value: aps.nonBritish, note: "APS YE Jun 2021 (nationality)" };
+      if ((mid === "share-non-british" || !mid) && aps.shareNonBritish != null) {
+        return { value: aps.shareNonBritish, note: "APS YE Jun 2021 % non-British nationality" };
+      }
+    }
+  }
+  if (l.id === "p1-ethnicity-census" || (l.id === "p2-identity-compare" && mid === "pct-white")) {
+    const row = (l.id === "p1-ethnicity-census" ? l.extras?.las : ethLas)?.find((r) => r.code === geoId);
+    if (year === 2021 && row?.pctWhite != null) return { value: row.pctWhite, note: "Census 2021 % White (high-level ethnic group)" };
+  }
+  if (l.id === "p1-religion-census") {
+    const row = l.extras?.las?.find((r) => r.code === geoId);
+    if (year === 2021 && row) {
+      const v = mid === "none" ? row.pctNone : mid === "muslim" ? row.pctMuslim : row.pctChristian;
+      if (v != null) return { value: v, note: "Census 2021 religion %" };
+    }
+  }
+  return { value: null, note: "" };
+}
+
+/** Honest fallback only when the published series is explicitly that grouping. */
+function lookupValue(l, m, geoId, year) {
+  if (!m && !l) return { value: null, note: "" };
+  for (const id of aliasesFor(geoId)) {
+    const direct = m ? valueAt(m.series, id, year) : null;
+    if (direct != null) {
+      const pt = pointAt(m.series, id, year);
+      return { value: direct, note: pt?.note || "" };
+    }
+  }
+  if ((geoId === "E" || geoId === "W" || geoId === "E92000001" || geoId === "W92000004") && m && valueAt(m.series, "EW", year) != null) {
+    return { value: valueAt(m.series, "EW", year), note: "England & Wales combined figure" };
+  }
+  return extraValue(l, m, geoId, year);
+}
+
+function mapValue(m, nationId, year) {
+  return lookupValue(layer(), m, nationId, year).value;
 }
 
 function mapValueNote(m, nationId, year) {
-  if (!m) return "";
-  if (valueAt(m.series, nationId, year) != null) return "";
-  if ((nationId === "E" || nationId === "W") && valueAt(m.series, "EW", year) != null) {
-    return "England & Wales combined figure";
+  return lookupValue(layer(), m, nationId, year).note;
+}
+
+function usedMetric(l) {
+  const selected = metric();
+  if (selected) return selected;
+  return (l.mapMetric && l.metrics.find((x) => x.id === l.mapMetric)) || null;
+}
+
+function geoName(id) {
+  if (!id) return "";
+  if (NATION_NAMES[id]) return NATION_NAMES[id];
+  if (state.lookups?.itl1Names?.[id]) return state.lookups.itl1Names[id];
+  const region = state.catalog?.regions?.find((r) => r.id === id);
+  if (region) return region.name;
+  for (const fc of Object.values(state.geos || {})) {
+    const f = fc?.features?.find((x) => x.properties?.id === id || x.properties?.gss === id || x.properties?.itl === id);
+    if (f) return f.properties.name;
   }
-  return "";
+  return id;
+}
+
+function currentFeatures() {
+  return state.geos[state.geoLevel]?.features || [];
+}
+
+function levelAvailable(l, level) {
+  const spec = l?.mapLevels?.[level];
+  if (!spec) return Boolean(l?.mapGeos?.length) && level === "nation";
+  return spec.available !== false;
+}
+
+function encodeGeoParam() {
+  if (!state.selectedGeo || state.selectedGeo === "UK") return state.geoLevel;
+  if (state.geoLevel === "nation") {
+    return NATION_IDS.includes(state.selectedGeo) || state.selectedGeo === "UK" || state.selectedGeo === "EW" || state.selectedGeo === "GB"
+      ? state.selectedGeo
+      : state.geoLevel;
+  }
+  if (state.geoLevel === "region") {
+    return state.lookups?.gssToItl1?.[state.selectedGeo] || state.selectedGeo;
+  }
+  return state.selectedGeo;
+}
+
+function parseGeoParam(raw) {
+  if (!raw) return { level: "nation", selected: "UK" };
+  if (raw === "nation" || raw === "region" || raw === "la") return { level: raw, selected: raw === "nation" ? "UK" : null };
+  if (ITL_RE.test(raw)) {
+    const gss = state.lookups?.itl1ToGss?.[raw.toUpperCase()] || raw.toUpperCase();
+    return { level: "region", selected: gss };
+  }
+  if (REGION_GSS_RE.test(raw)) return { level: "region", selected: raw };
+  if (LAD_RE.test(raw)) return { level: "la", selected: raw };
+  if (GSS_TO_ID[raw] || ID_TO_GSS[raw]) return { level: "nation", selected: GSS_TO_ID[raw] || raw };
+  return { level: "nation", selected: "UK" };
+}
+
+function queryString() {
+  const q = new URLSearchParams();
+  q.set("layer", state.layerId);
+  q.set("year", String(state.year));
+  q.set("geo", encodeGeoParam());
+  q.set("metric", state.metricId || "");
+  return `?${q.toString()}`;
+}
+
+function writeUrl() {
+  if (state.skipHistory) return;
+  const next = `${location.pathname}${queryString()}${location.hash || ""}`;
+  const cur = `${location.pathname}${location.search}${location.hash || ""}`;
+  if (cur !== next) history.replaceState(null, "", next);
+}
+
+function readUrlIntoState() {
+  const q = new URLSearchParams(location.search);
+  const layerId = q.get("layer");
+  if (layerId && state.catalog.layers.some((l) => l.id === layerId)) state.layerId = layerId;
+  const year = Number(q.get("year"));
+  if (Number.isFinite(year) && year >= 1838 && year <= 2030) state.year = year;
+  const parsed = parseGeoParam(q.get("geo"));
+  state.geoLevel = parsed.level;
+  state.selectedGeo = parsed.selected || (parsed.level === "nation" ? "UK" : null);
+  const metricId = q.get("metric");
+  if (metricId) state.metricId = metricId;
 }
 
 function layerHasYear(l, year) {
@@ -202,10 +367,12 @@ function fillSelect(el, options, selected) {
     .join("");
 }
 
-function setLayer(id, keepYear = false) {
+function setLayer(id, keepYear = false, keepMetric = false) {
   state.layerId = id;
   const l = layer();
-  state.metricId = l.defaultMetric || l.metrics[0]?.id || null;
+  if (!keepMetric || !l.metrics?.some((m) => m.id === state.metricId)) {
+    state.metricId = l.defaultMetric || l.metrics[0]?.id || null;
+  }
   const modes = l.vizModes?.length ? l.vizModes : ["absolute"];
   state.viz = modes.includes(state.viz) ? state.viz : modes[0];
   if (!keepYear) {
@@ -214,6 +381,28 @@ function setLayer(id, keepYear = false) {
   } else if (!layerHasYear(l, state.year) && l.years.length) {
     state.year = nearestYear(l, state.year);
   }
+  if (!levelAvailable(l, state.geoLevel) && levelAvailable(l, "nation")) {
+    // keep the user's level even if empty — honesty: dim + "no comparable data"
+  }
+  renderChrome();
+  renderAll();
+  resetUkView();
+}
+
+function setGeoLevel(level) {
+  if (!GEO_LEVELS.some((g) => g.id === level)) return;
+  state.geoLevel = level;
+  if (level === "nation" && (!state.selectedGeo || LAD_RE.test(state.selectedGeo) || REGION_GSS_RE.test(state.selectedGeo))) {
+    state.selectedGeo = "UK";
+  }
+  if (level === "region" && state.selectedGeo && !REGION_GSS_RE.test(state.selectedGeo) && !["W92000004", "S92000003", "N92000002", "W", "S", "NI"].includes(state.selectedGeo)) {
+    if (state.lookups?.ladToItl?.[state.selectedGeo]) state.selectedGeo = state.lookups.ladToItl[state.selectedGeo];
+    else state.selectedGeo = null;
+  }
+  if (level === "la" && state.selectedGeo && !LAD_RE.test(state.selectedGeo)) {
+    state.selectedGeo = null;
+  }
+  bindGeoLayer();
   renderChrome();
   renderAll();
 }
@@ -245,6 +434,7 @@ function renderChrome() {
         composition: "Composition (census groups)",
         pyramid: "Age–sex pyramid",
         panel: "Methods panel",
+        compare: "Side-by-side identity",
       }[v] || v,
   }));
   fillSelect($("viz-mode"), modes, state.viz);
@@ -254,6 +444,28 @@ function renderChrome() {
   $("palette").value = state.palette;
   $("year").value = String(state.year);
   $("year-label").textContent = String(state.year);
+
+  const geoBox = $("geo-levels");
+  geoBox.innerHTML = GEO_LEVELS.map((g) => {
+    const spec = l.mapLevels?.[g.id];
+    const empty = spec && spec.available === false;
+    return `<button type="button" data-geo="${g.id}" aria-pressed="${state.geoLevel === g.id}" ${empty ? `title="${spec.reason || "No comparable data"}"` : ""}>${g.label}${empty ? " · none" : ""}</button>`;
+  }).join("");
+  geoBox.querySelectorAll("button").forEach((btn) => {
+    btn.addEventListener("click", () => setGeoLevel(btn.dataset.geo));
+  });
+  const spec = l.mapLevels?.[state.geoLevel];
+  $("geo-level-note").textContent = spec?.reason || spec?.note || "";
+
+  const ident = $("identity-modes");
+  const box = $("identity-box");
+  box.hidden = false;
+  ident.innerHTML = IDENTITY_MODES.map(
+    (m) => `<button type="button" data-identity="${m.id}" aria-pressed="${l.id === m.id}" title="${m.q}">${m.label}</button>`
+  ).join("");
+  ident.querySelectorAll("button").forEach((btn) => {
+    btn.addEventListener("click", () => setLayer(btn.dataset.identity, true));
+  });
 }
 
 function yearStatusText() {
@@ -281,90 +493,130 @@ function renderYearUi() {
 }
 
 function mapDomain(m) {
-  if (!m) return { min: null, max: null, diverging: false };
+  if (!m && !layer()) return { min: null, max: null, diverging: false };
+  const l = layer();
   const vals = [];
-  for (const id of NATION_IDS) {
-    const v = mapValue(m, id, state.year);
+  for (const f of currentFeatures()) {
+    const id = geoIdFromFeature(f);
+    const v = lookupValue(l, m, id, state.year).value;
     if (v != null) vals.push(v);
   }
-  if (!vals.length) {
+  if (!vals.length && m) {
     for (const pts of Object.values(m.series || {})) {
       const p = pts.find((x) => x.year === state.year);
       if (p) vals.push(p.value);
     }
   }
   if (!vals.length) return { min: null, max: null, diverging: false };
-  const diverging = state.palette === "diverging" || /net/i.test(m.id) || /net/i.test(m.label);
+  const diverging = state.palette === "diverging" || /net/i.test(m?.id) || /net/i.test(m?.label);
   return { min: Math.min(...vals), max: Math.max(...vals), diverging };
 }
 
 function styleFeature(feature) {
   const l = layer();
   const id = geoIdFromFeature(feature);
-  const m = metric();
-  const mapMetric = l.mapMetric ? l.metrics.find((x) => x.id === l.mapMetric) : m;
-  const used = mapMetric || m;
+  const used = usedMetric(l);
   const hasYear = layerHasYear(l, state.year);
-  const mapped = l.mapGeos?.length ? l.mapGeos.includes(id) : false;
-  const v = hasYear && mapped ? mapValue(used, id, state.year) : null;
+  const spec = l.mapLevels?.[state.geoLevel];
+  const levelOk = !spec || spec.available !== false;
+  const v = hasYear && levelOk ? lookupValue(l, used, id, state.year).value : null;
   const { min, max, diverging } = mapDomain(used);
   const fill = v == null ? "var" : colorFor(v, min, max, state.palette, diverging);
+  const selected = aliasesFor(state.selectedGeo).includes(id) || state.selectedGeo === id;
+  const la = state.geoLevel === "la";
   return {
-    color: "#4a443a",
-    weight: state.selectedGeo === id ? 2.4 : 1,
-    fillColor: v == null ? "#c8c1b2" : fill,
-    fillOpacity: v == null ? 0.28 : 0.86,
-    opacity: 0.9,
+    color: selected ? "#1c1917" : "#3a362f",
+    weight: selected ? 2.2 : la ? 0.7 : 1.15,
+    fillColor: v == null ? "#c5c0b4" : fill,
+    fillOpacity: v == null ? 0.2 : 0.78,
+    opacity: 1,
   };
 }
 
 function featureLabel(feature) {
   const id = geoIdFromFeature(feature);
-  const name = feature.properties?.name || NATION_NAMES[id] || id;
+  const name = feature.properties?.name || geoName(id) || id;
   const l = layer();
-  const used = (l.mapMetric && l.metrics.find((x) => x.id === l.mapMetric)) || metric();
-  const v = mapValue(used, id, state.year);
-  const note = mapValueNote(used, id, state.year);
-  const val = v == null ? "no comparable figure" : formatValue(used, v);
-  return `${name} · ${state.year}: ${val}${note ? ` (${note})` : ""}`;
+  const used = usedMetric(l);
+  const found = lookupValue(l, used, id, state.year);
+  const val = found.value == null ? "no comparable data" : formatValue(used, found.value);
+  const question = IDENTITY_MODES.find((m) => m.id === l.id)?.q || used?.label || l.title;
+  return `${name} · ${state.year}\n${question}\n${val}${found.note ? ` (${found.note})` : ""}`;
 }
 
 function updateReadout(geoId) {
   const el = $("map-readout");
   if (!el) return;
   const l = layer();
-  const used = (l.mapMetric && l.metrics.find((x) => x.id === l.mapMetric)) || metric();
-  const rows = NATION_IDS.map((id) => {
-    const v = used ? mapValue(used, id, state.year) : null;
-    const mark = id === geoId ? "←" : "";
-    return `${NATION_NAMES[id]}: ${used ? formatValue(used, v) : "—"}${mark ? ` ${mark}` : ""}`;
-  });
+  const used = usedMetric(l);
+  const features = currentFeatures();
+  const pick = geoId || state.selectedGeo;
+  const rows = [];
+  if (state.geoLevel === "nation") {
+    for (const id of NATION_IDS) {
+      const v = used ? lookupValue(l, used, id, state.year).value : null;
+      const mark = aliasesFor(pick).includes(id) ? "←" : "";
+      rows.push(`${NATION_NAMES[id]}: ${used ? formatValue(used, v) : "—"} ${mark}`);
+    }
+  } else if (pick) {
+    const found = lookupValue(l, used, pick, state.year);
+    rows.push(`${geoName(pick)}: ${used ? formatValue(used, found.value) : "—"}`);
+    if (found.note) rows.push(found.note);
+  } else {
+    const withVal = features.filter((f) => lookupValue(l, used, geoIdFromFeature(f), state.year).value != null).length;
+    rows.push(`${withVal} of ${features.length} areas have a published figure at this level.`);
+  }
   const title = used ? `${used.label} · ${state.year}` : l.title;
-  el.innerHTML = `<strong>${title}</strong>${rows.map((r) => `<div>${r}</div>`).join("")}`;
+  const level = GEO_LEVELS.find((g) => g.id === state.geoLevel)?.label || state.geoLevel;
+  let extra = "";
+  if (l.id === "p2-identity-compare") {
+    const place = pick || (state.geoLevel === "nation" ? "UK" : null);
+    const cob = identityValue("p1-cob-stock", "share-non-uk", place || "UK", state.year);
+    const nat = identityValue("p1-nationality-stock", "share-non-british", place || "UK", state.year);
+    const eth = identityValue("p1-ethnicity-census", "pct-white", place || "EW", state.year);
+    extra = `<div class="cite">Birthplace non-UK-born: ${formatValue(cob.format, cob.value)}</div>
+      <div class="cite">Nationality non-British: ${formatValue(nat.format, nat.value)}</div>
+      <div class="cite">Ethnic group White (high-level): ${formatValue(eth.format, eth.value)}</div>`;
+  }
+  el.innerHTML = `<strong>${title}</strong><div class="cite">${level}</div>${rows.map((r) => `<div>${r}</div>`).join("")}${extra}`;
 }
 
 function bannerText() {
   const l = layer();
-  if (l.noMapReason && (!l.mapGeos || !l.mapGeos.length)) return l.noMapReason;
+  const spec = l.mapLevels?.[state.geoLevel];
+  if (spec && spec.available === false) {
+    return spec.reason || l.noMapReason || "No comparable data at this geography.";
+  }
+  if (l.noMapReason && spec?.available === false) return l.noMapReason;
   if (!layerHasYear(l, state.year)) {
     return l.noMapYearsOutside || "No comparable published figure for this year in the extract. The map is dimmed.";
   }
-  if (l.id === "p1-cob-stock" && state.year === 2011) {
-    return "2011 nation totals are not in the APS extract. The area table lists E&W local-authority census percentages; the map stays dimmed.";
+  const used = usedMetric(l);
+  const n = currentFeatures().filter((f) => lookupValue(l, used, geoIdFromFeature(f), state.year).value != null).length;
+  if (!n) {
+    return spec?.note
+      ? `${spec.note} No comparable data for ${state.year} at ${state.geoLevel} level.`
+      : `No comparable data for ${state.year} at ${state.geoLevel} level. The map is dimmed.`;
   }
-  if (l.id === "p1-ethnicity-census" || l.id === "p1-religion-census") {
+  if (l.id === "p1-cob-stock" && state.year === 2011 && state.geoLevel === "nation") {
+    return "2011 nation totals are not in the APS extract. Switch to local authorities for the 2011 E&W census percentages.";
+  }
+  if ((l.id === "p1-ethnicity-census" || l.id === "p1-religion-census") && state.geoLevel === "nation") {
     return "Choropleth uses the England & Wales published percentage on both England and Wales. Scotland and Northern Ireland are not in this extract.";
   }
   if (l.id === "p1-age-sex") {
-    return "Pyramids are mid-2025 counts for England and England & Wales (and English regions in the table). Wales is not separately pyramid-mapped from this file.";
+    return "Pyramids are mid-2025 counts. Wales, Scotland and Northern Ireland are not separately pyramid-mapped from this file.";
   }
-  return "";
+  if (l.id === "p2-identity-compare") {
+    return "Map colour is the selected identity series only. The panel below shows country of birth, nationality, and ethnic group side by side for the same place.";
+  }
+  return spec?.note || "";
 }
 
 function renderLegend(min, max, unit, diverging) {
   const el = $("legend");
   if (min == null || max == null) {
-    el.innerHTML = `<strong>Map</strong><div class="cite">No nation values for this year.</div>`;
+    el.innerHTML = `<strong>Map</strong><div class="cite">No comparable data at this geography for this year.</div>`;
     return;
   }
   const stops = PALETTES[state.palette] || PALETTES.ink;
@@ -392,14 +644,36 @@ function renderMap() {
   updateReadout(state.selectedGeo);
 }
 
+function geoAttribution() {
+  if (state.geoLevel === "region") {
+    return '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · ITL1: ONS Open Geography (Jan 2021 BUC) OGL';
+  }
+  if (state.geoLevel === "la") {
+    return '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · LAD: ONS Open Geography (Dec 2021 BUC) OGL';
+  }
+  return '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · nation polygons: Natural Earth';
+}
+
 function bindMap() {
   state.map = L.map("map", { scrollWheelZoom: true, attributionControl: true }).setView([54.6, -2.4], 5.2);
   L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    attribution:
-      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · nation polygons: Natural Earth',
+    attribution: geoAttribution(),
     maxZoom: 12,
   }).addTo(state.map);
-  state.geoLayer = L.geoJSON(state.geo, {
+  bindGeoLayer();
+  setTimeout(() => state.map.invalidateSize(), 80);
+}
+
+function bindGeoLayer() {
+  if (!state.map) return;
+  if (state.geoLayer) {
+    state.map.removeLayer(state.geoLayer);
+    state.geoLayer = null;
+  }
+  const fc = state.geos[state.geoLevel];
+  if (!fc) return;
+  state.map.attributionControl?.setPrefix(false);
+  state.geoLayer = L.geoJSON(fc, {
     style: (f) => styleFeature(f),
     onEachFeature: (feature, lyr) => {
       const refreshTip = () => featureLabel(feature);
@@ -410,6 +684,7 @@ function bindMap() {
         renderMap();
         renderChart();
         renderNotes();
+        writeUrl();
       });
       lyr.on("mouseover", () => {
         lyr.setStyle({ weight: 2.4 });
@@ -421,6 +696,12 @@ function bindMap() {
       });
     },
   }).addTo(state.map);
+  resetUkView();
+}
+
+function resetUkView() {
+  if (!state.map) return;
+  state.map.setView([54.6, -2.2], state.geoLevel === "la" ? 5.6 : 5.4);
 }
 
 function seriesForChart(l, m) {
@@ -453,15 +734,17 @@ function seriesForChart(l, m) {
   }
   const geos = Object.keys(m.series);
   const prefer = [];
-  if (geos.includes(state.selectedGeo)) prefer.push(state.selectedGeo);
-  for (const g of ["UK", "EW", "GB", "E", "W", "S", "NI"]) {
+  for (const id of aliasesFor(state.selectedGeo)) {
+    if (geos.includes(id) && !prefer.includes(id)) prefer.push(id);
+  }
+  for (const g of ["UK", "EW", "GB", "E", "W", "S", "NI", "E12000007"]) {
     if (geos.includes(g) && !prefer.includes(g)) prefer.push(g);
   }
   const take = prefer.slice(0, state.viz === "absolute" || state.viz === "share" ? 4 : 3);
   if (!take.length) take.push(geos[0]);
   return take.filter(Boolean).map((g) => ({
     id: g,
-    label: NATION_NAMES[g] || state.catalog.regions.find((r) => r.id === g)?.name || g,
+    label: geoName(g) || g,
     format: m.format,
     unit: m.unit,
     points: m.series[g] || [],
@@ -646,6 +929,59 @@ function drawComposition(canvas, groups) {
   return true;
 }
 
+function identityValue(layerId, metricId, geoId, year) {
+  const l = state.catalog.layers.find((x) => x.id === layerId);
+  if (!l) return { value: null, note: "layer missing", label: metricId };
+  const m = l.metrics.find((x) => x.id === metricId) || l.metrics[0];
+  const found = lookupValue(l, m, geoId, year);
+  return { ...found, label: m?.label, format: m, layer: l };
+}
+
+function identityCompareHtml() {
+  const geoId = state.selectedGeo || (state.geoLevel === "nation" ? "UK" : null);
+  const year = state.year;
+  const place = geoName(geoId) || (state.geoLevel === "la" ? "Select a local authority" : state.geoLevel === "region" ? "Select an ITL1 region" : "United Kingdom");
+  const cards = [
+    {
+      title: "Country of birth",
+      q: "Where was this person born?",
+      not: "Not nationality. Not ethnic group. Not “native”.",
+      hit: identityValue("p1-cob-stock", "share-non-uk", geoId || "UK", year),
+      unit: "non-UK-born share",
+    },
+    {
+      title: "Nationality",
+      q: "What citizenship did they report?",
+      not: "Not country of birth. A British national may be born abroad.",
+      hit: identityValue("p1-nationality-stock", "share-non-british", geoId || "UK", year),
+      unit: "non-British nationality share",
+    },
+    {
+      title: "Ethnic group",
+      q: "Which ethnic group did they identify with?",
+      not: "Not UK-born. ‘White’ includes White British and Other White.",
+      hit: identityValue("p1-ethnicity-census", "pct-white", geoId || "EW", year),
+      unit: "White high-level share",
+    },
+  ];
+  const cells = cards
+    .map((c) => {
+      const val = c.hit.value == null ? "no comparable data" : formatValue(c.hit.format, c.hit.value);
+      return `<article class="compare-card">
+        <h3>${c.title}</h3>
+        <p class="q">${c.q}</p>
+        <div class="big">${val}</div>
+        <p class="cite">${c.unit} · ${year} · ${place}</p>
+        <p class="cite">${c.hit.note || c.not}</p>
+      </article>`;
+    })
+    .join("");
+  return `<div>
+    <p><strong>Three published questions, one place.</strong> These percentages are not interchangeable and must not be added or labelled “native”.</p>
+    <div class="compare-grid">${cells}</div>
+  </div>`;
+}
+
 function fiscalHtml(l) {
   const rows = l.extras?.macStatic || [];
   const sens = l.extras?.macSensitivities || [];
@@ -697,6 +1033,13 @@ function renderChart() {
     canvas.hidden = true;
     html.hidden = false;
     html.innerHTML = fiscalHtml(l);
+    return;
+  }
+
+  if (state.viz === "compare" || l.id === "p2-identity-compare") {
+    canvas.hidden = true;
+    html.hidden = false;
+    html.innerHTML = identityCompareHtml();
     return;
   }
 
@@ -755,12 +1098,19 @@ function areaRows(l) {
     for (const g of geos) {
       const p = pointAt(m.series, g, state.year);
       if (!p) continue;
-      const name = NATION_NAMES[g] || state.catalog.regions.find((r) => r.id === g)?.name || g;
+      const name = geoName(g) || g;
       rows.push({ code: g, name, value: p.value, note: p.flag || p.period || "" });
     }
   }
-  const las = l.extras?.las || [];
-  if (las.length && (state.year === 2011 || state.year === 2021 || l.id === "p1-ethnicity-census" || l.id === "p1-religion-census")) {
+  const las = l.extras?.las || l.extras?.cobLas || [];
+  const apsLas = l.extras?.apsLas || l.extras?.natApsLas || [];
+  if (l.id === "p1-nationality-stock" && state.year === 2021) {
+    for (const r of apsLas) {
+      const value = m?.id === "british" ? r.british : m?.id === "non-british" ? r.nonBritish : r.shareNonBritish;
+      if (value != null) rows.push({ code: r.code, name: r.name, value, note: "APS YE Jun 2021 nationality (not country of birth)" });
+    }
+  }
+  if (las.length && (state.year === 2011 || state.year === 2021 || l.id === "p1-ethnicity-census" || l.id === "p1-religion-census" || l.id === "p2-identity-compare")) {
     for (const r of las) {
       let value = null;
       let note = "local authority";
@@ -835,6 +1185,7 @@ function renderAll() {
   renderMap();
   renderChart();
   renderNotes();
+  writeUrl();
 }
 
 function togglePlay() {
@@ -865,6 +1216,7 @@ function bindUi() {
   $("viz-mode").addEventListener("change", (e) => {
     state.viz = e.target.value;
     renderChart();
+    writeUrl();
   });
   $("metric").addEventListener("change", (e) => {
     state.metricId = e.target.value;
@@ -875,6 +1227,27 @@ function bindUi() {
     renderAll();
   });
   $("play").addEventListener("click", togglePlay);
+  $("btn-share").addEventListener("click", async () => {
+    writeUrl();
+    const url = location.href;
+    try {
+      await navigator.clipboard.writeText(url);
+      $("btn-share").textContent = "Copied";
+      setTimeout(() => {
+        $("btn-share").textContent = "Copy link";
+      }, 1600);
+    } catch {
+      window.prompt("Copy this link", url);
+    }
+  });
+  window.addEventListener("popstate", () => {
+    state.skipHistory = true;
+    readUrlIntoState();
+    bindGeoLayer();
+    renderChrome();
+    renderAll();
+    state.skipHistory = false;
+  });
   document.querySelectorAll(".tabs button").forEach((btn) => {
     btn.addEventListener("click", () => {
       document.querySelectorAll(".tabs button").forEach((b) => b.setAttribute("aria-selected", b === btn ? "true" : "false"));
@@ -900,19 +1273,29 @@ function bindUi() {
   window.addEventListener("resize", () => renderChart());
 }
 
+async function loadJson(url, label) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`${label} missing — run npm run build`);
+  return r.json();
+}
+
 async function main() {
-  const [catalog, geo] = await Promise.all([
-    fetch("./data/catalog.json").then((r) => {
-      if (!r.ok) throw new Error("catalog.json missing — run npm run build");
-      return r.json();
-    }),
-    fetch("./geo/uk-nations.geojson").then((r) => r.json()),
+  const [catalog, nation, region, la, lookups] = await Promise.all([
+    loadJson("./data/catalog.json", "catalog.json"),
+    loadJson("./geo/uk-nations.geojson", "uk-nations.geojson"),
+    loadJson("./geo/uk-itl1.geojson", "uk-itl1.geojson"),
+    loadJson("./geo/uk-lad.geojson", "uk-lad.geojson"),
+    loadJson("./geo/lookups.json", "lookups.json"),
   ]);
+  if (region.features?.length !== 12) throw new Error("ITL1 GeoJSON does not contain 12 official regions");
+  if ((la.features?.length || 0) < 360) throw new Error("LAD GeoJSON is incomplete");
   state.catalog = catalog;
-  state.geo = geo;
+  state.geos = { nation, region, la };
+  state.lookups = lookups;
+  readUrlIntoState();
   bindUi();
   bindMap();
-  setLayer(state.layerId);
+  setLayer(state.layerId, true, true);
   renderSourcesPage();
 }
 

@@ -28,8 +28,9 @@ const status = {
   workflow: "https://github.com/bushellsblower-maker/migration/actions/workflows/refresh.yml",
   workflowRun: runUrl,
   note: success
-    ? "Last refresh finished without a critical download or SCHEMA ERROR."
-    : "Last refresh failed. The published catalog was not overwritten with invented figures. See the workflow run.",
+    ? "Last refresh finished without a critical download or SCHEMA ERROR. Checksum pins and source-health.json were updated."
+    : "Last refresh failed. The published catalog was not overwritten with invented figures. Source health records last OK vs last fail per feed. See the workflow run.",
+  sourceHealth: "./source-health.json",
 };
 
 fs.mkdirSync(path.dirname(DEST), { recursive: true });

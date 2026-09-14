@@ -1,5 +1,5 @@
 /**
- * Phase 2 explorer. Renders only values present in catalog.json.
+ * Phase 6 explorer. Renders only values present in catalog.json.
  * Never interpolates missing years or places. Never invents geometries.
  */
 const GSS_TO_ID = {
@@ -112,6 +112,7 @@ const state = {
   palette: "teal",
   year: 2021,
   compareYear: null,
+  compareGeo: null,
   geoLevel: "nation",
   playing: false,
   playTimer: null,
@@ -318,6 +319,7 @@ function queryString() {
   q.set("geo", encodeGeoParam());
   q.set("metric", state.metricId || "");
   if (state.compareYear) q.set("year2", String(state.compareYear));
+  if (state.compareGeo) q.set("geo2", state.compareGeo);
   return `?${q.toString()}`;
 }
 
@@ -341,6 +343,8 @@ function readUrlIntoState() {
   state.selectedGeo = parsed.selected || (parsed.level === "nation" ? "UK" : null);
   const metricId = q.get("metric");
   if (metricId) state.metricId = metricId;
+  const geo2 = q.get("geo2");
+  state.compareGeo = geo2 ? parseGeoParam(geo2).selected || geo2 : null;
 }
 
 function layerHasYear(l, year) {
@@ -486,6 +490,10 @@ function setGeoLevel(level) {
   if (level === "la" && state.selectedGeo && !LAD_RE.test(state.selectedGeo)) {
     state.selectedGeo = null;
   }
+  if (state.compareGeo) {
+    const parsed = parseGeoParam(state.compareGeo);
+    if (parsed.level !== level) state.compareGeo = null;
+  }
   bindGeoLayer();
   renderChrome();
   renderAll();
@@ -538,6 +546,7 @@ function renderChrome() {
     ticks.innerHTML = marks.map((y) => `<span>${y}</span>`).join("");
   }
   renderCompareYearControl(l);
+  renderCompareAreaControl();
 
   const geoBox = $("geo-levels");
   geoBox.innerHTML = GEO_LEVELS.map((g) => {
@@ -568,6 +577,32 @@ function renderChrome() {
   }
 }
 
+function renderRefreshBadge() {
+  const el = $("refresh-badge");
+  if (!el) return;
+  const r = state.refreshStatus || {};
+  const h = state.sourceHealth || {};
+  const failed = r.ok === false || h.ok === false;
+  document.body.classList.toggle("refresh-failed", failed);
+  if (failed) {
+    const when = (r.lastFailure || h.lastFailure || "").toString().slice(0, 10);
+    const href = r.workflowRun || r.workflow || h.workflow || "#sources";
+    el.hidden = false;
+    el.className = "site-badge fail";
+    el.innerHTML = `Last refresh failed${when ? ` ${when}` : ""}. Showing last good catalog. <a href="${href}" style="color:inherit;text-decoration:underline">Details</a>`;
+    return;
+  }
+  if (r.ok === true) {
+    el.hidden = false;
+    el.className = "site-badge ok";
+    el.textContent = `Last refresh ok ${(r.lastSuccess || "").toString().slice(0, 10)}`;
+    return;
+  }
+  el.hidden = false;
+  el.className = "site-badge pending";
+  el.textContent = "Scheduled refresh not yet recorded — catalog is the last ingest.";
+}
+
 function renderDataStamp() {
   const el = $("data-stamp");
   if (!el || !state.catalog) return;
@@ -583,6 +618,7 @@ function renderDataStamp() {
       : "";
   const refreshBit = lastOk ? ` · last successful refresh ${lastOk}` : " · scheduled refresh not yet recorded";
   el.innerHTML = `Data as of ${asOf || "unknown"} · catalog ${built || "—"}${refreshBit}${warn}${fail} · <a href="#sources">OGL attribution</a>`;
+  renderRefreshBadge();
 }
 
 function renderCompareYearControl(l) {
@@ -605,6 +641,50 @@ function renderCompareYearControl(l) {
     state.compareYear = Number.isFinite(v) ? v : null;
     renderChart();
     renderNotes();
+    writeUrl();
+  });
+}
+
+function areaOptionsForLevel() {
+  const features = currentFeatures();
+  if (state.geoLevel === "nation") {
+    return [
+      { id: "UK", name: "United Kingdom" },
+      { id: "E", name: "England" },
+      { id: "W", name: "Wales" },
+      { id: "S", name: "Scotland" },
+      { id: "NI", name: "Northern Ireland" },
+    ];
+  }
+  return features
+    .map((f) => ({ id: geoIdFromFeature(f), name: f.properties?.name || geoIdFromFeature(f) }))
+    .filter((x) => x.id)
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+function renderCompareAreaControl() {
+  const host = $("compare-area-box");
+  if (!host) return;
+  const opts = areaOptionsForLevel();
+  const current = state.selectedGeo || (state.geoLevel === "nation" ? "UK" : "");
+  const sel = (id, value) =>
+    opts
+      .map((o) => `<option value="${o.id}" ${o.id === value ? "selected" : ""}>${o.name}</option>`)
+      .join("");
+  host.innerHTML = `<label>Compare two areas
+    <select id="compare-area-a">${sel("a", current)}</select>
+    <select id="compare-area-b"><option value="">No second area</option>${sel("b", state.compareGeo)}</select>
+    <span class="cite">Side-by-side published figures only. Shift-click the map to set the second area. Nothing is interpolated.</span>
+  </label>`;
+  $("compare-area-a")?.addEventListener("change", (e) => {
+    state.selectedGeo = e.target.value || (state.geoLevel === "nation" ? "UK" : null);
+    renderAll();
+  });
+  $("compare-area-b")?.addEventListener("change", (e) => {
+    state.compareGeo = e.target.value || null;
+    renderChart();
+    renderNotes();
+    renderMap();
     writeUrl();
   });
 }
@@ -652,6 +732,17 @@ function renderYearUi() {
   $("year").classList.toggle("dim", st.dim);
   $("play").setAttribute("aria-pressed", state.playing ? "true" : "false");
   $("play").textContent = state.playing ? "Pause" : "Play";
+  const ticks = $("year-ticks");
+  if (ticks) {
+    const l = layer();
+    const marks = [1940, 1964, 1991, 2012, 2026];
+    for (const b of l?.breaks || []) {
+      if (!marks.includes(b.year) && b.year >= 1940 && b.year <= 2026) marks.push(b.year);
+    }
+    marks.sort((a, b) => a - b);
+    const breakYears = new Set((l?.breaks || []).map((b) => b.year));
+    ticks.innerHTML = marks.map((y) => `<span class="${breakYears.has(y) ? "break-pin" : ""}" title="${(l?.breaks || []).find((b) => b.year === y)?.label || ""}">${y}${breakYears.has(y) ? " ▾" : ""}</span>`).join("");
+  }
 }
 
 function mapDomain(m) {
@@ -685,10 +776,11 @@ function styleFeature(feature) {
   const { min, max, diverging } = mapDomain(used);
   const fill = v == null ? "var" : colorFor(v, min, max, state.palette, diverging);
   const selected = aliasesFor(state.selectedGeo).includes(id) || state.selectedGeo === id;
+  const compared = state.compareGeo && (aliasesFor(state.compareGeo).includes(id) || state.compareGeo === id);
   const la = state.geoLevel === "la";
   return {
-    color: selected ? "#1c1917" : "#3a362f",
-    weight: selected ? 2.2 : la ? 0.7 : 1.15,
+    color: selected ? "#1c1917" : compared ? "#8a3d1c" : "#3a362f",
+    weight: selected ? 2.2 : compared ? 2 : la ? 0.7 : 1.15,
     fillColor: v == null ? "#c5c0b4" : fill,
     fillOpacity: v == null ? 0.2 : 0.78,
     opacity: 1,
@@ -846,8 +938,11 @@ function bindGeoLayer() {
       const refreshTip = () => featureLabel(feature);
       lyr.bindTooltip(refreshTip, { sticky: true, opacity: 0.95, className: "map-tip" });
       lyr.bindPopup(refreshTip);
-      lyr.on("click", () => {
-        state.selectedGeo = geoIdFromFeature(feature);
+      lyr.on("click", (ev) => {
+        const id = geoIdFromFeature(feature);
+        if (ev.originalEvent?.shiftKey) state.compareGeo = id;
+        else state.selectedGeo = id;
+        renderCompareAreaControl();
         renderMap();
         renderChart();
         renderNotes();
@@ -925,6 +1020,14 @@ function seriesForChart(l, m) {
     if (geos.includes(g) && !prefer.includes(g)) prefer.push(g);
   }
   const take = prefer.slice(0, state.viz === "absolute" || state.viz === "share" ? 4 : 3);
+  if (state.compareGeo) {
+    for (const id of aliasesFor(state.compareGeo)) {
+      if (geos.includes(id) && !take.includes(id)) {
+        take.push(id);
+        break;
+      }
+    }
+  }
   if (!take.length) take.push(geos[0]);
   return take.filter(Boolean).map((g) => ({
     id: g,
@@ -951,7 +1054,7 @@ function drawLineChart(canvas, series, breaks) {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, cssW, cssH);
 
-  const pad = { l: 58, r: 16, t: series.length > 3 ? 36 : 18, b: 28 };
+  const pad = { l: 58, r: 16, t: series.length > 3 || (breaks || []).length ? 36 : 18, b: 28 };
   const all = series.flatMap((s) => s.points);
   if (!all.length) return false;
   const xs = all.map((p) => p.year);
@@ -1001,6 +1104,16 @@ function drawLineChart(canvas, series, breaks) {
     ctx.moveTo(x, pad.t);
     ctx.lineTo(x, cssH - pad.b);
     ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = "#8a6910";
+    ctx.beginPath();
+    ctx.moveTo(x, pad.t - 1);
+    ctx.lineTo(x - 4, pad.t - 8);
+    ctx.lineTo(x + 4, pad.t - 8);
+    ctx.closePath();
+    ctx.fill();
+    ctx.font = "9px IBM Plex Sans, system-ui, sans-serif";
+    ctx.fillText(String(br.year), x + 5, pad.t - 2);
     ctx.restore();
   }
 
@@ -1310,6 +1423,7 @@ function drawFiscalContext() {
 
 function cobAgeBandRows(pack, caption) {
   if (!pack?.bands?.length) return "";
+  const sex = pack.sex && pack.sex !== "persons" ? ` · ${pack.sex}` : " · persons";
   const rows = pack.bands
     .map((b) => {
       const t = b.total || (b.uk || 0) + (b.nonUk || 0);
@@ -1317,7 +1431,7 @@ function cobAgeBandRows(pack, caption) {
       return `<tr><td>${b.band}</td><td class="num">${formatCount(b.uk)}</td><td class="num">${formatCount(b.nonUk)}</td><td class="num">${share == null ? "—" : `${share.toFixed(1)}%`}</td></tr>`;
     })
     .join("");
-  return `<p class="cite">${pack.source || ""} · ${pack.geography || ""} · ${pack.year}. Age by country of birth, not a sex split. Not a MYE pyramid.</p>
+  return `<p class="cite">${pack.source || ""} · ${pack.geography || ""} · ${pack.year}${sex}. Not a MYE pyramid.</p>
     <table><caption>${caption}</caption>
     <thead><tr><th>Age</th><th>UK-born</th><th>Non-UK-born</th><th>Non-UK-born share</th></tr></thead>
     <tbody>${rows}</tbody></table>`;
@@ -1345,6 +1459,16 @@ function cobAgeTablesHtml(l) {
         `${where} Census 2021 RM011 — usual residents <em>by age, persons</em> (not a male/female split). UK-born = published ‘Europe: United Kingdom’.`
       )
     );
+    const sex = l.extras?.cobAgeSex;
+    if (sex?.female?.bands?.length && sex?.male?.bands?.length && (nation === "EW" || nation === "E" || nation === "W" || nation === "UK" || !nation)) {
+      parts.push(
+        `<p class="cite">Official E&amp;W sex split is CT21_0433 (England &amp; Wales as a whole, not local authorities). UK-born is the four UK country columns. Channel Islands / Isle of Man are not added. RM011 persons and CT21_0433 are not spliced.</p>`
+      );
+      parts.push(cobAgeBandRows(sex.female, "England &amp; Wales Census 2021 CT21_0433 — female usual residents by age and country of birth"));
+      parts.push(cobAgeBandRows(sex.male, "England &amp; Wales Census 2021 CT21_0433 — male usual residents by age and country of birth"));
+    } else if (!sex && (nation === "EW" || nation === "E" || nation === "W") ) {
+      parts.push(`<p class="cite">No official RM011 sex dimension. CT21_0433 was not ingested — no male/female split is invented.</p>`);
+    }
   }
   if (showScot) {
     parts.push(
@@ -1459,6 +1583,27 @@ function renderChart() {
     canvas.hidden = true;
     empty.hidden = false;
   }
+  const compareBlock = twoAreaCompareHtml(l, m);
+  if (compareBlock) {
+    html.hidden = false;
+    html.innerHTML = compareBlock;
+  }
+}
+
+function twoAreaCompareHtml(l, m) {
+  if (!state.compareGeo || !m) return "";
+  const a = state.selectedGeo || (state.geoLevel === "nation" ? "UK" : null);
+  if (!a) return "";
+  const year = state.year;
+  const left = lookupValue(l, m, a, year);
+  const right = lookupValue(l, m, state.compareGeo, year);
+  const year2 = state.compareYear;
+  const left2 = year2 ? lookupValue(l, m, a, year2) : null;
+  const right2 = year2 ? lookupValue(l, m, state.compareGeo, year2) : null;
+  return `<div class="area-compare">
+    <article><h3>${geoName(a) || a} · ${year}</h3><p class="big">${formatValue(m, left.value)}</p><p class="cite">${left.note || m.label}</p>${year2 ? `<p class="cite">${year2}: ${formatValue(m, left2.value)}</p>` : ""}</article>
+    <article><h3>${geoName(state.compareGeo) || state.compareGeo} · ${year}</h3><p class="big">${formatValue(m, right.value)}</p><p class="cite">${right.note || m.label}</p>${year2 ? `<p class="cite">${year2}: ${formatValue(m, right2.value)}</p>` : ""}</article>
+  </div><p class="cite">Two published areas, same layer and year. Difference is not shown when either side is missing — nothing is interpolated.</p>`;
 }
 
 function areaRows(l) {
@@ -1689,7 +1834,67 @@ function renderSourcesPage() {
       ? `<h3>Downloaded extracts (provenance)</h3><table><thead><tr><th>Source</th><th>Status</th><th>Role</th><th>SHA-256</th></tr></thead><tbody>${files}</tbody></table>`
       : ""
   }
+  ${sourceHealthHtml()}
+  ${phase6GapsHtml()}
   <p>Generated catalog: ${state.catalog.generated}. Principles: ${(state.catalog.principles || []).join(" ")}</p>`;
+}
+
+function sourceHealthHtml() {
+  const h = state.sourceHealth || {};
+  const feeds = h.feeds || [];
+  if (!feeds.length) {
+    return `<h3>Source health</h3><p class="cite">No source-health.json yet. Run <code>npm run refresh</code> or <code>npm run health</code>.</p>`;
+  }
+  const rows = feeds
+    .filter((f) => f.critical || f.status !== "ok")
+    .map((f) => {
+      const cls = f.status === "missing" || f.status === "hash-changed" ? "health-fail" : f.status === "ok" ? "health-ok" : "";
+      return `<tr><td>${f.id}<div class="cite">${f.dest}</div></td><td class="${cls}">${f.status}</td><td>${f.lastOk ? String(f.lastOk).slice(0, 19) : "—"}</td><td>${f.lastFail ? String(f.lastFail).slice(0, 19) : "—"}</td><td class="cite">${f.hashMatch == null ? "unpinned" : f.hashMatch ? "match" : "changed"}</td></tr>`;
+    })
+    .join("");
+  const uv = h.uvBulk || {};
+  return `<h3>Source health</h3>
+    <p>Last attempt ${h.lastAttempt ? String(h.lastAttempt).slice(0, 19) : "—"}. Last OK ${h.lastSuccess ? String(h.lastSuccess).slice(0, 19) : "not recorded"}. Last fail ${h.lastFailure ? String(h.lastFailure).slice(0, 19) : "none"}. Critical missing: ${h.missingCritical ?? 0}. Hash changes vs pin: ${h.hashMismatches ?? 0}.</p>
+    <p class="cite">Scotland UV bulk: <strong>${uv.status || "unknown"}</strong>${uv.blocker ? ` — ${uv.blocker}` : ""}</p>
+    <table><thead><tr><th>Feed</th><th>Status</th><th>Last OK</th><th>Last fail</th><th>Checksum</th></tr></thead><tbody>${rows}</tbody></table>
+    <p class="cite">Full list: <a href="./data/source-health.json">public/data/source-health.json</a>. Pins: <code>data/checksums.json</code>.</p>`;
+}
+
+function phase6GapsHtml() {
+  const g = state.catalog.phase6 || {};
+  const row = (label, obj) =>
+    `<tr><td>${label}</td><td>${obj?.status || "—"}</td><td>${obj?.source || obj?.blocker || obj?.note || ""}</td></tr>`;
+  return `<h3>Phase 6 — available vs blocked</h3>
+    <table><thead><tr><th>Item</th><th>Status</th><th>Note</th></tr></thead><tbody>
+    ${row("Scotland UV201/UV204/UV205 bulk", g.scotlandUvBulk)}
+    ${row("E&W age × birthplace sex split", g.ewCobAgeSex)}
+    ${row("Scotland age × birthplace sex split", g.scotlandCobAgeSex)}
+    ${row("NI age × birthplace sex split", g.niCobAgeSex)}
+    </tbody></table>`;
+}
+
+function printOnePager() {
+  const l = layer();
+  const m = usedMetric(l);
+  const place = state.selectedGeo || (state.geoLevel === "nation" ? "UK" : state.geoLevel);
+  const found = m ? lookupValue(l, m, place, state.year) : { value: null, note: "" };
+  const compare = state.compareGeo && m ? lookupValue(l, m, state.compareGeo, state.year) : null;
+  const sheet = $("print-sheet");
+  if (!sheet) {
+    window.print();
+    return;
+  }
+  sheet.hidden = false;
+  sheet.innerHTML = `<h2>Migration one-pager</h2>
+    <p><strong>${l.title}</strong> · ${state.year}${state.compareYear ? ` vs ${state.compareYear}` : ""} · ${geoName(place) || place}</p>
+    <p class="big">${m ? `${m.label}: ${formatValue(m, found.value)}` : "No mapped series"}</p>
+    <p class="cite">${found.note || ""} ${sourceCite(l)}</p>
+    ${compare ? `<p>${geoName(state.compareGeo)}: ${formatValue(m, compare.value)}</p>` : ""}
+    <h3>How to read</h3>
+    <ul>${(l.notes || []).slice(0, 4).map((n) => `<li>${n}</li>`).join("")}</ul>
+    ${(l.breaks || []).length ? `<h3>Method-break years</h3><ul>${l.breaks.map((b) => `<li>${b.year} — ${b.label}</li>`).join("")}</ul>` : ""}
+    <p class="cite">Printed from published catalog rows only. Detections are not an illegal-entry stock. No single net fiscal cost.</p>`;
+  window.print();
 }
 
 function renderAll() {
@@ -1746,6 +1951,7 @@ function bindUi() {
   $("btn-export-png")?.addEventListener("click", exportChartPng);
   $("btn-export-csv-chart")?.addEventListener("click", exportViewCsv);
   $("btn-export-png-chart")?.addEventListener("click", exportChartPng);
+  $("btn-print")?.addEventListener("click", printOnePager);
   renderTours();
   $("btn-share").addEventListener("click", async () => {
     writeUrl();
@@ -1800,15 +2006,17 @@ async function loadJson(url, label) {
 }
 
 async function main() {
-  const [catalog, nation, region, la, lookups, refreshStatus] = await Promise.all([
+  const [catalog, nation, region, la, lookups, refreshStatus, sourceHealth] = await Promise.all([
     loadJson("./data/catalog.json", "catalog.json"),
     loadJson("./geo/uk-nations.geojson", "uk-nations.geojson"),
     loadJson("./geo/uk-itl1.geojson", "uk-itl1.geojson"),
     loadJson("./geo/uk-lad.geojson", "uk-lad.geojson"),
     loadJson("./geo/lookups.json", "lookups.json"),
     fetch("./data/refresh-status.json").then((r) => (r.ok ? r.json() : {})).catch(() => ({})),
+    fetch("./data/source-health.json").then((r) => (r.ok ? r.json() : {})).catch(() => ({})),
   ]);
   state.refreshStatus = refreshStatus || {};
+  state.sourceHealth = sourceHealth || {};
   if (region.features?.length !== 12) throw new Error("ITL1 GeoJSON does not contain 12 official regions");
   if ((la.features?.length || 0) < 360) throw new Error("LAD GeoJSON is incomplete");
   state.catalog = catalog;

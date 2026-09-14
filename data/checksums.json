@@ -1,0 +1,224 @@
+{
+  "files": {
+    "ons-pop-csv": {
+      "dest": "ons/pop.csv",
+      "sha256": "54831af76fd125cf6bcd168648350fb306789bd3ef14920784abe14d880983af",
+      "bytes": 5857,
+      "critical": true,
+      "stableUrl": true
+    },
+    "ons-ukpop": {
+      "dest": "ons/ukpop.csv",
+      "sha256": "92ea7d77afdcf4a8af633f7df5b232f33d76aacb12b1969622f34069223aaa57",
+      "bytes": 1913,
+      "critical": false,
+      "stableUrl": true
+    },
+    "ons-ew-long": {
+      "dest": "ons/ew-pop-1838-2025.xlsx",
+      "sha256": "715635a653d6471de5e4fd6059cf552855c580ed7af856a3ee4cc1e8e1cbaf7f",
+      "bytes": 442349,
+      "critical": true,
+      "stableUrl": false
+    },
+    "ons-regional": {
+      "dest": "ons/regional-pop-1971-2023.xlsx",
+      "sha256": "506e11c6642145e64aa7a9653016164b7f2b4fbc0cdd0866f3d09795421c80c2",
+      "bytes": 673713,
+      "critical": true,
+      "stableUrl": false
+    },
+    "ons-mye25": {
+      "dest": "ons/mye25tablesew.xlsx",
+      "sha256": "85b4e105e9618043884e5ac41d46e6eae8a46bb01b31790f1c76110cbe92d0d8",
+      "bytes": 976621,
+      "critical": true,
+      "stableUrl": false
+    },
+    "ons-ltim-ips": {
+      "dest": "ons/ltim-1964-2015.xls",
+      "sha256": "103c33f566fa933bab946db325afe1df133a2b907b284980687e5718feb53c11",
+      "bytes": 76800,
+      "critical": true,
+      "stableUrl": true
+    },
+    "ons-ltim-admin": {
+      "dest": "ons/ltim-flows-may2026.xlsx",
+      "sha256": "254a57a0d1e30c40c42843290c6dcc8ccb935ad26ac9148ad2665846ff7e9147",
+      "bytes": 168193,
+      "critical": true,
+      "stableUrl": false
+    },
+    "ons-births-cob": {
+      "dest": "ons/births-parents-cob-2025.xlsx",
+      "sha256": "d444d2c5b6b96eea67ccb82ad5acffb9f5ea7e63f5efe6311cf2a92db065e264",
+      "bytes": 158731,
+      "critical": true,
+      "stableUrl": false
+    },
+    "ons-aps-2021": {
+      "dest": "ons/aps-cob-nationality-2021.xls",
+      "sha256": "b12503f0a22e761a3ab0efde7727eeee82bf3196985d1a058fae289e1a1aec1d",
+      "bytes": 1169408,
+      "critical": true,
+      "stableUrl": false
+    },
+    "ons-emp06": {
+      "dest": "ons/emp06aug2026.xls",
+      "sha256": "d97b433dce51aa8be57bcbda69a7127797422c7148a2b4c0949d64d66d562f73",
+      "bytes": 208896,
+      "critical": true,
+      "stableUrl": false
+    },
+    "ons-housing": {
+      "dest": "ons/housing-affordability.xlsx",
+      "sha256": "585bc98112e801fc3dd45dbc5238d05c6507d4e48dc3ec3afab4867eded1c2f4",
+      "bytes": 513860,
+      "critical": true,
+      "stableUrl": false
+    },
+    "ho-asylum-summary": {
+      "dest": "ho/asylum-summary-jun-2026.ods",
+      "sha256": "f935782ab90190deb04a1a86f7b6ba7515f32e238c14b96c55993f4793096d14",
+      "bytes": 121209,
+      "critical": true,
+      "stableUrl": false
+    },
+    "ho-ier-summary": {
+      "dest": "ho/illegal-entry-summary-jun-2026.ods",
+      "sha256": "247cdb26e11953ce73a88589c9edc9ade531328a5f97b75c56abf612217c293f",
+      "bytes": 33607,
+      "critical": true,
+      "stableUrl": false
+    },
+    "mac-fiscal-ods": {
+      "dest": "mac/fiscal_report_ods_tables.checked.ods",
+      "sha256": "ab431dbcd7d3eb40e611d2e208968124803f78a0b5dbf041ace642a53a22c608",
+      "bytes": 328098,
+      "critical": true,
+      "stableUrl": false
+    },
+    "geo-itl1": {
+      "dest": "geo/itl1-ons-buc.geojson",
+      "sha256": "d69b468c829bd4dcafa1fb818d6e90cac6265110d8008102d19dba690d661b32",
+      "bytes": 512103,
+      "critical": true,
+      "stableUrl": true
+    },
+    "geo-lad": {
+      "dest": "geo/lad-ons-buc.geojson",
+      "sha256": "eefc10e2574050e177032c0471a761c6df5f13a775f10bd58e56170a0ffe6b68",
+      "bytes": 1168180,
+      "critical": true,
+      "stableUrl": true
+    },
+    "ons-mye24-uk": {
+      "dest": "ons/mye24tablesuk.xlsx",
+      "sha256": "f78d50e8d77fe5ed9d04667d6875aefcf62b56380af7aceb2e90dce067981526",
+      "bytes": 1062342,
+      "critical": false,
+      "stableUrl": false
+    },
+    "ons-rm011": {
+      "dest": "ons/census-rm011-cob-age.csv",
+      "sha256": "da64a74e1799baee7b39281799b320ca1b5cd7f7bbb6a5588b91058654526639",
+      "bytes": 1993601,
+      "critical": false,
+      "stableUrl": true
+    },
+    "ons-ct21-0433": {
+      "dest": "ons/census-ct21-0433-cob-age-sex.xlsx",
+      "sha256": "1d35c193653fe726acf5f0ab43fad717bbbc1d3852df6516853070bdff6d42c5",
+      "bytes": 181853,
+      "critical": false,
+      "stableUrl": true
+    },
+    "nrs-uv-bulk-status": {
+      "dest": "nrs/uv-bulk-status.json",
+      "sha256": "9ddf2e3c1741921c1a082dfb6165f5b5e95d62dd8b058d6d4b88816ccd036f3d",
+      "bytes": 4372,
+      "critical": false,
+      "stableUrl": true
+    },
+    "nrs-census2022-area-overviews": {
+      "dest": "nrs/census2022-area-overviews.json",
+      "sha256": "69bb08ec2a558d0e4cbfa03470ee1c6f398ea9a5c2e43789cef523fbf8a4d048",
+      "bytes": 63848,
+      "critical": false,
+      "stableUrl": true
+    },
+    "nrs-census2022-eilr": {
+      "dest": "nrs/census2022-eilr-chart-data.xlsx",
+      "sha256": "917b6ce55ba110edb2c10a5333682756efbc8b7aed6f877f4356c2070ce827a1",
+      "bytes": 55539,
+      "critical": false,
+      "stableUrl": false
+    },
+    "nrs-vital-events-3": {
+      "dest": "nrs/vital-events-2024-chapter-3.xlsx",
+      "sha256": "bfdb94a2c8ecba432af74dc7a4f5d41eab5b52a77891b066db797ad64cb58419",
+      "bytes": 353138,
+      "critical": false,
+      "stableUrl": false
+    },
+    "nrs-mye-2024": {
+      "dest": "nrs/mye-scotland-2024.xlsx",
+      "sha256": "85e1f3bcf76b90f729fdec813de4bc43180d3f6f630865360c8c2a469a0cb74c",
+      "bytes": 147251,
+      "critical": false,
+      "stableUrl": false
+    },
+    "nisra-ms-a16": {
+      "dest": "nisra/census2021-ms-a16-cob.xlsx",
+      "sha256": "5da7d30e1f8ca8c3580e49fb285ee28b6531bf4515701541b06d2098d4d30945",
+      "bytes": 360906,
+      "critical": false,
+      "stableUrl": true
+    },
+    "nisra-ms-a31": {
+      "dest": "nisra/census2021-ms-a31-cob-age.xlsx",
+      "sha256": "f6e171217408b99c0a0de271728e482fa717487e9e483991394ced3f6814f3f6",
+      "bytes": 635414,
+      "critical": false,
+      "stableUrl": true
+    },
+    "nisra-ms-b01": {
+      "dest": "nisra/census2021-ms-b01-ethnicity.xlsx",
+      "sha256": "db6d0b27f5112d9ff891caa0aadbcc3fa333b738812f44db720283541cbe5bfb",
+      "bytes": 347432,
+      "critical": false,
+      "stableUrl": true
+    },
+    "nisra-ms-b19": {
+      "dest": "nisra/census2021-ms-b19-religion.xlsx",
+      "sha256": "bb043ddeff66f4e96fbb5603bdf2571445ad9d2c9c362ec7b8dd1cea98a8241d",
+      "bytes": 321101,
+      "critical": false,
+      "stableUrl": true
+    },
+    "nisra-ms-b23": {
+      "dest": "nisra/census2021-ms-b23-religion-brought-up.xlsx",
+      "sha256": "578a992f7499e3e66e7896968695f51aaff9c3041e9fffafa33f3a1fbf631018",
+      "bytes": 267493,
+      "critical": false,
+      "stableUrl": true
+    },
+    "nisra-ms-b15": {
+      "dest": "nisra/census2021-ms-b15-national-identity.xlsx",
+      "sha256": "618a64b11ed7cddc8444a3c11838798dc7f79def6e79c8e2865b6cccd637743b",
+      "bytes": 319390,
+      "critical": false,
+      "stableUrl": true
+    },
+    "nisra-births-2024": {
+      "dest": "nisra/births-tables-2024.xlsx",
+      "sha256": "3374c302e36e0a68dbae4efc7df7d7a5770b7f198bac3ea7adb8b4a33e0e4c54",
+      "bytes": 453088,
+      "critical": false,
+      "stableUrl": false
+    }
+  },
+  "title": "Pinned SHA-256 of last ingest-validated extracts",
+  "note": "Pins are last-known-good hashes after a successful ingest. A later download may change a file; ingest must still parse. If ingest fails, the previous catalog and these pins stay.",
+  "updated": "2026-09-14T20:25:51.247Z"
+}

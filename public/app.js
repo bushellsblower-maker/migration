@@ -386,6 +386,7 @@ function setLayer(id, keepYear = false, keepMetric = false) {
   }
   renderChrome();
   renderAll();
+  resetUkView();
 }
 
 function setGeoLevel(level) {
@@ -695,6 +696,11 @@ function bindGeoLayer() {
       });
     },
   }).addTo(state.map);
+  resetUkView();
+}
+
+function resetUkView() {
+  if (!state.map) return;
   state.map.setView([54.6, -2.2], state.geoLevel === "la" ? 5.6 : 5.4);
 }
 

@@ -25,6 +25,17 @@ Cited fiscal comparison figures (copied from published studies / the Migration O
 | `ons/regional-pop-1971-2023.xlsx` | ONS | Same dataset family, regional edition | English regions + Wales 1981–2023 |
 | `ons/gb-pop-1937-2014.xls` | ONS | [GB MYE 1937–2014 ad hoc](https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationestimates/adhocs/004357greatbritainpopulationestimates1937to2014) | GB wartime/early post-war stock |
 | `ons/mye25tablesew.xlsx` | ONS | Mid-2025 E&W tables | Age–sex pyramid (latest year) |
+| `ons/mye24tablesuk.xlsx` | ONS | [UK MYE mid-2024](https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/populationestimatesforukenglandandwalesscotlandandnorthernireland) | UK/nation age–sex pyramids (mid-2024) |
+| `nrs/census2022-eilr-chart-data.xlsx` | NRS / Scotland’s Census | [EILR chart data](https://www.scotlandscensus.gov.uk/documents/scotlands-census-2022-ethnic-group-national-identity-language-and-religion-chart-data/) | Scotland 2022 COB (Figure 8), ethnicity (Figures 4–5), religion (Figure 2), national identity (Figure 9) |
+| `nrs/vital-events-2024-chapter-3.xlsx` | NRS | [Vital Events Reference Tables 2024, chapter 3](https://www.nrscotland.gov.uk/publications/vital-events-reference-tables-2024/) | Births by mother’s COB (Tables 3.09 council, 3.13 country) |
+| `nrs/mye-scotland-2024.xlsx` | NRS | [Mid-2024 population estimates](https://www.nrscotland.gov.uk/publications/mid-2024-population-estimates/) | Council-area name → S12 codes |
+| `nisra/census2021-ms-a16-cob.xlsx` | NISRA | [MS-A16](https://www.nisra.gov.uk/publications/census-2021-main-statistics-demography-tables-country-birth) | NI + 11 LGD country of birth |
+| `nisra/census2021-ms-a31-cob-age.xlsx` | NISRA | Same collection | NI country of birth by broad age |
+| `nisra/census2021-ms-b01-ethnicity.xlsx` | NISRA | [MS-B01](https://www.nisra.gov.uk/publications/census-2021-main-statistics-ethnicity-tables) | NI ethnic group (White excludes Irish Traveller and Roma) |
+| `nisra/census2021-ms-b19-religion.xlsx` | NISRA | [MS-B19](https://www.nisra.gov.uk/publications/census-2021-main-statistics-religion-tables) | NI current religion (no standalone Muslim column) |
+| `nisra/census2021-ms-b23-religion-brought-up.xlsx` | NISRA | Same collection | Religion brought up in — cited extra only; not mixed into affiliation maps |
+| `nisra/census2021-ms-b15-national-identity.xlsx` | NISRA | [MS-B15](https://www.nisra.gov.uk/publications/census-2021-main-statistics-identity-tables) | National identity, not citizenship |
+| `nisra/births-tables-2024.xlsx` | NISRA | [RGAR 2024 births](https://www.nisra.gov.uk/publications/registrar-general-annual-report-2024-births) | Table 3.18 mother’s country of birth 2014–2024 |
 | `ons/ltim-1964-2015.xls` | ONS | [LTIM 1964–2015 ad hoc](https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/internationalmigration/adhocs/006408longterminternationalmigrationintoandoutoftheukbycitizenship1964to2015) | IPS-era flows (thousands) |
 | `ons/ltim-flows-may2026.xlsx` | ONS | [LTIM flows YE Dec 2025](https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/internationalmigration/datasets/longterminternationalimmigrationemigrationandnetmigrationflowsprovisional) | Admin-based LTIM 2012– |
 | `ons/ltim-fig02.xlsx` | ONS | Bulletin figure download | Cross-check admin LTIM |

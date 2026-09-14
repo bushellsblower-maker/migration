@@ -7,7 +7,8 @@
     "build": "npm run build  (normalise geo + ingest). Fails if a critical file is missing or a required sheet/column cannot be parsed.",
     "refresh": "npm run refresh  = download + build. Use npm run refresh:force to re-fetch even when files exist.",
     "partial": "Optional files only warn. Default: any SCHEMA ERROR exits 1 and leaves the previous catalog.json in place. MIG_ALLOW_PARTIAL=1 is a local debug escape — ingest still prints SCHEMA ERROR but writes catalog.json anyway (it may be incomplete).",
-    "schemaBreak": "ingest.mjs prints SCHEMA ERROR for a missing critical file, missing sheet, or a series with too few parseable points. Without MIG_ALLOW_PARTIAL=1 the previous public/data/catalog.json is not overwritten."
+    "schemaBreak": "ingest.mjs prints SCHEMA ERROR for a missing critical file, missing sheet, or a series with too few parseable points. Without MIG_ALLOW_PARTIAL=1 the previous public/data/catalog.json is not overwritten.",
+    "scheduledRefresh": "Prefer `npm run refresh` locally or `.github/workflows/refresh.yml` (workflow_dispatch; optional commented cron). A Cloudflare Cron Trigger is not shipped — it would need a secret-gated Worker endpoint and is heavier than a documented refresh command."
   },
   "files": [
     {
@@ -153,6 +154,105 @@
       "critical": true,
       "stableUrl": true,
       "usedFor": "LA choropleth"
+    },
+    {
+      "id": "ons-mye24-uk",
+      "dest": "ons/mye24tablesuk.xlsx",
+      "url": "https://www.ons.gov.uk/file?uri=/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/populationestimatesforukenglandandwalesscotlandandnorthernireland/mid2024/mye24tablesuk.xlsx",
+      "producer": "ONS",
+      "critical": false,
+      "stableUrl": false,
+      "usedFor": "Mid-2024 UK/nation age–sex pyramids"
+    },
+    {
+      "id": "nrs-census2022-eilr",
+      "dest": "nrs/census2022-eilr-chart-data.xlsx",
+      "url": "https://www.scotlandscensus.gov.uk/media/1ioiuhvx/scotland-s-census-2022-ethnic-group-national-identity-language-and-religion-chart-data_new-1.xlsx",
+      "producer": "NRS / Scotland’s Census",
+      "critical": false,
+      "stableUrl": false,
+      "usedFor": "Scotland 2022 COB / ethnicity / religion / national identity"
+    },
+    {
+      "id": "nrs-vital-events-3",
+      "dest": "nrs/vital-events-2024-chapter-3.xlsx",
+      "url": "https://www.nrscotland.gov.uk/media/wp2eyitb/vital-events-reference-tables-chapter-3.xlsx",
+      "producer": "NRS",
+      "critical": false,
+      "stableUrl": false,
+      "usedFor": "Scotland births by mother’s COB (Tables 3.09, 3.13)"
+    },
+    {
+      "id": "nrs-mye-2024",
+      "dest": "nrs/mye-scotland-2024.xlsx",
+      "url": "https://www.nrscotland.gov.uk/media/txvdnee4/data-mid-year-population-estimates-2024.xlsx",
+      "producer": "NRS",
+      "critical": false,
+      "stableUrl": false,
+      "usedFor": "Scotland council-area name → S12 codes"
+    },
+    {
+      "id": "nisra-ms-a16",
+      "dest": "nisra/census2021-ms-a16-cob.xlsx",
+      "url": "https://www.nisra.gov.uk/system/files/statistics/census-2021-ms-a16.xlsx",
+      "producer": "NISRA",
+      "critical": false,
+      "stableUrl": true,
+      "usedFor": "NI census country of birth (NI + 11 LGDs)"
+    },
+    {
+      "id": "nisra-ms-a31",
+      "dest": "nisra/census2021-ms-a31-cob-age.xlsx",
+      "url": "https://www.nisra.gov.uk/system/files/statistics/census-2021-ms-a31.xlsx",
+      "producer": "NISRA",
+      "critical": false,
+      "stableUrl": true,
+      "usedFor": "NI country of birth by broad age"
+    },
+    {
+      "id": "nisra-ms-b01",
+      "dest": "nisra/census2021-ms-b01-ethnicity.xlsx",
+      "url": "https://www.nisra.gov.uk/system/files/statistics/census-2021-ms-b01.xlsx",
+      "producer": "NISRA",
+      "critical": false,
+      "stableUrl": true,
+      "usedFor": "NI ethnic group (White excludes Irish Traveller and Roma)"
+    },
+    {
+      "id": "nisra-ms-b19",
+      "dest": "nisra/census2021-ms-b19-religion.xlsx",
+      "url": "https://www.nisra.gov.uk/system/files/statistics/census-2021-ms-b19.xlsx",
+      "producer": "NISRA",
+      "critical": false,
+      "stableUrl": true,
+      "usedFor": "NI current religion (no standalone Muslim column)"
+    },
+    {
+      "id": "nisra-ms-b23",
+      "dest": "nisra/census2021-ms-b23-religion-brought-up.xlsx",
+      "url": "https://www.nisra.gov.uk/system/files/statistics/census-2021-ms-b23.xlsx",
+      "producer": "NISRA",
+      "critical": false,
+      "stableUrl": true,
+      "usedFor": "NI religion brought up in — cited extra only"
+    },
+    {
+      "id": "nisra-ms-b15",
+      "dest": "nisra/census2021-ms-b15-national-identity.xlsx",
+      "url": "https://www.nisra.gov.uk/system/files/statistics/census-2021-ms-b15.xlsx",
+      "producer": "NISRA",
+      "critical": false,
+      "stableUrl": true,
+      "usedFor": "NI national identity — not citizenship"
+    },
+    {
+      "id": "nisra-births-2024",
+      "dest": "nisra/births-tables-2024.xlsx",
+      "url": "https://www.nisra.gov.uk/system/files/statistics/2026-02/Section%203%20-%20Births_Tables_2024-Final.xlsx",
+      "producer": "NISRA",
+      "critical": false,
+      "stableUrl": false,
+      "usedFor": "NI births by mother’s COB (Table 3.18)"
     }
   ]
 }

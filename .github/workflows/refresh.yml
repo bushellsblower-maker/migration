@@ -1,0 +1,27 @@
+name: Refresh catalog
+
+on:
+  workflow_dispatch:
+  # Enable if maintainers want a monthly check that official URLs still parse.
+  # schedule:
+  #   - cron: "17 6 1 * *"
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+      - run: npm ci
+      - name: Download official extracts and ingest
+        run: npm run refresh
+      - name: Upload rebuilt catalog
+        uses: actions/upload-artifact@v4
+        with:
+          name: catalog-json
+          path: public/data/catalog.json
+          if-no-files-found: error

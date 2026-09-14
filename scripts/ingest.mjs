@@ -6,6 +6,20 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import XLSX from "xlsx";
+import {
+  concordanceNotes,
+  parseScotlandEilr,
+  parseScotlandBirths,
+  parseNisraCob,
+  parseNisraEthnicity,
+  parseNisraReligion,
+  parseNisraReligionBroughtUp,
+  parseNisraIdentity,
+  parseNisraCobAge,
+  parseNisraBirths,
+  parseUkMyePyramids,
+  scotlandCouncilLookup,
+} from "./ingest-nations.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const RAW = path.join(ROOT, "data", "raw");
@@ -627,11 +641,13 @@ function parseWideYearTable(rows, startRowLabel) {
   for (const row of rows) {
     const name = String(row[0] || "").trim();
     if (!name || yearOf(name) || /date|as at|method of entry|year$/i.test(name)) continue;
+    const calendarYears = new Set(years.filter(({ y, label }) => y && !/year ending june/i.test(label)).map(({ y }) => y));
     const series = {};
     for (const { i, y, label } of years) {
       if (!y || i === 0) continue;
-      if (/year ending june/i.test(label)) continue;
-      addPoint(series, "UK", y, num(row[i]));
+      const midYear = /year ending june/i.test(label);
+      if (midYear && calendarYears.has(y)) continue;
+      addPoint(series, "UK", y, num(row[i]), midYear ? { period: String(label).trim(), midYear: true } : {});
     }
     if (Object.keys(series).length) metrics[name] = sortSeries(series);
   }
@@ -954,6 +970,133 @@ function main() {
   const housing = parseHousing(readWb("ons/housing-affordability.xlsx"));
   const mac = parseMac(macWb);
   const cobAge = parseRm011CobAge();
+  const scotEilr = parseScotlandEilr();
+  const scotBirths = parseScotlandBirths();
+  const niCob = parseNisraCob();
+  const niEth = parseNisraEthnicity();
+  const niRel = parseNisraReligion();
+  const niRelBroughtUp = parseNisraReligionBroughtUp();
+  const niIdentity = parseNisraIdentity();
+  const niCobAge = parseNisraCobAge();
+  const niBirths = parseNisraBirths();
+  const ukMyePyramids = parseUkMyePyramids();
+  const scotCouncilCodes = scotlandCouncilLookup();
+  if (!scotEilr) schemaWarn("Scotland Census 2022 EILR chart data missing or unreadable — nation ethnicity/religion/COB×age stay E&W-only");
+  if (!niCob) schemaWarn("NISRA MS-A16 missing or unreadable — NI census country-of-birth not spliced");
+  if (ukMyePyramids) Object.assign(age.pyramids, ukMyePyramids);
+
+  if (scotEilr?.cob?.shareNonUk != null) {
+    const note = `${scotEilr.cob.note} ITL1 TLM is the same Scotland total — not a sub-Scotland estimate.`;
+    addPoint(aps.shareNonUk, "S", 2022, scotEilr.cob.shareNonUk, { note });
+    addPoint(aps.bornUk, "S", 2022, scotEilr.cob.ukBorn, { note });
+    addPoint(aps.bornNonUk, "S", 2022, scotEilr.cob.nonUkBorn, { note });
+    addPoint(aps.shareNonUk, "S92000003", 2022, scotEilr.cob.shareNonUk, { note });
+    addPoint(aps.shareNonUk, "TLM", 2022, scotEilr.cob.shareNonUk, { note });
+  }
+  if (niCob?.ni) {
+    const note = `${niCob.ni.note} ITL1 TLN is the same NI total — not a sub-NI estimate.`;
+    addPoint(aps.shareNonUk, "NI", 2021, niCob.ni.shareNonUk, { note });
+    addPoint(aps.bornUk, "NI", 2021, niCob.ni.ukBorn, { note });
+    addPoint(aps.bornNonUk, "NI", 2021, niCob.ni.nonUkBorn, { note });
+    addPoint(aps.shareNonUk, "N92000002", 2021, niCob.ni.shareNonUk, { note });
+    addPoint(aps.shareNonUk, "TLN", 2021, niCob.ni.shareNonUk, { note });
+  }
+  for (const [y, pts] of Object.entries(scotEilr?.ethnicity?.whiteShare || {})) {
+    for (const p of pts) addPoint(ethnicity.whiteShare, y, p.year, p.value, { note: p.note });
+  }
+  if (niEth?.ni) {
+    addPoint(ethnicity.whiteShare, "NI", 2021, niEth.ni.pctWhite, { note: niEth.ni.note });
+    addPoint(ethnicity.whiteShare, "N92000002", 2021, niEth.ni.pctWhite, { note: niEth.ni.note });
+    addPoint(ethnicity.whiteShare, "TLN", 2021, niEth.ni.pctWhite, { note: `${niEth.ni.note} ITL1 TLN is the NI total.` });
+  }
+  for (const p of scotEilr?.ethnicity?.whiteShare?.S || []) {
+    addPoint(ethnicity.whiteShare, "S92000003", p.year, p.value, { note: p.note });
+    addPoint(ethnicity.whiteShare, "TLM", p.year, p.value, { note: `${p.note} ITL1 TLM is the Scotland total.` });
+  }
+  for (const [geo, pts] of Object.entries(scotEilr?.religion?.christian || {})) {
+    for (const p of pts) addPoint(religion.christian, geo, p.year, p.value, { note: p.note });
+  }
+  for (const [geo, pts] of Object.entries(scotEilr?.religion?.none || {})) {
+    for (const p of pts) addPoint(religion.none, geo, p.year, p.value, { note: p.note });
+  }
+  for (const [geo, pts] of Object.entries(scotEilr?.religion?.muslim || {})) {
+    for (const p of pts) addPoint(religion.muslim, geo, p.year, p.value, { note: p.note });
+  }
+  if (niRel?.ni) {
+    if (niRel.ni.pctChristian != null) {
+      addPoint(religion.christian, "NI", 2021, niRel.ni.pctChristian, { note: niRel.ni.note });
+      addPoint(religion.christian, "N92000002", 2021, niRel.ni.pctChristian, { note: niRel.ni.note });
+      addPoint(religion.christian, "TLN", 2021, niRel.ni.pctChristian, { note: niRel.ni.note });
+    }
+    if (niRel.ni.pctNone != null) {
+      addPoint(religion.none, "NI", 2021, niRel.ni.pctNone, { note: niRel.ni.note });
+      addPoint(religion.none, "N92000002", 2021, niRel.ni.pctNone, { note: niRel.ni.note });
+      addPoint(religion.none, "TLN", 2021, niRel.ni.pctNone, { note: niRel.ni.note });
+    }
+  }
+  for (const p of scotEilr?.religion?.christian?.S || []) {
+    addPoint(religion.christian, "S92000003", p.year, p.value, { note: p.note });
+    addPoint(religion.christian, "TLM", p.year, p.value, { note: p.note });
+  }
+  for (const p of scotEilr?.religion?.none?.S || []) {
+    addPoint(religion.none, "S92000003", p.year, p.value, { note: p.note });
+    addPoint(religion.none, "TLM", p.year, p.value, { note: p.note });
+  }
+  for (const p of scotEilr?.religion?.muslim?.S || []) {
+    addPoint(religion.muslim, "S92000003", p.year, p.value, { note: p.note });
+    addPoint(religion.muslim, "TLM", p.year, p.value, { note: p.note });
+  }
+  if (scotBirths?.share) {
+    for (const [geo, pts] of Object.entries(scotBirths.share)) {
+      for (const p of pts) addPoint(births.share, geo, p.year, p.value, { note: p.note });
+    }
+    for (const [geo, pts] of Object.entries(scotBirths.ukMothers || {})) {
+      for (const p of pts) addPoint(births.ukMothers, geo, p.year, p.value, { note: p.note });
+    }
+    for (const [geo, pts] of Object.entries(scotBirths.nonUkMothers || {})) {
+      for (const p of pts) addPoint(births.nonUkMothers, geo, p.year, p.value, { note: p.note });
+    }
+  }
+  if (niBirths?.share) {
+    for (const [geo, pts] of Object.entries(niBirths.share)) {
+      for (const p of pts) addPoint(births.share, geo, p.year, p.value, { note: p.note });
+    }
+    for (const [geo, pts] of Object.entries(niBirths.ukMothers || {})) {
+      for (const p of pts) addPoint(births.ukMothers, geo, p.year, p.value, { note: p.note });
+    }
+    for (const [geo, pts] of Object.entries(niBirths.nonUkMothers || {})) {
+      for (const p of pts) addPoint(births.nonUkMothers, geo, p.year, p.value, { note: p.note });
+    }
+  }
+  for (const row of scotBirths?.council || []) {
+    const code = scotCouncilCodes[row.name.toLowerCase()];
+    if (!code) continue;
+    addPoint(births.regionShare, code, row.year, row.shareNonUk, { note: row.note, name: row.name });
+    addPoint(births.share, code, row.year, row.shareNonUk, { note: row.note, name: row.name });
+  }
+  if (scotEilr?.ethnicity?.composition) {
+    ethnicity.composition.S = scotEilr.ethnicity.composition.S;
+  }
+  if (scotEilr?.religion?.composition) {
+    religion.composition.S = scotEilr.religion.composition.S;
+  }
+  if (niEth?.ni?.groups) {
+    ethnicity.composition.NI = { 2021: niEth.ni.groups };
+  }
+  if (niRel?.ni?.groups) {
+    religion.composition.NI = { 2021: niRel.ni.groups };
+  }
+  sortSeries(aps.shareNonUk);
+  sortSeries(aps.bornUk);
+  sortSeries(aps.bornNonUk);
+  sortSeries(ethnicity.whiteShare);
+  sortSeries(religion.christian);
+  sortSeries(religion.none);
+  sortSeries(religion.muslim);
+  sortSeries(births.share);
+  sortSeries(births.ukMothers);
+  sortSeries(births.nonUkMothers);
+  sortSeries(births.regionShare);
 
   requireSeries(pop, "ONS pop.csv", 20);
   requireSeries(ltimHist.emigration, "IPS-era emigration", 10);
@@ -1150,30 +1293,34 @@ function main() {
       title: "Country of birth — UK-born and non-UK-born stock",
       short: "Country of birth",
       identity: "country-of-birth",
-      coverage: { start: 2011, end: 2021 },
+      coverage: { start: 2011, end: 2022 },
       mapGeos: ["E", "W", "S", "NI"],
       mapLevels: {
-        nation: { available: true, years: [2021], note: "APS YE June 2021 nation totals. 2011 nation totals are not in this extract." },
-        region: { available: true, years: [2021], note: "APS YE June 2021 ITL1 / English-region stocks. 2011 has no region table here." },
-        la: { available: true, years: [2011, 2021], note: "Census 2011 & 2021 E&W % non-UK-born; APS YE June 2021 LA estimates where the sample supports them." },
+        nation: { available: true, years: [2021, 2022], note: "APS YE June 2021 for all UK nations. Scotland Census 2022 Figure 8 replaces the APS point for Scotland in 2022 only. NISRA MS-A16 is preferred for NI in 2021." },
+        region: { available: true, years: [2021, 2022], note: "APS YE June 2021 ITL1. Scotland ITL1 in 2022 uses the Scotland census nation total (TLM = Scotland). NI ITL1 uses NISRA 2021." },
+        la: { available: true, years: [2011, 2021], note: "Census 2011 & 2021 E&W % non-UK-born; NISRA MS-A16 LGD 2021; APS YE June 2021 LA estimates where the sample supports them. Scotland council-area COB stocks are not in this extract." },
       },
       confidence: "survey-and-census",
       badges: ["Country of birth ≠ nationality ≠ ethnic group", "APS household survey", "Census LA snapshot"],
       breaks: [
         { year: 2011, label: "Census 2011 country-of-birth (E&W LA percentages)" },
-        { year: 2021, label: "Census 2021 (E&W) and APS YE June 2021 (UK, nations, regions, LAs)" },
+        { year: 2021, label: "Census 2021 (E&W + NISRA MS-A16) and APS YE June 2021 (UK, nations, regions, LAs)" },
+        { year: 2022, label: "Scotland’s Census 2022 country of birth (Figure 8). Not an E&W/NI census year." },
       ],
       sources: [
         source("ons-aps", "ONS population by country of birth and nationality (APS, YE June 2021)", "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/internationalmigration/datasets/populationoftheunitedkingdombycountryofbirthandnationality"),
         source("census-cob", "Census 2021 E&W country of birth / passports (figure data)", "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/internationalmigration/bulletins/internationalmigrationenglandandwales/census2021"),
         source("nomis-ts012", "Nomis TS012 Country of birth", "https://www.nomisweb.co.uk/datasets/c2021ts012"),
+        source("nrs-eilr", "Scotland’s Census 2022 EILR chart data (Figure 8 country of birth by age)", "https://www.scotlandscensus.gov.uk/documents/scotlands-census-2022-ethnic-group-national-identity-language-and-religion-chart-data/"),
+        source("nisra-msa16", "NISRA Census 2021 MS-A16 country of birth — basic detail", "https://www.nisra.gov.uk/publications/census-2021-main-statistics-demography-tables-country-birth"),
       ],
       notes: [
         "Country of birth is not nationality and is not ethnicity. A UK-born person may have any ethnic group; a British national may be born abroad.",
         "APS is a household survey: it excludes most communal establishments and totals do not match mid-year estimates.",
         "The main APS bulletin series ends YE June 2021. This build does not invent a post-2021 APS time series.",
-        "Scotland’s Census was in 2022. Combining it with E&W/NI 2021 as a single UK census year would be a date mismatch.",
-        "APS YE June 2021 already includes Scotland and Northern Ireland nation totals (and ITL1). Census 2022 Scotland / NISRA 2021 LA files are not in this extract — those nations stay on the APS 2021 figures, not a later census splice.",
+        "Scotland’s Census was in 2022. Combining it with E&W/NI 2021 as a single UK census year would be a date mismatch. 2022 map colour for Scotland is the census Figure 8 UK-born / overseas split; E&W and NI stay dimmed that year.",
+        "NISRA MS-A16 UK-born is NI + England + Scotland + Wales only. The published ‘Other non-EU’ residual can include United Kingdom (part not specified) and is not added into UK-born.",
+        "Scotland council-area country-of-birth stocks (UV204) exist via Search the Census but no stable bulk file was retrieved for this extract — those LAs stay labelled no comparable data.",
       ],
       definitions: [
         "Country of birth (this layer): where a usual resident was born. It is not a passport, not a nationality, and not an ethnic group.",
@@ -1184,8 +1331,12 @@ function main() {
         { id: "non-uk-born", label: "Non-UK-born usual residents (country of birth, APS YE Jun 2021)", unit: "people", format: "count", series: aps.bornNonUk },
         { id: "share-non-uk", label: "Non-UK-born share of usual residents (country of birth, APS)", unit: "%", format: "percent", series: aps.shareNonUk },
       ],
-      extras: { las: cobCensus.las, apsLas: aps.las.slice(0, 400) },
-      snapshotYears: [2011, 2021],
+      extras: {
+        las: cobCensus.las,
+        apsLas: aps.las.slice(0, 400),
+        niLas: (niCob?.lgd || []).map((r) => ({ code: r.code, name: r.name, year: 2021, shareNonUk: r.shareNonUk, ukBorn: r.ukBorn, nonUkBorn: r.nonUkBorn })),
+      },
+      snapshotYears: [2011, 2021, 2022],
       defaultMetric: "share-non-uk",
       mapMetric: "share-non-uk",
       vizModes: ["share", "absolute"],
@@ -1213,6 +1364,7 @@ function main() {
         "Do not read this layer as ‘native’ or as White British. Those are different questions.",
         "APS excludes most communal establishments. Totals do not match mid-year estimates.",
         "The main APS bulletin series ends YE June 2021. No later nationality stock is invented here.",
+        "Scotland Figure 9 and NISRA MS-B15 are national identity (feeling of attachment), not citizenship. They are never written onto this layer.",
       ],
       definitions: [
         "British: APS Table 2.1 ‘British Estimate’ — British nationality, not country of birth.",
@@ -1234,12 +1386,12 @@ function main() {
       title: "Identity compare — birthplace, nationality, ethnic group",
       short: "Identity (compare)",
       identity: "compare",
-      coverage: { start: 2021, end: 2021 },
+      coverage: { start: 2021, end: 2022 },
       mapGeos: ["E", "W", "S", "NI"],
       mapLevels: {
-        nation: { available: true, years: [2021], note: "Side-by-side 2021 figures. Ethnicity is E&W only." },
-        region: { available: true, years: [2021], note: "APS birthplace and nationality at ITL1; ethnicity ITL1 is the sum of published E&W LA census counts." },
-        la: { available: true, years: [2021], note: "Census % non-UK-born (E&W), APS nationality, and census ethnic group where each source has a row." },
+        nation: { available: true, years: [2021, 2022], note: "Side-by-side figures. 2021 is the only year with all three questions for E&W and NI. Scotland ethnicity/religion/COB census is 2022. National identity (census) is shown separately — it is not nationality." },
+        region: { available: true, years: [2021, 2022], note: "APS birthplace and nationality at ITL1; ethnicity ITL1 is the sum of published E&W LA census counts plus Scotland/NI nation census where dated." },
+        la: { available: true, years: [2021], note: "Census % non-UK-born (E&W), NISRA LGD 2021, APS nationality, and census ethnic group where each source has a row. Scotland council stocks are not in this extract." },
       },
       confidence: "mixed",
       badges: ["Three different questions", "Never ‘native’", "Do not splice the three series"],
@@ -1248,12 +1400,15 @@ function main() {
         source("ons-aps", "ONS APS YE June 2021 country of birth and nationality", "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/internationalmigration/datasets/populationoftheunitedkingdombycountryofbirthandnationality"),
         source("census-eth", "Census 2021 ethnic group, England and Wales", "https://www.ons.gov.uk/peoplepopulationandcommunity/culturalidentity/ethnicity/bulletins/ethnicgroupenglandandwales/census2021"),
         source("census-cob", "Census 2021 E&W country of birth figure data", "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/internationalmigration/bulletins/internationalmigrationenglandandwales/census2021"),
+        source("nrs-eilr", "Scotland’s Census 2022 EILR chart data", "https://www.scotlandscensus.gov.uk/documents/scotlands-census-2022-ethnic-group-national-identity-language-and-religion-chart-data/"),
+        source("nisra-msb01", "NISRA Census 2021 MS-B01 ethnic group", "https://www.nisra.gov.uk/publications/census-2021-main-statistics-ethnicity-tables"),
+        source("nisra-msb15", "NISRA Census 2021 MS-B15 national identity", "https://www.nisra.gov.uk/publications/census-2021-main-statistics-identity-tables"),
       ],
       notes: [
-        "These three columns answer different census/survey questions. A high non-UK-born share is not a non-British share and is not a non-White share.",
+        "These columns answer different published questions. A high non-UK-born share is not a non-British share and is not a non-White share.",
         "The word ‘native’ is not used: it conflates birthplace, nationality, and ethnicity.",
-        "Ethnicity ITL1 values are sums of the published 2021 LA counts in this extract, assigned to ITL1 with ONS LAD21 centroids. They are not a separate ONS region table.",
-        "Scotland and Northern Ireland have no ethnicity percentages in this extract.",
+        "Ethnicity ITL1 values for England are sums of the published 2021 LA counts in this extract, assigned to ITL1 with ONS LAD21 centroids. Scotland and NI ITL1 use the nation census figures (different dates and category lists).",
+        "Census national identity (Scotland Figure 9; NISRA MS-B15) is a feeling of attachment. It is not APS nationality and is not written onto the nationality layer.",
       ],
       definitions: [
         "Country of birth: where the person was born (APS / census).",
@@ -1271,8 +1426,13 @@ function main() {
         cobApsLas: aps.las.slice(0, 400),
         natApsLas: nationality.las.slice(0, 400),
         ethLas: ethnicity.las.map(({ groups, ...rest }) => rest),
+        niCobLas: niCob?.lgd || [],
+        niEthLas: (niEth?.lgd || []).map(({ groups, ...rest }) => rest),
+        scotIdentity: scotEilr?.nationalIdentity || null,
+        niIdentity,
+        concordance: concordanceNotes(),
       },
-      snapshotYears: [2021],
+      snapshotYears: [2021, 2022],
       defaultMetric: "share-non-uk",
       mapMetric: "share-non-uk",
       vizModes: ["share", "compare"],
@@ -1282,38 +1442,50 @@ function main() {
       title: "Ethnic group (census snapshots)",
       short: "Ethnic group",
       identity: "ethnicity",
-      coverage: { start: 2011, end: 2021 },
-      mapGeos: ["E", "W"],
+      coverage: { start: 2011, end: 2022 },
+      mapGeos: ["E", "W", "S", "NI"],
       mapLevels: {
-        nation: { available: true, years: [2011, 2021], note: "E&W high-level percentages only. Scotland and NI are not in this extract." },
-        region: { available: true, years: [2021], note: "2021 ITL1 = sum of published E&W LA counts. 2011 has no LA file here, so regions stay dimmed." },
-        la: { available: true, years: [2021], note: "2021 E&W local authorities from the census map extract. 2011 LA ethnicity is not in this file." },
+        nation: { available: true, years: [2011, 2021, 2022], note: "E&W high-level White in 2011/2021. Scotland White heading in 2011/2022 (includes Irish/Polish/Other White). NISRA MS-B01 White in 2021 excludes Irish Traveller and Roma. These are not the same category." },
+        region: { available: true, years: [2021, 2022], note: "2021 ITL1 England = sum of published E&W LA counts. Scotland/NI ITL1 use the nation census figures for their census year." },
+        la: { available: true, years: [2021], note: "2021 E&W local authorities from the census map extract; NISRA MS-B01 LGDs. Scotland council ethnicity stocks are not in this extract (Figure 6 is Polish only and is not used as a White share)." },
       },
       noMapYearsOutside: "No comparable UK ethnicity question before 1991. This extract has E&W 2011 and 2021 high-level groups; 1991/2001 concordance is not in the downloaded files.",
       confidence: "census-snapshot",
-      badges: ["No pre-1991 series", "Categories change between censuses", "E&W extract"],
+      badges: ["No pre-1991 series", "Categories change between censuses", "Nation concordance required"],
       breaks: [
         { year: 1991, label: "First census ethnicity question (not in this extract)" },
         { year: 2001, label: "Mixed category added (not in this extract)" },
-        { year: 2011, label: "E&W high-level groups in this extract" },
-        { year: 2021, label: "E&W Census 2021; write-in detail expanded" },
+        { year: 2011, label: "E&W high-level groups and Scotland Figure 5 in this extract" },
+        { year: 2021, label: "E&W Census 2021 and NISRA MS-B01; write-in detail expanded" },
+        { year: 2022, label: "Scotland’s Census 2022 (not an E&W/NI census year)" },
       ],
       sources: [
         source("census-eth", "Census 2021 ethnic group, England and Wales", "https://www.ons.gov.uk/peoplepopulationandcommunity/culturalidentity/ethnicity/bulletins/ethnicgroupenglandandwales/census2021"),
         source("nomis-ts021", "Nomis TS021 Ethnic group", "https://www.nomisweb.co.uk/datasets/c2021ts021"),
+        source("nrs-eilr", "Scotland’s Census 2022 EILR chart data (Figure 5 ethnic groups)", "https://www.scotlandscensus.gov.uk/documents/scotlands-census-2022-ethnic-group-national-identity-language-and-religion-chart-data/"),
+        source("nisra-msb01", "NISRA Census 2021 MS-B01 ethnic group", "https://www.nisra.gov.uk/publications/census-2021-main-statistics-ethnicity-tables"),
       ],
       notes: [
         "Ethnicity is self-identified and is not country of birth or nationality.",
-        "‘White’ includes White British, White Irish, Gypsy or Irish Traveller, Roma (2021), and Other White. It is not a synonym for UK-born.",
-        "Scotland 2022 and Northern Ireland 2021 ethnicity tables are published separately and are not in this extract.",
+        "E&W ‘White’ includes White British, White Irish, Gypsy or Irish Traveller, Roma (2021), and Other White. It is not a synonym for UK-born.",
+        "Scotland Figure 5 White heading is 100 minus the published non-White heading groups. NRS ‘minority ethnic’ (Figure 4) also includes White minorities — that series is not plotted as the complement of E&W White.",
+        "NISRA MS-B01 lists Irish Traveller and Roma as separate columns from White. Do not read the NI White share as the E&W high-level White share.",
       ],
       definitions: [
         "High-level ethnic groups follow the ONS 2021 five-group presentation used in the cited bulletin figure.",
       ],
       metrics: [
-        { id: "pct-white", label: "White high-level share (Census ethnic group, not UK-born)", unit: "%", format: "percent", series: ethnicity.whiteShare },
+        { id: "pct-white", label: "White share (census heading as published — see concordance)", unit: "%", format: "percent", series: ethnicity.whiteShare },
+        ...(scotEilr?.ethnicity?.minorityShare?.S
+          ? [{ id: "pct-minority-scot", label: "Scotland minority-ethnic share (NRS definition, includes some White minorities)", unit: "%", format: "percent", series: scotEilr.ethnicity.minorityShare }]
+          : []),
       ],
-      extras: { composition: ethnicity.composition, las: ethnicity.las.map(({ groups, ...rest }) => rest) },
+      extras: {
+        composition: ethnicity.composition,
+        las: ethnicity.las.map(({ groups, ...rest }) => rest),
+        niLas: (niEth?.lgd || []).map(({ groups, ...rest }) => rest),
+      },
+      snapshotYears: [2011, 2021, 2022],
       defaultMetric: "pct-white",
       mapMetric: "pct-white",
       vizModes: ["share", "composition"],
@@ -1322,34 +1494,46 @@ function main() {
       id: "p1-religion-census",
       title: "Religion (census snapshots)",
       short: "Religion",
-      coverage: { start: 2011, end: 2021 },
-      mapGeos: ["E", "W"],
+      coverage: { start: 2011, end: 2022 },
+      mapGeos: ["E", "W", "S", "NI"],
       mapLevels: {
-        nation: { available: true, years: [2011, 2021], note: "E&W only." },
-        region: { available: true, years: [2021], note: "2021 ITL1 = sum of published E&W LA counts. 2011 has no LA religion file here." },
-        la: { available: true, years: [2021], note: "2021 E&W local authorities from the census map extract." },
+        nation: { available: true, years: [2011, 2021, 2022], note: "E&W 2011/2021 affiliation. Scotland 2011/2022 current religion (not stated is a residual). NISRA MS-B19 2021 current religion. MS-B23 religion-brought-up-in is a separate NI concept." },
+        region: { available: true, years: [2021, 2022], note: "2021 ITL1 England = sum of published E&W LA counts. Scotland/NI ITL1 use nation census figures for their census year." },
+        la: { available: true, years: [2021], note: "2021 E&W local authorities from the census map extract; NISRA MS-B19 LGDs. Scotland council religion stocks are not in this extract." },
       },
       confidence: "census-snapshot",
-      badges: ["Voluntary question", "No modern affiliation series before 2001", "E&W extract"],
+      badges: ["Voluntary question", "No modern affiliation series before 2001", "Nation concordance required"],
       breaks: [
-        { year: 2001, label: "First modern affiliation question (2001 counts cited in bulletin text; 2011/21 in this extract)" },
-        { year: 2011, label: "E&W Census 2011" },
-        { year: 2021, label: "E&W Census 2021" },
+        { year: 2001, label: "First modern affiliation question (2001 counts cited in bulletin text; 2011/21/22 in this extract)" },
+        { year: 2011, label: "E&W Census 2011 and Scotland Figure 2" },
+        { year: 2021, label: "E&W Census 2021 and NISRA MS-B19" },
+        { year: 2022, label: "Scotland’s Census 2022 current religion (not an E&W/NI census year)" },
       ],
       sources: [
         source("census-rel", "Census 2021 religion, England and Wales", "https://www.ons.gov.uk/peoplepopulationandcommunity/culturalidentity/religion/bulletins/religionenglandandwales/census2021"),
+        source("nrs-eilr", "Scotland’s Census 2022 EILR chart data (Figure 2 religion)", "https://www.scotlandscensus.gov.uk/documents/scotlands-census-2022-ethnic-group-national-identity-language-and-religion-chart-data/"),
+        source("nisra-msb19", "NISRA Census 2021 MS-B19 religion", "https://www.nisra.gov.uk/publications/census-2021-main-statistics-religion-tables"),
+        source("nisra-msb23", "NISRA Census 2021 MS-B23 religion or religion brought up in", "https://www.nisra.gov.uk/publications/census-2021-main-statistics-religion-tables"),
       ],
       notes: [
-        "The religion question is voluntary. Non-response is a category, not missing data to be filled in.",
+        "The religion question is voluntary. Non-response is a category, not missing data to be filled in. Scotland publishes ‘Not stated’ without imputing a religion.",
         "1851 worship-attendance counts are not comparable to modern affiliation.",
-        "Northern Ireland’s ‘religion brought up in’ concept is different and is not mixed into these E&W percentages.",
+        "Northern Ireland’s ‘religion brought up in’ (MS-B23) is a different question and is shown only as a cited composition extra — it is not mixed into the Christian / no-religion map percentages.",
+        "NISRA MS-B19 has no standalone Muslim column. The Muslim metric stays blank for NI (Other religions is not treated as Muslim).",
+        "Scotland Christian % is Church of Scotland + Roman Catholic + Other Christian as published. That is not silently treated as the E&W Christian tick-box.",
       ],
       metrics: [
-        { id: "christian", label: "Christian % (E&W)", unit: "%", format: "percent", series: religion.christian },
-        { id: "none", label: "No religion % (E&W)", unit: "%", format: "percent", series: religion.none },
-        { id: "muslim", label: "Muslim % (E&W)", unit: "%", format: "percent", series: religion.muslim },
+        { id: "christian", label: "Christian % (nation-specific grouping — see notes)", unit: "%", format: "percent", series: religion.christian },
+        { id: "none", label: "No religion % (current religion as published)", unit: "%", format: "percent", series: religion.none },
+        { id: "muslim", label: "Muslim % (where a standalone category is published)", unit: "%", format: "percent", series: religion.muslim },
       ],
-      extras: { composition: religion.composition, las: religion.las.map((r) => ({ code: r.code, name: r.name, year: 2021, pctChristian: r.pctChristian, pctNone: r.pctNone, pctMuslim: r.pctMuslim })) },
+      extras: {
+        composition: religion.composition,
+        las: religion.las.map((r) => ({ code: r.code, name: r.name, year: 2021, pctChristian: r.pctChristian, pctNone: r.pctNone, pctMuslim: r.pctMuslim })),
+        niLas: (niRel?.lgd || []).map((r) => ({ code: r.code, name: r.name, year: 2021, pctChristian: r.pctChristian, pctNone: r.pctNone, pctMuslim: r.pctMuslim })),
+        niBroughtUp: niRelBroughtUp,
+      },
+      snapshotYears: [2011, 2021, 2022],
       defaultMetric: "christian",
       mapMetric: "christian",
       vizModes: ["share", "composition"],
@@ -1358,28 +1542,42 @@ function main() {
       id: "p1-age-sex",
       title: "Age–sex structure",
       short: "Age–sex",
-      coverage: { start: 2025, end: 2025 },
-      mapGeos: ["E", "W"],
+      coverage: { start: 2021, end: 2025 },
+      mapGeos: ["E", "W", "S", "NI"],
       mapLevels: {
-        nation: { available: true, years: [2025], note: "England and E&W pyramids only in this extract." },
-        region: { available: true, years: [2025], note: "English ITL1 pyramids from mid-2025 MYE2. Wales/Scotland/NI are not separately pyramid-mapped here." },
+        nation: { available: true, years: [2024, 2025], note: "Mid-2025 E&W/England pyramids from the E&W MYE workbook. Mid-2024 UK/nation pyramids (including Scotland and NI) from ONS UK MYE2." },
+        region: { available: true, years: [2024, 2025], note: "English ITL1 from mid-2025 MYE2. Wales/Scotland/NI ITL1 use the nation mid-2024 UK MYE2 pyramids." },
         la: { available: false, reason: "No local-authority age–sex pyramid in this extract." },
       },
       confidence: "accredited",
-      badges: ["Mid-2025 E&W / regions", "Pyramid is latest year only in this extract"],
-      breaks: [],
+      badges: ["Mid-2025 E&W / regions", "Mid-2024 UK nations", "COB×age is census, not MYE"],
+      breaks: [
+        { year: 2021, label: "NISRA MS-A31 country of birth by broad age (NI, persons)" },
+        { year: 2022, label: "Scotland Census Figure 8 country of birth by age (persons, not sex)" },
+        { year: 2024, label: "ONS UK MYE2 mid-2024 age–sex for UK nations" },
+        { year: 2025, label: "ONS mid-2025 E&W / English-region pyramids" },
+      ],
       sources: [
         source("ons-mye-age", "ONS mid-2025 population estimates, England and Wales", "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/estimatesofthepopulationforenglandandwales"),
+        source("ons-mye-uk", "ONS mid-2024 population estimates for UK, England and Wales, Scotland and Northern Ireland", "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/populationestimatesforukenglandandwalesscotlandandnorthernireland"),
+        source("nrs-eilr", "Scotland’s Census 2022 EILR Figure 8 — country of birth by age", "https://www.scotlandscensus.gov.uk/documents/scotlands-census-2022-ethnic-group-national-identity-language-and-religion-chart-data/"),
+        source("nisra-msa31", "NISRA Census 2021 MS-A31 country of birth by broad age", "https://www.nisra.gov.uk/publications/census-2021-main-statistics-demography-tables-country-birth"),
       ],
       notes: [
-        "Pyramids are from the mid-2025 single-year-of-age tables (2023 LA boundaries). They are not birthplace- or nationality-specific.",
+        "Mid-year pyramids are usual residents by age and sex. They are not birthplace- or nationality-specific.",
         cobAge
           ? "A Census 2021 E&W country-of-birth-by-age table (ONS RM011) is attached where the download parsed. It is age by birthplace, not a sex split, and not a MYE pyramid."
-          : "Age × country-of-birth for E&W is ONS RM011 (Census 2021). The optional CSV was not present or did not parse in this build — no birthplace pyramid is invented.",
-        "Scotland UV204a (COB × sex × age) and NISRA MS-A31 (COB by broad age) exist as official tables but are not in this extract.",
+          : "Age × country-of-birth for E&W is ONS RM011 (Census 2021). The optional CSV was not present or did not parse in this build — no E&W birthplace pyramid is invented.",
+        "Scotland Figure 8 is persons by age and country-of-birth group (Scotland / Rest of UK / Overseas). It is not a male/female pyramid.",
+        "NISRA MS-A31 is persons by broad age and country of birth. UK-born is the four UK countries only.",
       ],
-      metrics: [{ id: "persons", label: "Usual residents (sum of mid-2025 age bands)", unit: "people", format: "count", series: pyramidTotals }],
-      extras: { pyramids: age.pyramids, cobAge: cobAge || null },
+      metrics: [{ id: "persons", label: "Usual residents (sum of published age bands)", unit: "people", format: "count", series: pyramidTotals }],
+      extras: {
+        pyramids: age.pyramids,
+        cobAge: cobAge || null,
+        cobAgeScot: scotEilr?.cobAge || null,
+        cobAgeNi: niCobAge || null,
+      },
       defaultMetric: "persons",
       mapMetric: "persons",
       vizModes: ["pyramid"],
@@ -1389,32 +1587,36 @@ function main() {
       title: "Births by mother’s country of birth",
       short: "Births",
       coverage: { start: 2008, end: 2025 },
-      mapGeos: ["E", "W"],
+      mapGeos: ["E", "W", "S", "NI"],
       mapLevels: {
-        nation: { available: true, yearsFrom: 2008, note: "E&W totals. Not a UK map." },
-        region: { available: true, yearsFrom: 2016, yearsTo: 2022, note: "Regional share from the 2023 bulletin figure (either parent born outside the UK). Not the same as mother’s birthplace alone." },
-        la: { available: false, reason: "No local-authority births-by-mother’s-birthplace table in this extract." },
+        nation: { available: true, yearsFrom: 2008, note: "E&W 2008–2025 (ONS Table 1). Scotland selected years from NRS Table 3.13. NI 2014–2024 from NISRA RGAR Table 3.18. These are three vital-registration systems, not one UK series." },
+        region: { available: true, yearsFrom: 2016, yearsTo: 2024, note: "E&W regional share from the 2023 bulletin figure (either parent born outside the UK) for 2016–22. Scotland council-area mother’s-COB shares for 2024 from NRS Table 3.09." },
+        la: { available: true, years: [2024], note: "Scotland council areas, 2024 mother’s country of birth (NRS Table 3.09). E&W and NI local-authority mother’s-COB tables are not in this extract." },
       },
       confidence: "accredited",
-      badges: ["E&W vital registration", "Recorded since 1969; this extract 2008–2025", "Birthplace ≠ ethnicity"],
+      badges: ["E&W / Scotland / NI vital registration", "Birthplace ≠ ethnicity", "Not one UK series"],
       breaks: [
         { year: 1969, label: "Parents’ country of birth collected at E&W registration from April 1969 (earlier years not in this workbook)" },
-        { year: 2008, label: "Start of the consistent table ingested from the 2025 workbook" },
+        { year: 2008, label: "Start of the consistent E&W table ingested from the 2025 workbook" },
+        { year: 2014, label: "Start of NISRA RGAR Table 3.18 and NRS Table 3.13 in this extract" },
       ],
       sources: [
         source("ons-births", "ONS births by parents’ country of birth, England and Wales", "https://www.ons.gov.uk/peoplepopulationandcommunity/birthsdeathsandmarriages/livebirths/datasets/parentscountryofbirth"),
         source("ons-births-map", "ONS 2023 bulletin figure (regional shares 2016–2022)", "https://www.ons.gov.uk/peoplepopulationandcommunity/birthsdeathsandmarriages/livebirths/bulletins/parentscountryofbirthenglandandwales/2023"),
+        source("nrs-ve-3", "NRS Vital Events Reference Tables 2024, chapter 3 (Tables 3.09 and 3.13)", "https://www.nrscotland.gov.uk/publications/vital-events-reference-tables-2024/"),
+        source("nisra-rgar-births", "NISRA Registrar General Annual Report 2024 births tables (Table 3.18)", "https://www.nisra.gov.uk/publications/registrar-general-annual-report-2023-births"),
       ],
       notes: [
         "A birth to a non-UK-born mother is not a measure of the mother’s ethnicity, nationality, or long-term migrant status.",
-        "Scotland and Northern Ireland publish separate vital statistics.",
-        "The 2025 workbook’s Table 1 in this download covers 2008–2025. Longer 1969– series exist in earlier releases but were not a single clean column set in the files retrieved.",
+        "E&W, Scotland and Northern Ireland are separate vital-registration systems. They are drawn as separate geographies, not spliced into one UK line.",
+        "The E&W 2025 workbook’s Table 1 covers 2008–2025. NRS Table 3.13 in this extract has 2014, 2019 and 2022–2024. NISRA Table 3.18 is 2014–2024.",
+        "The E&W regional 2016–22 figure is either parent born outside the UK — not the same as mother’s birthplace alone. Scotland 2024 council shares are mother’s country of birth.",
       ],
       metrics: [
-        { id: "share-non-uk-mother", label: "Births to non-UK-born mothers (E&W)", unit: "%", format: "percent", series: births.share },
+        { id: "share-non-uk-mother", label: "Births to non-UK-born mothers (as published by each producer)", unit: "%", format: "percent", series: births.share },
         { id: "births-non-uk", label: "Births to non-UK-born mothers", unit: "births", format: "count", series: births.nonUkMothers },
         { id: "births-uk", label: "Births to UK-born mothers", unit: "births", format: "count", series: births.ukMothers },
-        { id: "region-share", label: "Regional share (either parent born outside UK, 2016–22 figure)", unit: "%", format: "percent", series: births.regionShare },
+        { id: "region-share", label: "Subnational share (E&W either-parent 2016–22; Scotland mother’s COB 2024)", unit: "%", format: "percent", series: births.regionShare },
       ],
       defaultMetric: "share-non-uk-mother",
       mapMetric: "share-non-uk-mother",
@@ -1424,7 +1626,7 @@ function main() {
       id: "p1-asylum",
       title: "Asylum claims, decisions and awaiting decision",
       short: "Asylum",
-      coverage: { start: 2010, end: 2025 },
+      coverage: { start: 2010, end: 2026 },
       mapGeos: [],
       mapLevels: {
         nation: { available: false, reason: "UK totals only in this extract." },
@@ -1494,7 +1696,7 @@ function main() {
       id: "p1-small-boats",
       title: "Detected small-boat and illegal-entry-route arrivals",
       short: "Detections",
-      coverage: { start: 2018, end: 2025 },
+      coverage: { start: 2018, end: 2026 },
       mapGeos: [],
       mapLevels: {
         nation: { available: false, reason: "National detection totals — not a stock map." },
@@ -1643,10 +1845,11 @@ function main() {
 
   const catalog = {
     generated: new Date().toISOString(),
-    title: "Migration — Phase 3 catalog",
-    phase: 3,
+    title: "Migration — Phase 4 catalog",
+    phase: 4,
     yearMin: 1940,
-    yearMax: 2025,
+    yearMax: 2026,
+    concordance: concordanceNotes(),
     nations: Object.values(NATIONS),
     regions: Object.entries(REGIONS).map(([id, name]) => ({ id, name, kind: "region" })),
     geographies: {
@@ -1669,7 +1872,7 @@ function main() {
       },
     },
     deepLink: {
-      params: ["layer", "year", "geo", "metric"],
+      params: ["layer", "year", "geo", "metric", "year2"],
       geo: "nation | region | la | GSS or ITL1 code (E12… / E06… / W92… / TLC…)",
       example: "?layer=p1-cob-stock&year=2021&geo=region&metric=share-non-uk",
     },

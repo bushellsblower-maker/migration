@@ -244,6 +244,18 @@ a.skip:focus { top: 8px; }
 .year-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .geo-seg { flex: 1 1 auto; }
 .geo-note { margin: 2px 0 0; }
+.compare-year-box { margin: 6px 0 2px; }
+.compare-year-box label { display: grid; gap: 4px; font-size: 0.75rem; color: var(--muted); max-width: 22rem; }
+.compare-year-box select {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 6px 8px;
+}
+.concordance { margin: 10px 0; font-size: 0.82rem; }
+.concordance summary { cursor: pointer; color: var(--accent); }
+.identity-extra { margin-top: 12px; }
+.year-compare { margin-top: 12px; }
 #play {
   width: 44px;
   height: 36px;
@@ -331,7 +343,7 @@ a.skip:focus { top: 8px; }
 @media (max-width: 1040px) {
   .guard { display: none; }
   .top { grid-template-columns: 1fr auto; }
-  .nav-btn { display: inline-block; }
+  .nav-btn { display: inline-block; min-height: 40px; }
   .app { grid-template-columns: 1fr; }
   .rail, .inspect {
     position: fixed;
@@ -344,6 +356,25 @@ a.skip:focus { top: 8px; }
   }
   .inspect { right: 0; left: auto; transform: translateX(110%); }
   .rail.open, .inspect.open { transform: none; box-shadow: 0 0 0 100vw rgba(28,25,23,0.28); }
+  .geo-seg {
+    flex: 1 1 100%;
+    position: sticky;
+    bottom: 0;
+    background: #f8f3e9;
+    padding: 4px 0 2px;
+    z-index: 2;
+  }
+  .geo-seg button,
+  .seg button,
+  .controls select,
+  .fiscal-axes select,
+  #compare-year {
+    min-height: 44px;
+    padding: 8px 12px;
+    font-size: 0.9rem;
+  }
+  .fiscal-axes { gap: 14px; }
+  .year-row { row-gap: 8px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

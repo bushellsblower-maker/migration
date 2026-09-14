@@ -5,6 +5,7 @@
 **Domain:** https://migration.cybush.uk  
 **Coverage intent:** ~1940–present (as available)  
 **Compiled:** 2026-09-13 22:15 BST (Europe/London)  
+**Phase 4 extract (2026-09-14):** Scotland Census 2022 EILR chart data + NRS vital-events chapter 3 + NISRA MS-A16/A31/B01/B15/B19/B23 + ONS UK MYE2 mid-2024 are ingested where they align with existing COB / ethnicity / religion / nationality / births / age–sex layers. Concordance notes are required; do not silent-conflate E&W / Scotland / NI headings. Scotland council UV stocks were not retrieved as a stable bulk file. See `data/SOURCES.md` and `docs/refresh.md`.  
 
 ## Principles
 

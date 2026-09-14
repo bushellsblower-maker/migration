@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Evidence-led UK migration & demographics explorer (Phase 3 HTML)",
+  "description": "Evidence-led UK migration & demographics explorer (Phase 4 HTML)",
   "scripts": {
     "download": "bash scripts/download-raw.sh",
     "download:force": "bash scripts/download-raw.sh --force",

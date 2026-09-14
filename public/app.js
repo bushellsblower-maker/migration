@@ -68,6 +68,7 @@ const state = {
   viz: "absolute",
   palette: "teal",
   year: 2021,
+  compareYear: null,
   geoLevel: "nation",
   playing: false,
   playTimer: null,
@@ -127,6 +128,8 @@ function extraValue(l, m, geoId, year) {
       const census = cobLas.find((r) => r.code === geoId);
       const field = year === 2011 ? "y2011" : "y2021";
       if (census && census[field] != null) return { value: census[field], note: `census ${year} % non-UK-born (country of birth, E&W)` };
+      const ni = (l.extras?.niLas || l.extras?.niCobLas || []).find((r) => r.code === geoId);
+      if (year === 2021 && ni?.shareNonUk != null) return { value: ni.shareNonUk, note: ni.note || "NISRA MS-A16 % non-UK-born (four UK countries only)" };
       const aps = cobAps.find((r) => r.code === geoId);
       if (year === 2021 && aps?.shareNonUk != null) return { value: aps.shareNonUk, note: "APS YE Jun 2021 % non-UK-born (country of birth)" };
     }
@@ -150,13 +153,22 @@ function extraValue(l, m, geoId, year) {
   }
   if (l.id === "p1-ethnicity-census" || (l.id === "p2-identity-compare" && mid === "pct-white")) {
     const row = (l.id === "p1-ethnicity-census" ? l.extras?.las : ethLas)?.find((r) => r.code === geoId);
-    if (year === 2021 && row?.pctWhite != null) return { value: row.pctWhite, note: "Census 2021 % White (high-level ethnic group)" };
+    if (year === 2021 && row?.pctWhite != null) return { value: row.pctWhite, note: "Census 2021 % White (high-level ethnic group, E&W)" };
+    const niEth = (l.extras?.niLas || l.extras?.niEthLas || []).find((r) => r.code === geoId);
+    if (year === 2021 && niEth?.pctWhite != null) {
+      return { value: niEth.pctWhite, note: niEth.note || "NISRA MS-B01 % White (excludes Irish Traveller and Roma)" };
+    }
   }
   if (l.id === "p1-religion-census") {
     const row = l.extras?.las?.find((r) => r.code === geoId);
     if (year === 2021 && row) {
       const v = mid === "none" ? row.pctNone : mid === "muslim" ? row.pctMuslim : row.pctChristian;
-      if (v != null) return { value: v, note: "Census 2021 religion %" };
+      if (v != null) return { value: v, note: "Census 2021 religion % (E&W)" };
+    }
+    const niRel = (l.extras?.niLas || []).find((r) => r.code === geoId);
+    if (year === 2021 && niRel) {
+      const v = mid === "none" ? niRel.pctNone : mid === "muslim" ? niRel.pctMuslim : niRel.pctChristian;
+      if (v != null) return { value: v, note: niRel.note || "NISRA MS-B19 current religion %" };
     }
   }
   return { value: null, note: "" };
@@ -247,6 +259,7 @@ function queryString() {
   q.set("year", String(state.year));
   q.set("geo", encodeGeoParam());
   q.set("metric", state.metricId || "");
+  if (state.compareYear) q.set("year2", String(state.compareYear));
   return `?${q.toString()}`;
 }
 
@@ -263,6 +276,8 @@ function readUrlIntoState() {
   if (layerId && state.catalog.layers.some((l) => l.id === layerId)) state.layerId = layerId;
   const year = Number(q.get("year"));
   if (Number.isFinite(year) && year >= 1838 && year <= 2030) state.year = year;
+  const year2 = Number(q.get("year2"));
+  state.compareYear = Number.isFinite(year2) && year2 >= 1838 && year2 <= 2030 && year2 !== state.year ? year2 : null;
   const parsed = parseGeoParam(q.get("geo"));
   state.geoLevel = parsed.level;
   state.selectedGeo = parsed.selected || (parsed.level === "nation" ? "UK" : null);
@@ -453,8 +468,18 @@ function renderChrome() {
   $("metric").disabled = !metrics.length;
   fillSelect($("metric"), metrics.length ? metrics : [{ value: "", label: "— no mapped series —" }], state.metricId || "");
   $("palette").value = state.palette;
+  const ymin = state.catalog.yearMin || 1940;
+  const ymax = state.catalog.yearMax || 2026;
+  $("year").min = String(ymin);
+  $("year").max = String(ymax);
   $("year").value = String(state.year);
   $("year-label").textContent = String(state.year);
+  const ticks = $("year-ticks");
+  if (ticks) {
+    const marks = [ymin, 1964, 1991, 2012, 2021, ymax].filter((y, i, a) => a.indexOf(y) === i && y >= ymin && y <= ymax);
+    ticks.innerHTML = marks.map((y) => `<span>${y}</span>`).join("");
+  }
+  renderCompareYearControl(l);
 
   const geoBox = $("geo-levels");
   geoBox.innerHTML = GEO_LEVELS.map((g) => {
@@ -495,6 +520,30 @@ function renderDataStamp() {
   el.innerHTML = `Data as of ${asOf || "unknown"} · catalog ${built || "—"}${warn} · <a href="#sources">OGL attribution</a>`;
 }
 
+function renderCompareYearControl(l) {
+  const host = $("compare-year-box");
+  if (!host) return;
+  const years = [...new Set(l?.years || [])].sort((a, b) => a - b);
+  if (years.length < 2) {
+    host.hidden = true;
+    host.innerHTML = "";
+    if (state.compareYear) state.compareYear = null;
+    return;
+  }
+  host.hidden = false;
+  const opts = [`<option value="">No comparison</option>`]
+    .concat(years.filter((y) => y !== state.year).map((y) => `<option value="${y}" ${state.compareYear === y ? "selected" : ""}>${y}</option>`))
+    .join("");
+  host.innerHTML = `<label>Compare year<select id="compare-year">${opts}</select><span class="cite">Shows the same series at a second published year. Nothing is interpolated between them.</span></label>`;
+  $("compare-year").addEventListener("change", (e) => {
+    const v = Number(e.target.value);
+    state.compareYear = Number.isFinite(v) ? v : null;
+    renderChart();
+    renderNotes();
+    writeUrl();
+  });
+}
+
 function renderFiscalAssumptions(l) {
   const host = $("fiscal-assumptions");
   if (!host) return;
@@ -527,6 +576,7 @@ function yearStatusText() {
   if (pt?.flag === "wartime-definition") return { text: "Wartime population definition — not a usual-residence MYE.", dim: false };
   if (pt?.provisional) return { text: "Provisional point — subject to revision.", dim: false };
   if (pt?.revised) return { text: "Revised vintage.", dim: false };
+  if (pt?.midYear) return { text: `${pt.period || "Year ending June"} — mid-year point, not a December calendar year.`, dim: false };
   return { text: l.coverage ? `Extract coverage ${l.coverage.start}–${l.coverage.end}` : "", dim: false };
 }
 
@@ -649,13 +699,16 @@ function bannerText() {
     return "2011 nation totals are not in the APS extract. Switch to local authorities for the 2011 E&W census percentages.";
   }
   if ((l.id === "p1-ethnicity-census" || l.id === "p1-religion-census") && state.geoLevel === "nation") {
-    return "Choropleth uses the England & Wales published percentage on both England and Wales. Scotland and Northern Ireland are not in this extract.";
+    return "Each nation uses its own published census heading. E&W White / Christian is not the same category as Scotland’s heading or NISRA MS-B01 / MS-B19. See concordance.";
   }
   if (l.id === "p1-age-sex") {
-    return "Pyramids are mid-2025 counts. Wales, Scotland and Northern Ireland are not separately pyramid-mapped from this file.";
+    return "Mid-2025 pyramids are E&W / English regions. Mid-2024 UK MYE2 covers Scotland and Northern Ireland. Country-of-birth-by-age tables are census snapshots, not MYE.";
   }
   if (l.id === "p2-identity-compare") {
-    return "Map colour is the selected identity series only. The panel below shows country of birth, nationality, and ethnic group side by side for the same place.";
+    return "Map colour is the selected identity series only. The panel shows country of birth, nationality, and ethnic group as three different questions. Census national identity is listed separately — it is not citizenship.";
+  }
+  if (l.id === "p1-cob-stock" && state.year === 2022) {
+    return "2022 is Scotland’s Census year (Figure 8). E&W and NI have no 2022 census country-of-birth stock in this extract.";
   }
   return spec?.note || "";
 }
@@ -1005,6 +1058,13 @@ function identityCompareHtml() {
   const geoId = state.selectedGeo || (state.geoLevel === "nation" ? "UK" : null);
   const year = state.year;
   const place = geoName(geoId) || (state.geoLevel === "la" ? "Select a local authority" : state.geoLevel === "region" ? "Select an ITL1 region" : "United Kingdom");
+  const nation = aliasesFor(geoId || "UK").some((id) => id === "S" || id === "S92000003")
+    ? "S"
+    : aliasesFor(geoId || "UK").some((id) => id === "NI" || id === "N92000002")
+      ? "NI"
+      : aliasesFor(geoId || "UK").some((id) => id === "E" || id === "W" || id === "EW")
+        ? "EW"
+        : "UK";
   const cards = [
     {
       title: "Country of birth",
@@ -1014,18 +1074,18 @@ function identityCompareHtml() {
       unit: "non-UK-born share",
     },
     {
-      title: "Nationality",
+      title: "Nationality (citizenship)",
       q: "What citizenship did they report?",
-      not: "Not country of birth. A British national may be born abroad.",
+      not: "APS Table 2.1. Not country of birth. A British national may be born abroad. Not census national identity.",
       hit: identityValue("p1-nationality-stock", "share-non-british", geoId || "UK", year),
       unit: "non-British nationality share",
     },
     {
       title: "Ethnic group",
       q: "Which ethnic group did they identify with?",
-      not: "Not UK-born. ‘White’ includes White British and Other White.",
-      hit: identityValue("p1-ethnicity-census", "pct-white", geoId || "EW", year),
-      unit: "White high-level share",
+      not: "Not UK-born. White headings differ across E&W / Scotland / NI — see concordance.",
+      hit: identityValue("p1-ethnicity-census", "pct-white", geoId || (nation === "UK" ? "EW" : nation), year),
+      unit: "White share (census heading as published)",
     },
   ];
   const cells = cards
@@ -1040,9 +1100,49 @@ function identityCompareHtml() {
       </article>`;
     })
     .join("");
+  const cmp = state.compareYear
+    ? `<div class="compare-grid year-compare">${cards
+        .map((c) => {
+          const hit2 = identityValue(
+            c.title.startsWith("Country") ? "p1-cob-stock" : c.title.startsWith("Nationality") ? "p1-nationality-stock" : "p1-ethnicity-census",
+            c.title.startsWith("Country") ? "share-non-uk" : c.title.startsWith("Nationality") ? "share-non-british" : "pct-white",
+            geoId || (c.title.startsWith("Ethnic") && nation === "UK" ? "EW" : "UK"),
+            state.compareYear
+          );
+          const a = c.hit.value;
+          const b = hit2.value;
+          const delta = a != null && b != null ? a - b : null;
+          return `<article class="compare-card">
+            <h3>${c.title} · ${state.compareYear} → ${year}</h3>
+            <div class="big">${delta == null ? "no comparable pair" : `${delta >= 0 ? "+" : ""}${delta.toFixed(1)} pp`}</div>
+            <p class="cite">${state.compareYear}: ${formatValue(c.hit.format, b)} → ${year}: ${formatValue(c.hit.format, a)}. Difference only where both years are published.</p>
+          </article>`;
+        })
+        .join("")}</div>`
+    : "";
+  const l = state.catalog.layers.find((x) => x.id === "p2-identity-compare");
+  const scotId = l?.extras?.scotIdentity?.S?.[year] || l?.extras?.scotIdentity?.S?.[String(year)];
+  const niId = year === 2021 ? l?.extras?.niIdentity?.groups : null;
+  const idBlock =
+    (nation === "S" && scotId?.length) || (nation === "NI" && niId?.length)
+      ? `<div class="identity-extra">
+          <h3>Census national identity — not nationality</h3>
+          <p class="cite">This is a feeling of attachment (Scotland Figure 9 / NISRA MS-B15). It is not APS citizenship and is not written onto the nationality layer.</p>
+          <ul>${(nation === "S" ? scotId : niId).map((g) => `<li>${g.group}: ${g.pct.toFixed(1)}%</li>`).join("")}</ul>
+        </div>`
+      : "";
+  const conc = (l?.extras?.concordance || state.catalog.concordance)?.items || [];
+  const concHtml = conc.length
+    ? `<details class="concordance"><summary>Concordance — why these percentages are not interchangeable</summary><ul>${conc
+        .map((item) => `<li><strong>${item.theme}.</strong> ${item.text}</li>`)
+        .join("")}</ul></details>`
+    : "";
   return `<div>
     <p><strong>Three published questions, one place.</strong> These percentages are not interchangeable and must not be added or labelled “native”.</p>
     <div class="compare-grid">${cells}</div>
+    ${cmp}
+    ${idBlock}
+    ${concHtml}
   </div>`;
 }
 
@@ -1141,6 +1241,59 @@ function drawFiscalContext() {
   drawLineChart(canvas, series, labour.breaks);
 }
 
+function cobAgeBandRows(pack, caption) {
+  if (!pack?.bands?.length) return "";
+  const rows = pack.bands
+    .map((b) => {
+      const t = b.total || (b.uk || 0) + (b.nonUk || 0);
+      const share = t ? (100 * (b.nonUk || 0)) / t : null;
+      return `<tr><td>${b.band}</td><td class="num">${formatCount(b.uk)}</td><td class="num">${formatCount(b.nonUk)}</td><td class="num">${share == null ? "—" : `${share.toFixed(1)}%`}</td></tr>`;
+    })
+    .join("");
+  return `<p class="cite">${pack.source || ""} · ${pack.geography || ""} · ${pack.year}. Age by country of birth, not a sex split. Not a MYE pyramid.</p>
+    <table><caption>${caption}</caption>
+    <thead><tr><th>Age</th><th>UK-born</th><th>Non-UK-born</th><th>Non-UK-born share</th></tr></thead>
+    <tbody>${rows}</tbody></table>`;
+}
+
+function cobAgeTablesHtml(l) {
+  const nation = aliasesFor(state.selectedGeo || "UK").find((id) => ["S", "NI", "E", "W", "EW", "UK"].includes(id));
+  const showRm = l.extras?.cobAge?.bands?.length && (state.year === l.extras.cobAge.year || nation === "EW" || nation === "E" || nation === "W" || !nation);
+  const showScot = l.extras?.cobAgeScot?.bands?.length && (state.year === 2022 || nation === "S" || nation === "UK");
+  const showNi = l.extras?.cobAgeNi?.bands?.length && (state.year === 2021 || nation === "NI" || nation === "UK");
+  const parts = [];
+  if (showRm) {
+    parts.push(
+      cobAgeBandRows(
+        l.extras.cobAge,
+        "England &amp; Wales Census 2021 RM011 — usual residents by age and UK-born / non-UK-born (categories summed as published)"
+      )
+    );
+  }
+  if (showScot) {
+    parts.push(
+      cobAgeBandRows(
+        l.extras.cobAgeScot,
+        "Scotland Census 2022 Figure 8 — persons by age and country of birth (Scotland + Rest of UK = UK-born; Overseas = non-UK-born)"
+      )
+    );
+  }
+  if (showNi) {
+    parts.push(
+      cobAgeBandRows(
+        l.extras.cobAgeNi,
+        "Northern Ireland Census 2021 MS-A31 — persons by broad age. UK-born = four UK countries only"
+      )
+    );
+  }
+  if (!showRm && l.extras?.cobAge == null && (nation === "EW" || nation === "E" || nation === "W") && state.year === 2021) {
+    parts.push(
+      `<p class="cite">ONS RM011 (E&amp;W age × country of birth) was not retrieved — the optional Nomis/ONS CSV 404’d. No E&amp;W birthplace pyramid is invented.</p>`
+    );
+  }
+  return parts.join("");
+}
+
 function renderChart() {
   const l = layer();
   const m = metric();
@@ -1173,13 +1326,16 @@ function renderChart() {
   }
 
   if (state.viz === "pyramid" || l.id === "p1-age-sex") {
+    const nationKey = aliasesFor(state.selectedGeo || "UK").find((id) => ["UK", "EW", "E", "W", "S", "NI"].includes(id));
+    const keys = Object.keys(l.extras?.pyramids || {});
     const key =
-      Object.keys(l.extras?.pyramids || {}).find((k) => k === `${state.selectedGeo}:${state.year}`) ||
-      Object.keys(l.extras?.pyramids || {}).find((k) => k === `E:${state.year}`) ||
-      Object.keys(l.extras?.pyramids || {}).find((k) => k === `EW:${state.year}`);
+      keys.find((k) => k === `${state.selectedGeo}:${state.year}`) ||
+      keys.find((k) => nationKey && k === `${nationKey}:${state.year}`) ||
+      keys.find((k) => k === `EW:${state.year}`) ||
+      keys.find((k) => k === `E:${state.year}`) ||
+      keys.find((k) => k.endsWith(`:${state.year}`));
     const bands = key ? l.extras.pyramids[key] : null;
     const ok = drawPyramid(canvas, bands);
-    const cobAge = l.extras?.cobAge;
     if (!ok) {
       canvas.hidden = true;
       empty.hidden = false;
@@ -1187,19 +1343,10 @@ function renderChart() {
     } else {
       $("chart-title").textContent = `Age–sex pyramid · ${key.replace(":", " · ")}`;
     }
-    if (cobAge?.bands?.length && (state.year === cobAge.year || !ok)) {
+    const cobBlocks = cobAgeTablesHtml(l);
+    if (cobBlocks) {
       html.hidden = false;
-      const rows = cobAge.bands
-        .map((b) => {
-          const t = (b.uk || 0) + (b.nonUk || 0);
-          const share = t ? (100 * b.nonUk) / t : null;
-          return `<tr><td>${b.band}</td><td class="num">${formatCount(b.uk)}</td><td class="num">${formatCount(b.nonUk)}</td><td class="num">${share == null ? "—" : `${share.toFixed(1)}%`}</td></tr>`;
-        })
-        .join("");
-      html.innerHTML = `<p class="cite">${cobAge.source} · ${cobAge.geography} · ${cobAge.year}. Age by country of birth, not a sex split. Not a MYE pyramid.</p>
-        <table><caption>Usual residents by age and UK-born / non-UK-born (RM011 categories summed as published)</caption>
-        <thead><tr><th>Age</th><th>UK-born</th><th>Non-UK-born</th><th>Non-UK-born share</th></tr></thead>
-        <tbody>${rows}</tbody></table>`;
+      html.innerHTML = cobBlocks;
     }
     return;
   }
@@ -1207,12 +1354,16 @@ function renderChart() {
   if (state.viz === "composition") {
     const pack = l.extras?.composition;
     const yearKey = String(state.year);
-    const groups = pack?.EW?.[yearKey] || pack?.EW?.[state.year] || pack?.E?.[yearKey];
+    const nationKey = aliasesFor(state.selectedGeo || "EW").find((id) => pack && pack[id]) || "EW";
+    const groups = pack?.[nationKey]?.[yearKey] || pack?.[nationKey]?.[state.year] || pack?.EW?.[yearKey] || pack?.E?.[yearKey];
     const ok = drawComposition(canvas, groups);
     if (!ok) {
       canvas.hidden = true;
       empty.hidden = false;
       empty.textContent = "No high-level composition table for this census year in the extract.";
+    } else {
+      $("chart-title").textContent = `${l.short || l.title} composition · ${geoName(nationKey) || nationKey} · ${state.year}`;
+      $("chart-source").innerHTML = `${sourceCite(l)} · groups as published for ${geoName(nationKey) || nationKey} — not remapped onto another nation’s heading.`;
     }
     return;
   }
@@ -1274,6 +1425,31 @@ function areaRows(l) {
       if (value != null) rows.push({ code: r.code, name: r.name, value, note });
     }
   }
+  const niLas = l.extras?.niLas || l.extras?.niCobLas || [];
+  if (niLas.length && state.year === 2021) {
+    for (const r of niLas) {
+      let value = null;
+      let note = r.note || "NISRA Census 2021 LGD";
+      if (r.shareNonUk != null && (l.id === "p1-cob-stock" || l.id === "p2-identity-compare") && (m?.id === "share-non-uk" || !m || m.id === "share-non-uk")) {
+        value = r.shareNonUk;
+        note = "NISRA MS-A16 % non-UK-born (four UK countries only)";
+      } else if (r.pctWhite != null && (l.id === "p1-ethnicity-census" || (l.id === "p2-identity-compare" && m?.id === "pct-white"))) {
+        value = r.pctWhite;
+        note = "NISRA MS-B01 % White (excludes Irish Traveller and Roma)";
+      } else if (l.id === "p1-religion-census") {
+        const mid = metric()?.id;
+        value = mid === "none" ? r.pctNone : mid === "muslim" ? r.pctMuslim : r.pctChristian;
+        note = "NISRA MS-B19 current religion";
+      }
+      if (value != null) rows.push({ code: r.code, name: r.name, value, note });
+    }
+  }
+  const niEth = l.extras?.niEthLas || [];
+  if (niEth.length && state.year === 2021 && (l.id === "p1-ethnicity-census" || (l.id === "p2-identity-compare" && m?.id === "pct-white"))) {
+    for (const r of niEth) {
+      if (r.pctWhite != null) rows.push({ code: r.code, name: r.name, value: r.pctWhite, note: "NISRA MS-B01 % White (excludes Irish Traveller and Roma)" });
+    }
+  }
   return rows;
 }
 
@@ -1289,9 +1465,15 @@ function renderNotes() {
     ${(l.notes || []).length ? `<h3>How to read this layer</h3><ul>${l.notes.map((n) => `<li>${n}</li>`).join("")}</ul>` : ""}
     ${l.terminology ? `<h3>Wording</h3><ul>${l.terminology.map((t) => `<li>${t}</li>`).join("")}</ul>` : ""}`;
 
-  $("tab-breaks").innerHTML = (l.breaks || []).length
-    ? `<ul>${l.breaks.map((b) => `<li><strong>${b.year}</strong> — ${b.label}</li>`).join("")}</ul>`
-    : "<p>No method-break markers recorded for this layer beyond the coverage window.</p>";
+  const conc = (l.extras?.concordance || state.catalog.concordance)?.items || [];
+  const concHtml = conc.length
+    ? `<h3>Nation concordance</h3><ul>${conc.map((item) => `<li><strong>${item.theme}.</strong> ${item.text}</li>`).join("")}</ul>`
+    : "";
+  $("tab-breaks").innerHTML = `${
+    (l.breaks || []).length
+      ? `<ul>${l.breaks.map((b) => `<li><strong>${b.year}</strong> — ${b.label}</li>`).join("")}</ul>`
+      : "<p>No method-break markers recorded for this layer beyond the coverage window.</p>"
+  }${concHtml}`;
 
   $("tab-src").innerHTML = `${allSourcesHtml(l)}<p class="cite">Downloaded files and URLs: <a href="https://github.com/bushellsblower-maker/migration/blob/main/data/SOURCES.md">data/SOURCES.md</a>.</p>`;
 
@@ -1360,7 +1542,9 @@ function togglePlay() {
   renderYearUi();
   state.playTimer = setInterval(() => {
     let next = state.year + 1;
-    if (next > 2025) next = 1940;
+    const yMin = state.catalog?.yearMin || 1940;
+    const yMax = state.catalog?.yearMax || 2026;
+    if (next > yMax) next = yMin;
     state.year = next;
     $("year").value = String(state.year);
     renderAll();

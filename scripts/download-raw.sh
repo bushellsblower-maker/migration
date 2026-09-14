@@ -110,6 +110,40 @@ dl "$RAW/ons/births-cob-map.xlsx" \
 dl "$RAW/ons/census-rm011-cob-age.csv" \
   "https://api.beta.ons.gov.uk/v1/datasets/RM011/editions/2021/versions/1/csv"
 
+# --- optional UK-nations extracts (Phase 4). Missing files only warn at ingest. ---
+dl "$RAW/ons/mye24tablesuk.xlsx" \
+  "https://www.ons.gov.uk/file?uri=/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/populationestimatesforukenglandandwalesscotlandandnorthernireland/mid2024/mye24tablesuk.xlsx"
+
+dl "$RAW/nrs/census2022-eilr-chart-data.xlsx" \
+  "https://www.scotlandscensus.gov.uk/media/1ioiuhvx/scotland-s-census-2022-ethnic-group-national-identity-language-and-religion-chart-data_new-1.xlsx"
+
+dl "$RAW/nrs/vital-events-2024-chapter-3.xlsx" \
+  "https://www.nrscotland.gov.uk/media/wp2eyitb/vital-events-reference-tables-chapter-3.xlsx"
+
+dl "$RAW/nrs/mye-scotland-2024.xlsx" \
+  "https://www.nrscotland.gov.uk/media/txvdnee4/data-mid-year-population-estimates-2024.xlsx"
+
+dl "$RAW/nisra/census2021-ms-a16-cob.xlsx" \
+  "https://www.nisra.gov.uk/system/files/statistics/census-2021-ms-a16.xlsx"
+
+dl "$RAW/nisra/census2021-ms-a31-cob-age.xlsx" \
+  "https://www.nisra.gov.uk/system/files/statistics/census-2021-ms-a31.xlsx"
+
+dl "$RAW/nisra/census2021-ms-b01-ethnicity.xlsx" \
+  "https://www.nisra.gov.uk/system/files/statistics/census-2021-ms-b01.xlsx"
+
+dl "$RAW/nisra/census2021-ms-b19-religion.xlsx" \
+  "https://www.nisra.gov.uk/system/files/statistics/census-2021-ms-b19.xlsx"
+
+dl "$RAW/nisra/census2021-ms-b23-religion-brought-up.xlsx" \
+  "https://www.nisra.gov.uk/system/files/statistics/census-2021-ms-b23.xlsx"
+
+dl "$RAW/nisra/census2021-ms-b15-national-identity.xlsx" \
+  "https://www.nisra.gov.uk/system/files/statistics/census-2021-ms-b15.xlsx"
+
+dl "$RAW/nisra/births-tables-2024.xlsx" \
+  "https://www.nisra.gov.uk/system/files/statistics/2026-02/Section%203%20-%20Births_Tables_2024-Final.xlsx"
+
 dl "$RAW/ho/asylum-summary-jun-2026.ods" \
   "https://assets.publishing.service.gov.uk/media/6a85c315b0504df9f2c89800/asylum-summary-jun-2026-tables.ods" \
   critical
@@ -151,7 +185,7 @@ echo "DONE (failed=$FAILED critical_failed=$CRITICAL_FAILED force=$FORCE)"
 if [[ -f "$ROOT/scripts/write-manifest.mjs" ]]; then
   node "$ROOT/scripts/write-manifest.mjs" || true
 fi
-ls -lh "$RAW"/ons "$RAW"/ho "$RAW"/mac "$RAW"/geo 2>/dev/null || true
+ls -lh "$RAW"/ons "$RAW"/ho "$RAW"/mac "$RAW"/geo "$RAW"/nrs "$RAW"/nisra 2>/dev/null || true
 
 if [[ "$CRITICAL_FAILED" -ne 0 && "${MIG_ALLOW_PARTIAL:-}" != "1" ]]; then
   echo "CRITICAL: one or more required official files failed to download."

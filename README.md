@@ -7,7 +7,7 @@ Evidence-led explorer of UK population and migration, as published — not as ar
 - Source inventory: [`docs/inventory.md`](docs/inventory.md)
 - Downloaded files: [`data/SOURCES.md`](data/SOURCES.md)
 
-Phase 6 extends the Phase 1–5 static HTML/CSS/JS app served by a thin Cloudflare Worker (`wrangler.toml` assets + `src/worker.js` audit hit). The Worker name and route are unchanged. Do not treat this as a rewrite.
+Phase 7 extends the Phase 1–6 static HTML/CSS/JS app served by a thin Cloudflare Worker (`wrangler.toml` assets + `src/worker.js` audit hit). The Worker name and route are unchanged. Do not treat this as a rewrite.
 
 ## Principles
 
@@ -70,14 +70,23 @@ Refresh and share restore explorer state from the query string:
 
 Example: `https://migration.cybush.uk/?layer=p1-cob-stock&year=2021&year2=2011&geo=E12000007&geo2=S92000003&metric=share-non-uk`
 
-## What Phase 6 adds
+## What Phase 7 adds
+
+- **Map framing and size.** The choropleth is fitted to the UK and Ireland (`fitBounds` + `maxBounds` so the OSM basemap is not a Europe/world frame). The on-screen map panel is about half its previous height (`min(28vh, 240px)`) and stays zoomable/pannable.
+- **Religion / census choropleth join (priority).** The Area Table listed ITL1 and LA rows (East Midlands, Halton, …) while the map painted only the selected geography, and E&W LA religion/ethnicity/COB percentages lived only in `extras.las`. England therefore looked blank even when the table had percentages. Phase 7 publishes those percentages on the **same LAD21 / ITL1 GSS (and TLC…) keys** as `public/geo`. Lookup tries every official alias. The Area Table lists **only the areas on the current map**, with the same join and legend scale. Other geographies with published figures are offered as switches, not mixed into the painted set.
+- **Scotland UV bulk / Scotland–NI sex × age × birthplace.** Re-probed. Still blocked or not published as static tables — Area Overviews and persons cob×age stay. Nothing invented. See `data/raw/nrs/uv-bulk-status.json` and catalog `phase6` / `phase7`.
+- **Evidence-led story pack.** “What the data can / cannot say” cards in the rail, each deep-linking a real layer, year, geography, and method-break callouts (`public/data/stories.json`).
+- **Share / export.** `geo2` two-area compare stays in the restore URL; Copy link says when two areas are included. Print one-pager lists both areas, the painted table, method breaks, and sources.
+- **Ops.** Monthly refresh still stamps success (`refresh-status.json` + `source-health.json` + checksum pins) and on failure commits only the fail stamp so the red badge is visible without overwriting the last good catalog. Refresh also re-runs the UV probe.
+
+## What Phase 6 already added
 
 - **Scotland UV bulk still blocked.** UKDS UV201 / UV204 / UV205 resources remain datastore-pending or return 403 / login-walled from a no-account fetch. NRS “bulk download — multivariate” zips are Output Area / Civil Parish / Island files, not those UV council univariate tables. Council colours stay on Area Overviews. Concordance notes stay; headings are not remapped onto E&W or NISRA. Probe record: `data/raw/nrs/uv-bulk-status.json`.
 - **E&W sex × age × birthplace** from official commissioned table [CT21_0433](https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationestimates/adhocs/3102ct210433census2021) (29 Oct 2025): sex by single year of age by bespoke country of birth, England & Wales only. Rolled into the six RM011 age bands for reading. UK-born is the four UK country columns; Channel Islands / Isle of Man are not added. **RM011 stays persons.** Scotland Figure 8 and NISRA MS-A31 stay persons — no sex split is invented. NISRA Flexible Table Builder DT-0014 is interactive and is not scraped.
 - **Operational hardening.** `data/checksums.json` pins SHA-256 of last ingest-validated extracts. `public/data/source-health.json` lists last OK vs last fail and hash match per feed. A failed refresh shows a red site badge and keeps the last good catalog. The monthly Action commits the fail stamp (not a bad catalog) so the live Worker can show the badge.
 - **Low-cost polish (no visual QA required).** Side-by-side two-area compare (`geo2` / Shift-click); method-break year pins on the chart and year ticks; HTML print CSS one-pager for the selected year/layer.
 
-Honest gaps still remaining: UKDS/NRS UV201/204/205 council CSVs when that datastore is populated; Scotland/NI published static age×birthplace sex splits if they appear; NISRA still has no standalone Muslim column; no invented irregular-migrant stock; no pre-1991 ethnicity or pre-2001 religion continuous maps; no single net fiscal cost.
+Honest gaps still remaining: UKDS/NRS UV201/204/205 council CSVs when that datastore is populated (Phase 7 re-probe still blocked); Scotland/NI published static age×birthplace sex splits if they appear (still persons only); NISRA still has no standalone Muslim column; no invented irregular-migrant stock; no pre-1991 ethnicity or pre-2001 religion continuous maps; no single net fiscal cost.
 
 ## What Phase 5 already added
 

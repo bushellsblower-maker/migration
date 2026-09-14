@@ -1276,10 +1276,66 @@ function main() {
     if (row.none != null) addPoint(religion.none, row.code, 2021, (100 * row.none) / row.total, extra);
     if (row.Muslim != null) addPoint(religion.muslim, row.code, 2021, (100 * row.Muslim) / row.total, extra);
   }
+  // Same published percentages on the GeoJSON codes (LAD21 / N09 / ITL1 TLC…).
+  // extras.las stay as notes; the map must not depend on extras-only lookup.
+  for (const row of ethnicity.las) {
+    if (row.pctWhite != null) {
+      addPoint(ethnicity.whiteShare, row.code, 2021, row.pctWhite, {
+        note: "Census 2021 % White (high-level ethnic group, E&W)",
+        name: row.name,
+      });
+    }
+  }
+  for (const row of religion.las) {
+    if (row.pctChristian != null) addPoint(religion.christian, row.code, 2021, row.pctChristian, { note: "Census 2021 religion % (E&W)", name: row.name });
+    if (row.pctNone != null) addPoint(religion.none, row.code, 2021, row.pctNone, { note: "Census 2021 religion % (E&W)", name: row.name });
+    if (row.pctMuslim != null) addPoint(religion.muslim, row.code, 2021, row.pctMuslim, { note: "Census 2021 religion % (E&W)", name: row.name });
+  }
+  for (const row of cobCensus.las) {
+    if (row.y2011 != null) addPoint(aps.shareNonUk, row.code, 2011, row.y2011, { note: "census 2011 % non-UK-born (country of birth, E&W)", name: row.name });
+    if (row.y2021 != null) addPoint(aps.shareNonUk, row.code, 2021, row.y2021, { note: "census 2021 % non-UK-born (country of birth, E&W)", name: row.name });
+  }
+  for (const row of niEth?.lgd || []) {
+    if (row.pctWhite != null) {
+      addPoint(ethnicity.whiteShare, row.code, 2021, row.pctWhite, {
+        note: row.note || "NISRA MS-B01 % White (excludes Irish Traveller and Roma)",
+        name: row.name,
+      });
+    }
+  }
+  for (const row of niRel?.lgd || []) {
+    const note = row.note || "NISRA MS-B19 current religion";
+    if (row.pctChristian != null) addPoint(religion.christian, row.code, 2021, row.pctChristian, { note, name: row.name });
+    if (row.pctNone != null) addPoint(religion.none, row.code, 2021, row.pctNone, { note, name: row.name });
+    if (row.pctMuslim != null) addPoint(religion.muslim, row.code, 2021, row.pctMuslim, { note, name: row.name });
+  }
+  for (const row of niCob?.lgd || []) {
+    if (row.shareNonUk != null) {
+      addPoint(aps.shareNonUk, row.code, 2021, row.shareNonUk, {
+        note: row.note || "NISRA MS-A16 % non-UK-born (four UK countries only)",
+        name: row.name,
+      });
+    }
+  }
+  const gssToItl = lookups.gssToItl1 || {};
+  const copyItlAlias = (series, year) => {
+    for (const [gss, tl] of Object.entries(gssToItl)) {
+      const p = (series[gss] || []).find((x) => x.year === year);
+      if (p && !(series[tl] || []).some((x) => x.year === year)) {
+        addPoint(series, tl, year, p.value, { note: p.note, name: p.name });
+      }
+    }
+  };
+  copyItlAlias(ethnicity.whiteShare, 2021);
+  copyItlAlias(religion.christian, 2021);
+  copyItlAlias(religion.none, 2021);
+  copyItlAlias(religion.muslim, 2021);
+  copyItlAlias(aps.shareNonUk, 2021);
   sortSeries(ethnicity.whiteShare);
   sortSeries(religion.christian);
   sortSeries(religion.none);
   sortSeries(religion.muslim);
+  sortSeries(aps.shareNonUk);
 
   const pyramidTotals = {};
   for (const [key, bands] of Object.entries(age.pyramids || {})) {
@@ -2027,8 +2083,8 @@ function main() {
 
   const catalog = {
     generated: new Date().toISOString(),
-    title: "Migration — Phase 6 catalog",
-    phase: 6,
+    title: "Migration — Phase 7 catalog",
+    phase: 7,
     yearMin: 1940,
     yearMax: 2026,
     concordance: concordanceNotes(),
@@ -2058,6 +2114,25 @@ function main() {
       geo: "nation | region | la | GSS or ITL1 code (E12… / E06… / W92… / TLC…)",
       geo2: "optional second area for side-by-side compare (same encoding as geo)",
       example: "?layer=p1-cob-stock&year=2021&geo=E12000007&geo2=S92000003&metric=share-non-uk",
+    },
+    phase7: {
+      choroplethJoin: {
+        status: "fixed",
+        note: "E&W LA religion/ethnicity/COB percentages are published on the same LAD21 / ITL1 GSS keys as public/geo. Area table at a geography lists only that level’s map features.",
+      },
+      stories: "public/data/stories.json — evidence-led can/cannot pack; no invented statistics.",
+      scotlandNiCobAgeSex: (() => {
+        const p = path.join(RAW, "nrs", "cob-age-sex-status.json");
+        if (!fs.existsSync(p)) {
+          return { status: "not-probed", note: "Persons tables stay. No sex split invented." };
+        }
+        try {
+          const j = JSON.parse(fs.readFileSync(p, "utf8"));
+          return { status: j.status, blocker: j.blocker, probed: j.probed, fallback: j.fallback };
+        } catch {
+          return { status: "not-probed", note: "Persons tables stay. No sex split invented." };
+        }
+      })(),
     },
     phase6: {
       scotlandUvBulk: uvBulk

@@ -1,5 +1,5 @@
 /**
- * Post-ingest checks for Phase 6. Reads public/data/catalog.json.
+ * Post-ingest checks for Phase 7. Reads public/data/catalog.json.
  * Fails if a committed extract parsed empty — never invents a substitute figure.
  */
 import fs from "node:fs";
@@ -76,6 +76,15 @@ assert.ok(catalog.provenance?.refreshSchedule, "refresh schedule recorded on cat
 assert.ok(catalog.provenance?.checksums, "checksum pin path recorded");
 assert.ok(fs.existsSync(path.join(ROOT, "public", "data", "refresh-status.json")), "refresh-status.json present");
 assert.ok(fs.existsSync(path.join(ROOT, "data", "checksums.json")), "checksums.json present");
+assert.ok(fs.existsSync(path.join(ROOT, "public", "data", "stories.json")), "stories pack present");
+assert.equal(catalog.phase, 7, "catalog phase is 7");
+
+const christian = rel.metrics.find((m) => m.id === "christian");
+assert.ok(christian?.series?.E12000004?.some((p) => p.year === 2021), "East Midlands religion on series (ITL1 GSS)");
+assert.ok(christian?.series?.E06000006?.some((p) => p.year === 2021), "Halton religion on series (LAD21 — not extras-only)");
+assert.ok(christian?.series?.TLF?.some((p) => p.year === 2021), "East Midlands religion also keyed as ITL1 TLF");
+
+await import("./check-choropleth-join.mjs");
 
 console.log("check-catalog OK", {
   scotLas: scotCob.length,

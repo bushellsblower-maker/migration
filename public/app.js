@@ -458,8 +458,7 @@ function renderChrome() {
 
   const ident = $("identity-modes");
   const box = $("identity-box");
-  const isIdentity = IDENTITY_MODES.some((m) => m.id === l.id);
-  box.hidden = !isIdentity && !l.identity;
+  box.hidden = false;
   ident.innerHTML = IDENTITY_MODES.map(
     (m) => `<button type="button" data-identity="${m.id}" aria-pressed="${l.id === m.id}" title="${m.q}">${m.label}</button>`
   ).join("");

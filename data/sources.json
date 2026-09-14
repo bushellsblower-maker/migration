@@ -6,8 +6,8 @@
     "download": "npm run download  (or bash scripts/download-raw.sh). Resume-safe unless FORCE=1 / --force.",
     "build": "npm run build  (normalise geo + ingest). Fails if a critical file is missing or a required sheet/column cannot be parsed.",
     "refresh": "npm run refresh  = download + build. Use npm run refresh:force to re-fetch even when files exist.",
-    "partial": "Set MIG_ALLOW_PARTIAL=1 only to warn (exit 0) when an optional source is missing. Critical failures still exit 1 unless MIG_ALLOW_PARTIAL=1 is set AND the existing catalog.json is left untouched.",
-    "schemaBreak": "ingest.mjs prints SCHEMA ERROR for a missing critical file, missing sheet, or a series with too few parseable points. The previous public/data/catalog.json is not overwritten when ingest exits non-zero."
+    "partial": "Optional files only warn. Default: any SCHEMA ERROR exits 1 and leaves the previous catalog.json in place. MIG_ALLOW_PARTIAL=1 is a local debug escape — ingest still prints SCHEMA ERROR but writes catalog.json anyway (it may be incomplete).",
+    "schemaBreak": "ingest.mjs prints SCHEMA ERROR for a missing critical file, missing sheet, or a series with too few parseable points. Without MIG_ALLOW_PARTIAL=1 the previous public/data/catalog.json is not overwritten."
   },
   "files": [
     {

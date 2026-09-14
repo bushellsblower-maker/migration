@@ -888,12 +888,12 @@ function finishSchemaOrExit() {
     console.log("SCHEMA OK");
     return;
   }
-  console.error(`${errors.length} critical ingest error(s). catalog.json was not overwritten.`);
-  console.error("See data/sources.json → howRefreshWorks, or set MIG_ALLOW_PARTIAL=1 to keep the previous catalog.");
+  console.error(`${errors.length} critical ingest error(s).`);
   if (process.env.MIG_ALLOW_PARTIAL === "1") {
-    schemaWarn("MIG_ALLOW_PARTIAL=1 — continuing despite schema errors (catalog will still be written)");
+    schemaWarn("MIG_ALLOW_PARTIAL=1 — writing catalog anyway (may be incomplete). Default is to leave the previous catalog in place.");
     return;
   }
+  console.error("catalog.json was not overwritten. See data/sources.json → howRefreshWorks.");
   process.exit(1);
 }
 

@@ -6,12 +6,16 @@ Nothing in `data/raw` was typed from memory.
 Licence: most files are Crown copyright, reusable under the
 [Open Government Licence v3.0](https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/).
 
-Re-download:
+Re-download and rebuild:
 
 ```bash
-bash scripts/download-raw.sh
-npm run build
+npm run refresh          # download + build
+npm run refresh:force    # re-fetch + build
 ```
+
+Critical download or ingest failures exit 1 and do not overwrite `public/data/catalog.json`. See `data/sources.json` → `howRefreshWorks`.
+
+Cited fiscal comparison figures (copied from published studies / the Migration Observatory Table 1, not invented) live in `data/fiscal-citations.json`. MAC Figure 10 / Table 11 / Table 23 are parsed from the MAC ODS.
 
 | File | Producer | Source URL | Used for |
 | --- | --- | --- | --- |
@@ -32,7 +36,8 @@ npm run build
 | `ons/housing-affordability.xlsx` | ONS | [House price to workplace earnings](https://www.ons.gov.uk/peoplepopulationandcommunity/housing/datasets/ratioofhousepricetoworkplacebasedearningslowerquartileandmedian) | Affordability ratios |
 | `ho/asylum-summary-jun-2026.ods` | Home Office | [Immigration system statistics tables](https://www.gov.uk/government/statistical-data-sets/immigration-system-statistics-data-tables) | Asylum claims / decisions / awaiting |
 | `ho/illegal-entry-summary-jun-2026.ods` | Home Office | Same collection | Detected illegal-entry / small-boat arrivals |
-| `mac/fiscal_report_ods_tables.checked.ods` | MAC | [Fiscal impact of immigration](https://www.gov.uk/government/publications/the-fiscal-impact-of-immigration-in-the-uk) | Contested static estimates (methods panel) |
+| `mac/fiscal_report_ods_tables.checked.ods` | MAC | [Fiscal impact of immigration](https://www.gov.uk/government/publications/the-fiscal-impact-of-immigration-in-the-uk) | Contested static (Fig 10), public-goods sensitivities (Table 11), lifetime cohort totals (Table 23) |
+| `data/fiscal-citations.json` | MAC / OBR / Migration Observatory / Dustmann–Frattini (and Table 1 comparators) | [MigObs briefing](https://migrationobservatory.ox.ac.uk/resources/briefings/the-fiscal-impact-of-immigration-in-the-uk/) | Side-by-side cited estimates; never a single net total |
 | `geo/uk-nations.geojson` | Natural Earth 50m subunits | [natural-earth-vector](https://github.com/nvkelso/natural-earth-vector) | Four UK nation polygons |
 | `geo/itl1-ons-buc.geojson` | ONS Open Geography | [ITL1 January 2021 UK BUC FeatureServer](https://services1.arcgis.com/ESMARspQHYMw9BZ9/arcgis/rest/services/International_Territorial_Level_1_January_2021_UK_BUC_2022/FeatureServer) · [data.gov.uk](https://www.data.gov.uk/dataset/772cce9d-962b-477f-98bb-7f31dbe8b66a/international-territorial-level-1-january-2021-boundaries-uk-bgc) | 12 ITL1 polygons (ultra-generalised). OGL / OS+ONS IPR. Compact copy: `public/geo/uk-itl1.geojson`. |
 | `geo/lad-ons-buc.geojson` | ONS Open Geography | [LAD December 2021 UK BUC FeatureServer](https://services1.arcgis.com/ESMARspQHYMw9BZ9/arcgis/rest/services/Local_Authority_Districts_December_2021_UK_BUC_2022/FeatureServer) · [data.gov.uk](https://www.data.gov.uk/dataset/50fb9e41-01d4-4e12-b5a2-c9add02470a8/local-authority-districts-december-2021-boundaries-uk-buc) | 374 LAD polygons (ultra-generalised, Census 2021 vintage). Compact copy: `public/geo/uk-lad.geojson`. |

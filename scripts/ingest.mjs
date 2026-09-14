@@ -648,22 +648,35 @@ function parseBoats(wb) {
   return parseWideYearTable(rows, "Method");
 }
 
-function parseEmp06(wb) {
+function parseEmpRateSheet(wb, sheetName, keys) {
   const rates = {};
-  const rows = sheetAoa(wb, "Country of birth rates");
+  const rows = sheetAoa(wb, sheetName);
   const headerIdx = rows.findIndex((r) => /Dataset identifier/i.test(String(r[0])));
-  // columns: Total, UK-born, Non-UK born
+  if (headerIdx < 0) return rates;
   for (const row of rows.slice(headerIdx + 1)) {
     const label = String(row[0] || "").trim();
     const y = yearOf(label);
     if (!y) continue;
-    // Use Oct-Dec as annual-ish point when present; otherwise any quarter — keep all as year.fraction? Keep last quarter of each year.
     if (!/Oct-Dec|Oct–Dec/i.test(label)) continue;
-    addPoint(rates, "UK-born", y, num(row[2]));
-    addPoint(rates, "non-UK-born", y, num(row[3]));
-    addPoint(rates, "all", y, num(row[1]));
+    for (const [key, col] of Object.entries(keys)) {
+      addPoint(rates, key, y, num(row[col]));
+    }
   }
-  return { rates: sortSeries(rates) };
+  return sortSeries(rates);
+}
+
+function parseEmp06(wb) {
+  const rates = parseEmpRateSheet(wb, "Country of birth rates", {
+    all: 1,
+    "UK-born": 2,
+    "non-UK-born": 3,
+  });
+  const nationality = parseEmpRateSheet(wb, "Nationality rates", {
+    all: 1,
+    "UK-nationality": 2,
+    "non-UK-nationality": 3,
+  });
+  return { rates, nationality };
 }
 
 function parseHousing(wb) {
@@ -685,7 +698,19 @@ function parseMac(wb) {
   const fig10 = sheetAoa(wb, "Figure_10");
   const groups = (fig10[1] || []).slice(1).map((x) => String(x).replace(/\s+/g, " ").trim()).filter(Boolean);
   const values = (fig10[2] || []).slice(1).map(num);
-  const staticEstimates = groups.map((label, i) => ({ label, gbp: values[i], year: "2022/23" })).filter((d) => d.gbp != null);
+  const staticEstimates = groups
+    .map((label, i) => ({
+      label,
+      gbp: values[i],
+      year: "2022/23",
+      frame: "static",
+      incidence: "average",
+      publicGoods: "baseline",
+      population: /UK resident|UK working|UK child|UK non-working/i.test(label) ? "uk-born" : "visa",
+      sourceSheet: "Figure_10",
+      methodNote: "MAC static net fiscal impact including visa fees (primary spending), arrival-year 2022/23. Per person, not a UK-wide stock total.",
+    }))
+    .filter((d) => d.gbp != null);
   const t11 = sheetAoa(wb, "Table_11");
   const headers = (t11[1] || []).map((x) => String(x).replace(/\s+/g, " ").trim());
   const sensitivities = [];
@@ -698,9 +723,98 @@ function parseMac(wb) {
       const v = num(row[i]);
       if (v != null) cells[h] = v;
     });
-    if (Object.keys(cells).length) sensitivities.push({ scenario, cells });
+    const publicGoods = /Pure Public Goods/i.test(scenario)
+      ? "pure-mc0"
+      : /Congestible Public Goods/i.test(scenario)
+        ? "congestible-mc0"
+        : "baseline";
+    const incidence = /MC=0|MC = 0/i.test(scenario) ? "marginal" : "average";
+    if (Object.keys(cells).length) sensitivities.push({ scenario, cells, publicGoods, incidence, frame: "static" });
   }
-  return { staticEstimates, sensitivities };
+  const t23 = sheetAoa(wb, "Table_23");
+  const lifetimeCohorts = [];
+  for (const row of t23.slice(2)) {
+    const label = String(row[0] || "").trim();
+    if (!label) continue;
+    const tax = num(row[1]);
+    const visaFees = num(row[2]);
+    const expenditure = num(row[3]);
+    const net = num(row[4]);
+    if (tax == null && net == null) continue;
+    lifetimeCohorts.push({
+      label,
+      taxGbpMillion: tax,
+      visaFeesGbpMillion: visaFees,
+      expenditureGbpMillion: expenditure,
+      netGbpMillion: net,
+      year: "2022/23",
+      unit: "£ million, lifetime cohort total",
+      frame: "dynamic",
+      incidence: "average",
+      publicGoods: "baseline",
+      population: "visa",
+      sourceSheet: "Table_23",
+      methodNote: "MAC Table 23 lifetime cohort totals for the 2022/23 visa cohort (tax + visa fees − expenditure). Discounted lifetime model, not a stock of all migrants.",
+    });
+  }
+  return { staticEstimates, sensitivities, lifetimeCohorts };
+}
+
+function loadFiscalCitations() {
+  const p = path.join(ROOT, "data", "fiscal-citations.json");
+  if (!fs.existsSync(p)) return { assumptionAxes: [], estimates: [] };
+  return JSON.parse(fs.readFileSync(p, "utf8"));
+}
+
+function loadManifest() {
+  const p = path.join(RAW, "manifest.json");
+  if (!fs.existsSync(p)) return null;
+  try {
+    return JSON.parse(fs.readFileSync(p, "utf8"));
+  } catch {
+    return null;
+  }
+}
+
+function parseAsylumExtra(wb) {
+  const grants = parseWideYearTable(sheetAoa(wb, "Asy_02a"), "Date");
+  const awaiting = parseWideYearTable(sheetAoa(wb, "Asy_03a"), "As at");
+  return { grants, awaiting };
+}
+
+function detectionGroup(name) {
+  if (/small boat/i.test(name)) return "small-boat";
+  return "other-detection";
+}
+
+function parseRm011CobAge() {
+  const abs = path.join(RAW, "ons/census-rm011-cob-age.csv");
+  if (!fs.existsSync(abs) || fs.statSync(abs).size < 200) return null;
+  const rows = parseCsv("ons/census-rm011-cob-age.csv");
+  if (rows.length < 4) return null;
+  const header = rows[0].map((h) => String(h).replace(/^"|"$/g, ""));
+  const cobIdx = header.findIndex((h) => /country of birth/i.test(h));
+  const ageIdx = header.findIndex((h) => /^age/i.test(h) && !/sort/i.test(h));
+  const valIdx = header.findIndex((h) => /^(observation|obs|value|v4_1)$/i.test(h));
+  if (cobIdx < 0 || ageIdx < 0 || valIdx < 0) return null;
+  const bands = {};
+  for (const row of rows.slice(1)) {
+    const cob = String(row[cobIdx] || "").trim();
+    const age = String(row[ageIdx] || "").trim();
+    const v = num(row[valIdx]);
+    if (!cob || !age || v == null || /^total/i.test(age)) continue;
+    const uk = /united kingdom|europe: united kingdom/i.test(cob);
+    const nonUk =
+      /eu countries|non-eu|africa|asia|americas|oceania|british overseas|antarctica/i.test(cob) &&
+      !/united kingdom/i.test(cob);
+    if (!uk && !nonUk) continue;
+    bands[age] ??= { band: age, uk: 0, nonUk: 0 };
+    if (uk) bands[age].uk += v;
+    else bands[age].nonUk += v;
+  }
+  const list = Object.values(bands);
+  if (list.length < 3) return null;
+  return { geography: "EW", year: 2021, source: "ONS Census 2021 RM011 country of birth by age", bands: list };
 }
 
 function yearsOfSeries(series) {
@@ -730,26 +844,131 @@ function loadLookups() {
   return JSON.parse(fs.readFileSync(p, "utf8"));
 }
 
+const schemaIssues = [];
+function schemaError(msg) {
+  schemaIssues.push({ level: "error", msg });
+  console.error("SCHEMA ERROR", msg);
+}
+function schemaWarn(msg) {
+  schemaIssues.push({ level: "warn", msg });
+  console.warn("SCHEMA WARN", msg);
+}
+
+function requireExisting(rel, { critical = true } = {}) {
+  const abs = path.join(RAW, rel);
+  if (!fs.existsSync(abs) || fs.statSync(abs).size === 0) {
+    (critical ? schemaError : schemaWarn)(`missing ${rel}`);
+    return false;
+  }
+  return true;
+}
+
+function requireSheet(wb, rel, sheet) {
+  if (!wb) {
+    schemaError(`unreadable ${rel}`);
+    return false;
+  }
+  if (!wb.Sheets[sheet]) {
+    schemaError(`${rel} has no sheet “${sheet}” — official layout may have changed`);
+    return false;
+  }
+  return true;
+}
+
+function requireSeries(series, label, minYears = 3) {
+  const n = yearsOfSeries(series).length;
+  if (n < minYears) schemaError(`${label} has ${n} year(s); expected at least ${minYears}. Parser or source schema may have broken.`);
+}
+
+function finishSchemaOrExit() {
+  const errors = schemaIssues.filter((i) => i.level === "error");
+  const warns = schemaIssues.filter((i) => i.level === "warn");
+  if (warns.length) console.warn(`${warns.length} ingest warning(s)`);
+  if (!errors.length) {
+    console.log("SCHEMA OK");
+    return;
+  }
+  console.error(`${errors.length} critical ingest error(s). catalog.json was not overwritten.`);
+  console.error("See data/sources.json → howRefreshWorks, or set MIG_ALLOW_PARTIAL=1 to keep the previous catalog.");
+  if (process.env.MIG_ALLOW_PARTIAL === "1") {
+    schemaWarn("MIG_ALLOW_PARTIAL=1 — continuing despite schema errors (catalog will still be written)");
+    return;
+  }
+  process.exit(1);
+}
+
 function main() {
   const lookups = loadLookups();
+  const fiscalCitations = loadFiscalCitations();
+  const manifest = loadManifest();
+
+  requireExisting("ons/pop.csv");
+  requireExisting("ons/ltim-1964-2015.xls");
+  requireExisting("ons/ltim-flows-may2026.xlsx");
+  requireExisting("ho/asylum-summary-jun-2026.ods");
+  requireExisting("ho/illegal-entry-summary-jun-2026.ods");
+  requireExisting("mac/fiscal_report_ods_tables.checked.ods");
+  requireExisting("ons/aps-cob-nationality-2021.xls");
+  requireExisting("ons/emp06aug2026.xls");
+  requireExisting("ons/housing-affordability.xlsx");
+  requireExisting("geo/itl1-ons-buc.geojson");
+  requireExisting("geo/lad-ons-buc.geojson");
+
+  const ewPopWb = readWb("ons/ew-pop-1838-2025.xlsx");
+  const myeWb = readWb("ons/mye25tablesew.xlsx");
+  const ltimHistWb = readWb("ons/ltim-1964-2015.xls");
+  const ltimAdminWb = readWb("ons/ltim-flows-may2026.xlsx");
+  const apsWb = readWb("ons/aps-cob-nationality-2021.xls");
+  const asyWb = readWb("ho/asylum-summary-jun-2026.ods");
+  const ierWb = readWb("ho/illegal-entry-summary-jun-2026.ods");
+  const empWb = readWb("ons/emp06aug2026.xls");
+  const macWb = readWb("mac/fiscal_report_ods_tables.checked.ods");
+
+  requireSheet(ewPopWb, "ons/ew-pop-1838-2025.xlsx", "Table 7");
+  requireSheet(ltimHistWb, "ons/ltim-1964-2015.xls", "Data");
+  requireSheet(ltimAdminWb, "ons/ltim-flows-may2026.xlsx", "1");
+  requireSheet(apsWb, "ons/aps-cob-nationality-2021.xls", "1.1");
+  requireSheet(asyWb, "ho/asylum-summary-jun-2026.ods", "Asy_00a");
+  requireSheet(ierWb, "ho/illegal-entry-summary-jun-2026.ods", "IER_01");
+  requireSheet(empWb, "ons/emp06aug2026.xls", "Country of birth rates");
+  requireSheet(macWb, "mac/fiscal_report_ods_tables.checked.ods", "Figure_10");
+  requireSheet(macWb, "mac/fiscal_report_ods_tables.checked.ods", "Table_11");
+
   const pop = parsePopCsv();
-  const ewHist = parseEwHistorical(readWb("ons/ew-pop-1838-2025.xlsx"));
+  const ewHist = parseEwHistorical(ewPopWb);
   const gb = parseGb1937(readWb("ons/gb-pop-1937-2014.xls"));
   const regional = parseRegional(readWb("ons/regional-pop-1971-2023.xlsx"));
-  const age = parseAgeSex(readWb("ons/ew-pop-1838-2025.xlsx"), readWb("ons/mye25tablesew.xlsx"));
-  const ltimHist = parseLtimHistorical(readWb("ons/ltim-1964-2015.xls"));
-  const ltimAdmin = parseLtimAdmin(readWb("ons/ltim-flows-may2026.xlsx"));
-  const aps = parseAps(readWb("ons/aps-cob-nationality-2021.xls"));
-  const nationality = parseApsNationality(readWb("ons/aps-cob-nationality-2021.xls"));
+  const age = parseAgeSex(ewPopWb, myeWb);
+  const ltimHist = parseLtimHistorical(ltimHistWb);
+  const ltimAdmin = parseLtimAdmin(ltimAdminWb);
+  const aps = parseAps(apsWb);
+  const nationality = parseApsNationality(apsWb);
   const cobCensus = parseCensusCob(readWb("ons/census-cob-fig4.xlsx"));
   const ethnicity = parseEthnicity(readWb("ons/census-ethnicity-grouped.xlsx"), readWb("ons/census-ethnicity-map.xlsx"));
   const religion = parseReligion(readWb("ons/census-religion-fig1.xlsx"), readWb("ons/census-religion-fig2.xlsx"));
   const births = parseBirths(readWb("ons/births-parents-cob-2025.xlsx"), readWb("ons/births-cob-map.xlsx"));
-  const asylum = parseAsylum(readWb("ho/asylum-summary-jun-2026.ods"));
-  const boats = parseBoats(readWb("ho/illegal-entry-summary-jun-2026.ods"));
-  const emp = parseEmp06(readWb("ons/emp06aug2026.xls"));
+  const asylum = parseAsylum(asyWb);
+  const asylumExtra = parseAsylumExtra(asyWb);
+  const boats = parseBoats(ierWb);
+  const emp = parseEmp06(empWb);
   const housing = parseHousing(readWb("ons/housing-affordability.xlsx"));
-  const mac = parseMac(readWb("mac/fiscal_report_ods_tables.checked.ods"));
+  const mac = parseMac(macWb);
+  const cobAge = parseRm011CobAge();
+
+  requireSeries(pop, "ONS pop.csv", 20);
+  requireSeries(ltimHist.emigration, "IPS-era emigration", 10);
+  requireSeries(ltimAdmin.emigration, "admin LTIM emigration", 5);
+  requireSeries(ltimAdmin.immigration, "admin LTIM immigration", 5);
+  if (!asylum["People claiming asylum"] && !asylum["people claiming asylum"]) {
+    const asyKeys = Object.keys(asylum);
+    if (!asyKeys.some((k) => /people claiming asylum/i.test(k))) schemaError("Asy_00a missing “People claiming asylum”");
+    if (!asyKeys.some((k) => /grants of protection/i.test(k))) schemaError("Asy_00a missing grants row");
+    if (!asyKeys.some((k) => /^refusals$/i.test(k))) schemaError("Asy_00a missing refusals row");
+    if (!asyKeys.some((k) => /awaiting an initial decision/i.test(k))) schemaError("Asy_00a missing awaiting-decision row");
+  }
+  if (!Object.keys(boats).some((k) => /small boat/i.test(k))) schemaError("IER_01 missing small-boat detections");
+  if (!mac.staticEstimates?.length) schemaError("MAC Figure_10 produced no static estimates");
+  if (!fiscalCitations.estimates?.length) schemaError("data/fiscal-citations.json has no estimates");
 
   const mye = mergePrefer(pop, mergePrefer(ewHist, gb));
   // English ITL1 (E12*) sit in the regional workbook; Wales/Scotland/NI ITL1 = nation totals.
@@ -866,20 +1085,64 @@ function main() {
         "The 1964–2015 series and the 2012– admin series are shown as separate lines. They are not the same method.",
         "Admin-based chart points use year-ending December only, to avoid plotting four overlapping quarterly vintages as four years.",
         "IPS measured stated intentions; admin-based LTIM observes travel and visa/tax histories. Latest ~four points are revisable.",
+        "Emigration is a published series in its own right. Net migration is immigration minus emigration — it is not a substitute for the outflow.",
       ],
       definitions: [
         "Long-term international migrant (UN): a person who changes their country of usual residence for 12 months or more.",
-        "Net migration = immigration − emigration.",
+        "Immigration: inflows of long-term migrants. Emigration: outflows. Net migration = immigration − emigration.",
       ],
+      extras: {
+        flowTrio: ["immig-admin", "emig-admin", "net-admin", "immig-ips", "emig-ips", "net-ips"],
+      },
       metrics: [
-        { id: "immig-ips", label: "Immigration (IPS-era)", unit: "people", format: "count", series: ltimHist.immigration },
-        { id: "emig-ips", label: "Emigration (IPS-era)", unit: "people", format: "count", series: ltimHist.emigration },
-        { id: "net-ips", label: "Net migration (IPS-era)", unit: "people", format: "count", series: ltimHist.net },
-        { id: "immig-admin", label: "Immigration (admin LTIM, YE Dec)", unit: "people", format: "count", series: ltimAdmin.immigration },
-        { id: "emig-admin", label: "Emigration (admin LTIM, YE Dec)", unit: "people", format: "count", series: ltimAdmin.emigration },
-        { id: "net-admin", label: "Net migration (admin LTIM, YE Dec)", unit: "people", format: "count", series: ltimAdmin.net },
+        { id: "immig-ips", label: "Immigration (IPS-era)", unit: "people", format: "count", series: ltimHist.immigration, flow: "immigration" },
+        { id: "emig-ips", label: "Emigration (IPS-era)", unit: "people", format: "count", series: ltimHist.emigration, flow: "emigration" },
+        { id: "net-ips", label: "Net migration (IPS-era)", unit: "people", format: "count", series: ltimHist.net, flow: "net" },
+        { id: "immig-admin", label: "Immigration (admin LTIM, YE Dec)", unit: "people", format: "count", series: ltimAdmin.immigration, flow: "immigration" },
+        { id: "emig-admin", label: "Emigration (admin LTIM, YE Dec)", unit: "people", format: "count", series: ltimAdmin.emigration, flow: "emigration" },
+        { id: "net-admin", label: "Net migration (admin LTIM, YE Dec)", unit: "people", format: "count", series: ltimAdmin.net, flow: "net" },
       ],
-      defaultMetric: "net-admin",
+      defaultMetric: "emig-admin",
+      vizModes: ["absolute"],
+    },
+    {
+      id: "p3-emigration",
+      title: "Emigration — long-term outflows",
+      short: "Emigration",
+      coverage: { start: 1964, end: 2025 },
+      mapGeos: [],
+      mapLevels: {
+        nation: { available: false, reason: "LTIM emigration in this extract is a UK total only." },
+        region: { available: false, reason: "No ITL1 emigration series in this extract." },
+        la: { available: false, reason: "No local-authority emigration series in this extract." },
+      },
+      noMapReason: "Official LTIM emigration is a UK national series. It is an outflow, not a local stock.",
+      confidence: "mixed",
+      badges: ["First-class outflow", "Not the inverse of a stock", "IPS vs admin (do not splice)"],
+      breaks: [
+        { year: 1964, label: "IPS-era emigration timeline begins" },
+        { year: 1991, label: "LTIM 1991+ methodology" },
+        { year: 2012, label: "Admin-based LTIM emigration (YE December in this extract)" },
+      ],
+      sources: [
+        source("ons-ltim-ips", "ONS LTIM by citizenship 1964–2015 (ad hoc)", "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/internationalmigration/adhocs/006408longterminternationalmigrationintoandoutoftheukbycitizenship1964to2015"),
+        source("ons-ltim-admin", "ONS long-term international migration flows, provisional (YE Dec 2025)", "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/internationalmigration/datasets/longterminternationalimmigrationemigrationandnetmigrationflowsprovisional"),
+      ],
+      notes: [
+        "This layer is the published emigration series. Immigration is drawn only as context. Net migration lives on the Migration flows layer.",
+        "IPS-era and admin-based lines are different methods. Do not splice them.",
+      ],
+      definitions: [
+        "Emigration: people leaving the UK who change their country of usual residence for 12 months or more.",
+      ],
+      extras: { flowTrio: ["emig-admin", "emig-ips", "immig-admin", "immig-ips"] },
+      metrics: [
+        { id: "emig-admin", label: "Emigration (admin LTIM, YE Dec)", unit: "people", format: "count", series: ltimAdmin.emigration, flow: "emigration" },
+        { id: "emig-ips", label: "Emigration (IPS-era)", unit: "people", format: "count", series: ltimHist.emigration, flow: "emigration" },
+        { id: "immig-admin", label: "Immigration (admin LTIM, context)", unit: "people", format: "count", series: ltimAdmin.immigration, flow: "immigration" },
+        { id: "immig-ips", label: "Immigration (IPS-era, context)", unit: "people", format: "count", series: ltimHist.immigration, flow: "immigration" },
+      ],
+      defaultMetric: "emig-admin",
       vizModes: ["absolute"],
     },
     {
@@ -910,6 +1173,7 @@ function main() {
         "APS is a household survey: it excludes most communal establishments and totals do not match mid-year estimates.",
         "The main APS bulletin series ends YE June 2021. This build does not invent a post-2021 APS time series.",
         "Scotland’s Census was in 2022. Combining it with E&W/NI 2021 as a single UK census year would be a date mismatch.",
+        "APS YE June 2021 already includes Scotland and Northern Ireland nation totals (and ITL1). Census 2022 Scotland / NISRA 2021 LA files are not in this extract — those nations stay on the APS 2021 figures, not a later census splice.",
       ],
       definitions: [
         "Country of birth (this layer): where a usual resident was born. It is not a passport, not a nationality, and not an ethnic group.",
@@ -1109,10 +1373,13 @@ function main() {
       ],
       notes: [
         "Pyramids are from the mid-2025 single-year-of-age tables (2023 LA boundaries). They are not birthplace- or nationality-specific.",
-        "Age × country-of-birth cross-tabs are census or APS products, not this MYE file.",
+        cobAge
+          ? "A Census 2021 E&W country-of-birth-by-age table (ONS RM011) is attached where the download parsed. It is age by birthplace, not a sex split, and not a MYE pyramid."
+          : "Age × country-of-birth for E&W is ONS RM011 (Census 2021). The optional CSV was not present or did not parse in this build — no birthplace pyramid is invented.",
+        "Scotland UV204a (COB × sex × age) and NISRA MS-A31 (COB by broad age) exist as official tables but are not in this extract.",
       ],
       metrics: [{ id: "persons", label: "Usual residents (sum of mid-2025 age bands)", unit: "people", format: "count", series: pyramidTotals }],
-      extras: { pyramids: age.pyramids },
+      extras: { pyramids: age.pyramids, cobAge: cobAge || null },
       defaultMetric: "persons",
       mapMetric: "persons",
       vizModes: ["pyramid"],
@@ -1176,21 +1443,50 @@ function main() {
         source("ho-asy-chapter", "How many people are in the UK asylum system", "https://www.gov.uk/government/statistics/immigration-system-statistics-year-ending-june-2026/how-many-people-are-in-the-uk-asylum-system"),
       ],
       notes: [
-        "Rows distinguish people claiming asylum from cases awaiting a decision.",
+        "The default chart is claims, grants, refusals, and people awaiting an initial decision — four different published rows, not one backlog concept.",
         "Grant rate is at initial decision and excludes withdrawals depending on the table.",
+        "Asy_02a grant types and Asy_03a waiting-time bands are extra series from the same YE June 2026 summary workbook. History is not extended beyond those tables.",
         "Do not back-cast modern ‘work in progress’ concepts into 1940–1970s.",
       ],
       definitions: [
         "People claiming asylum: main applicants plus dependants in the summary people count.",
+        "Grants / refusals: initial decisions in that year (flow), not a stock.",
         "Awaiting an initial decision: stock at year end, not a lifetime backlog of every later stage.",
       ],
-      metrics: Object.entries(asylum).map(([name, series]) => ({
-        id: name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-+$/g, ""),
-        label: name,
-        unit: /rate|%/i.test(name) ? "%" : "people",
-        format: /rate|%/i.test(name) ? "percent" : "count",
-        series,
-      })),
+      extras: {
+        throughputIds: [
+          "people-claiming-asylum",
+          "grants-of-protection-or-other-leave",
+          "refusals",
+          "people-awaiting-an-initial-decision",
+        ],
+      },
+      metrics: [
+        ...Object.entries(asylum).map(([name, series]) => ({
+          id: name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-+$/g, ""),
+          label: name,
+          unit: /rate|%/i.test(name) ? "%" : "people",
+          format: /rate|%/i.test(name) ? "percent" : "count",
+          series,
+          group: /awaiting/i.test(name) ? "stock" : /grant|refusal|withdrawal|claim/i.test(name) ? "flow" : "other",
+        })),
+        ...Object.entries(asylumExtra.grants || {}).map(([name, series]) => ({
+          id: `asy02a-${name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-+$/g, "")}`,
+          label: `${name} (Asy_02a grant / resettlement types)`,
+          unit: "people",
+          format: "count",
+          series,
+          group: "grant-type",
+        })),
+        ...Object.entries(asylumExtra.awaiting || {}).map(([name, series]) => ({
+          id: `asy03a-${name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-+$/g, "")}`,
+          label: `${name} (Asy_03a awaiting by duration)`,
+          unit: "people",
+          format: "count",
+          series,
+          group: "awaiting-duration",
+        })),
+      ],
       defaultMetric: "people-claiming-asylum",
       vizModes: ["absolute"],
     },
@@ -1214,21 +1510,29 @@ function main() {
         source("ho-user", "HO irregular / illegal-entry statistics user guide", "https://www.gov.uk/government/publications/home-office-irregular-migration-to-the-uk-statistics-user-guide/home-office-irregular-migration-to-the-uk-statistics-user-guide"),
       ],
       notes: [
+        "Each IER_01 row is a separate detection series. Small-boat detections are not the same as ‘recorded detections in the UK’ or inadequately documented air arrivals.",
         "These series count detected arrivals by recorded method of entry. They are not an estimate of total irregular presence, undetected entries, or visa overstays.",
         "The Home Office does not publish a stock of people in the UK without permission from this series.",
         "French preventions are a separate operational series and are not included.",
         "Provisional daily Channel figures can differ from these quality-assured annual totals.",
       ],
       terminology: [
-        "Prefer: detected small-boat arrivals; detected arrivals via illegal entry routes.",
+        "Prefer: detected small-boat arrivals; detected arrivals via other illegal entry routes.",
         "Do not say: illegal immigrant population; total illegal immigration.",
       ],
+      extras: {
+        detectionGroups: {
+          "small-boat": "Detected small-boat arrivals (not an illegal stock)",
+          "other-detection": "Other recorded illegal-entry-route detections",
+        },
+      },
       metrics: Object.entries(boats).map(([name, series]) => ({
         id: name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-+$/g, ""),
         label: name,
         unit: "detections",
         format: "count",
         series,
+        group: detectionGroup(name),
       })),
       defaultMetric: "small-boat-arrivals",
       vizModes: ["absolute"],
@@ -1255,13 +1559,16 @@ function main() {
         source("ons-aff", "ONS house-price-to-workplace-earnings ratio", "https://www.ons.gov.uk/peoplepopulationandcommunity/housing/datasets/ratioofhousepricetoworkplacebasedearningslowerquartileandmedian"),
       ],
       notes: [
-        "Employment rates by country of birth are LFS/APS-based and should not be read as a causal migration-impact layer.",
-        "Housing affordability is median price to workplace-based earnings. It is not a measure of the fiscal or demographic ‘effect’ of migration.",
+        "Employment rates by country of birth and by nationality are LFS/APS-based and should not be read as a causal migration-impact layer.",
+        "Country of birth and nationality are different EMP06 sheets. They are not interchangeable.",
+        "Housing affordability is median price to workplace-based earnings. It is not a measure of the fiscal or demographic ‘effect’ of migration. Headline ASHE pay is not migrant-specific, so this extract does not invent a migrant wage series — only EMP06 employment rates.",
         "Oct–Dec quarters are plotted as the calendar year for the employment-rate series.",
       ],
       metrics: [
         { id: "emp-uk-born", label: "Employment rate, UK-born (Oct–Dec)", unit: "%", format: "percent", series: { UK: emp.rates["UK-born"] || [] } },
         { id: "emp-non-uk-born", label: "Employment rate, non-UK-born (Oct–Dec)", unit: "%", format: "percent", series: { UK: emp.rates["non-UK-born"] || [] } },
+        { id: "emp-uk-nationality", label: "Employment rate, UK nationality (Oct–Dec)", unit: "%", format: "percent", series: { UK: emp.nationality["UK-nationality"] || [] } },
+        { id: "emp-non-uk-nationality", label: "Employment rate, non-UK nationality (Oct–Dec)", unit: "%", format: "percent", series: { UK: emp.nationality["non-UK-nationality"] || [] } },
         { id: "affordability", label: "Median house-price-to-earnings ratio", unit: "ratio", format: "ratio", series: housing.ratio },
       ],
       defaultMetric: "emp-non-uk-born",
@@ -1290,17 +1597,28 @@ function main() {
         source("df2014", "Dustmann & Frattini (2014), The Fiscal Effects of Immigration to the UK", "https://ideas.repec.org/a/wly/econjl/v124y2014i580pf593-f643.html", { license: "Journal / cite only" }),
       ],
       notes: [
+        "There is no official mapped ‘cost of immigration’. The assumption controls filter published estimates — they do not compute a new true net figure.",
         "Static annual snapshots, lifetime NPVs, and OBR age-profile scenarios can differ in sign depending on the visa route, dependants, public-goods allocation, and time window.",
-        "MAC Figure 10 values below are the committee’s published static net estimates for specific 2022/23-style groups — not a UK-wide migrant-stock total.",
+        "MAC Figure 10 values are the committee’s published static net estimates for specific 2022/23-style groups — not a UK-wide migrant-stock total.",
+        "MAC Table 23 is lifetime cohort totals in £ million for the 2022/23 visa cohort. Do not add it to Dustmann–Frattini period billions.",
+        "Employment and housing charts on this panel are context only. They are not causal proof of a fiscal effect.",
       ],
       extras: {
         methods: [
-          { name: "OBR FRS / EFO", frame: "Age-specific tax and spend profiles applied to population projections with net-migration variants. Sensitive to the ONS long-run migration settle and to assumed earnings/length of stay." },
-          { name: "MAC 2025 lifetime / static", frame: "Cohort and visa-route model (Skilled Worker, Health & Care, dependants). Discount rate and lifetime assumptions drive NPV. Not the whole stock." },
-          { name: "Dustmann–Frattini 2014", frame: "Static period accounting ~1995–2011/12, EEA vs non-EEA. Foundational in debate; not official statistics and not current." },
+          { name: "OBR FRS / EFO", frame: "Age-specific tax and spend profiles applied to population projections with net-migration variants. Sensitive to the ONS long-run migration settle and to assumed earnings/length of stay. Usually a debt-path scenario, not a £ per migrant." },
+          { name: "MAC 2025 lifetime / static", frame: "Cohort and visa-route model (Skilled Worker, Health & Care, dependants, Partner route). Discount rate (~3%) and lifetime assumptions drive NPV. Not the whole stock." },
+          { name: "Dustmann–Frattini 2014", frame: "Static period accounting ~1995–2011/12, EEA vs non-EEA. Foundational in debate; not official statistics and not current. The 2013 discussion paper quotes different totals for the same window." },
+          { name: "Migration Observatory briefing", frame: "Secondary synthesis (23 June 2026). Table 1 is the reason estimates disagree: children, public goods, recent vs all-resident, and year all move the sign." },
         ],
+        assumptionAxes: fiscalCitations.assumptionAxes || [],
+        citedEstimates: fiscalCitations.estimates || [],
         macStatic: mac.staticEstimates,
         macSensitivities: mac.sensitivities,
+        macLifetime: mac.lifetimeCohorts,
+        contextMetricIds: {
+          labour: ["emp-uk-born", "emp-non-uk-born", "emp-uk-nationality", "emp-non-uk-nationality"],
+          housing: ["affordability"],
+        },
       },
       metrics: [],
       vizModes: ["panel"],
@@ -1325,7 +1643,8 @@ function main() {
 
   const catalog = {
     generated: new Date().toISOString(),
-    title: "Migration — Phase 2 catalog",
+    title: "Migration — Phase 3 catalog",
+    phase: 3,
     yearMin: 1940,
     yearMax: 2025,
     nations: Object.values(NATIONS),
@@ -1360,8 +1679,29 @@ function main() {
       "Detected arrivals are not an irregular population stock.",
       "Fiscal estimates are methods and ranges, not one cost.",
     ],
+    provenance: {
+      dataAsOf: manifest?.generated || new Date().toISOString(),
+      catalogBuilt: new Date().toISOString(),
+      ingestWarnings: schemaIssues.filter((i) => i.level === "warn").map((i) => i.msg),
+      ingestErrors: schemaIssues.filter((i) => i.level === "error").map((i) => i.msg),
+      ogl: "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
+      refresh: "npm run refresh",
+      sourcesIndex: "data/sources.json",
+      fileList: "data/SOURCES.md",
+      files: (manifest?.files || []).map((f) => ({
+        id: f.id,
+        dest: f.dest,
+        present: f.present,
+        bytes: f.bytes,
+        sha256: f.sha256,
+        critical: f.critical,
+        mtime: f.mtime,
+      })),
+    },
     layers,
   };
+
+  finishSchemaOrExit();
 
   fs.mkdirSync(OUT, { recursive: true });
   fs.mkdirSync(GEO_OUT, { recursive: true });

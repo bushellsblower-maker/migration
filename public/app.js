@@ -1,5 +1,5 @@
 /**
- * Phase 6 explorer. Renders only values present in catalog.json.
+ * Phase 7 explorer. Renders only values present in catalog.json.
  * Never interpolates missing years or places. Never invents geometries.
  */
 const GSS_TO_ID = {
@@ -121,6 +121,7 @@ const state = {
   selectedGeo: "UK",
   skipHistory: false,
   fiscal: { frame: "any", incidence: "any", publicGoods: "any", population: "any" },
+  stories: { stories: [] },
 };
 
 function layer() {
@@ -152,15 +153,20 @@ function valueAt(series, geo, year) {
 
 function aliasesFor(geoId) {
   const ids = [geoId];
+  if (!geoId) return ids;
   if (GSS_TO_ID[geoId]) ids.push(GSS_TO_ID[geoId]);
   if (ID_TO_GSS[geoId]) ids.push(ID_TO_GSS[geoId]);
   const itl = state.lookups?.gssToItl1?.[geoId] || (ITL_RE.test(geoId) ? geoId.toUpperCase() : null);
   if (itl) ids.push(itl, state.lookups?.itl1ToGss?.[itl]);
+  // Published E&W combined figure only — never an invented England-only or Wales-only split.
+  if (geoId === "E" || geoId === "W" || geoId === "E92000001" || geoId === "W92000004" || geoId === "EW" || geoId === "K04000001") {
+    ids.push("EW", "K04000001");
+  }
   return [...new Set(ids.filter(Boolean))];
 }
 
-function extraValue(l, m, geoId, year) {
-  if (!l || !LAD_RE.test(geoId)) return { value: null, note: "" };
+function extraValueForCode(l, m, geoId, year) {
+  if (!l || !geoId) return { value: null, note: "" };
   const mid = m?.id;
   const cobLas = l.extras?.las || l.extras?.cobLas || [];
   const cobAps = l.extras?.apsLas || l.extras?.cobApsLas || [];
@@ -233,6 +239,15 @@ function extraValue(l, m, geoId, year) {
   return { value: null, note: "" };
 }
 
+function extraValue(l, m, geoId, year) {
+  if (!l) return { value: null, note: "" };
+  for (const id of aliasesFor(geoId)) {
+    const hit = extraValueForCode(l, m, id, year);
+    if (hit.value != null) return hit;
+  }
+  return { value: null, note: "" };
+}
+
 /** Honest fallback only when the published series is explicitly that grouping. */
 function lookupValue(l, m, geoId, year) {
   if (!m && !l) return { value: null, note: "" };
@@ -240,11 +255,12 @@ function lookupValue(l, m, geoId, year) {
     const direct = m ? valueAt(m.series, id, year) : null;
     if (direct != null) {
       const pt = pointAt(m.series, id, year);
-      return { value: direct, note: pt?.note || "" };
+      let note = pt?.note || "";
+      if ((geoId === "E" || geoId === "E92000001") && (id === "EW" || id === "K04000001")) {
+        note = note || "England & Wales combined figure — not an England-only published cell";
+      }
+      return { value: direct, note };
     }
-  }
-  if ((geoId === "E" || geoId === "W" || geoId === "E92000001" || geoId === "W92000004") && m && valueAt(m.series, "EW", year) != null) {
-    return { value: valueAt(m.series, "EW", year), note: "England & Wales combined figure" };
   }
   return extraValue(l, m, geoId, year);
 }
@@ -416,7 +432,8 @@ function rampColor(stops, t) {
 }
 
 function colorFor(value, min, max, paletteId, diverging) {
-  if (value == null || min == null || max == null || min === max) return null;
+  if (value == null || min == null || max == null) return null;
+  if (min === max) return rampColor(PALETTES[paletteId] || PALETTES.ink, 0.55);
   if (diverging) {
     const ext = Math.max(Math.abs(min), Math.abs(max)) || 1;
     const t = (value + ext) / (2 * ext);
@@ -428,7 +445,9 @@ function colorFor(value, min, max, paletteId, diverging) {
 
 function geoIdFromFeature(feature) {
   const p = feature.properties || {};
-  return GSS_TO_ID[p.gss] || GSS_TO_ID[p.id] || p.id;
+  if (p.kind === "nation") return GSS_TO_ID[p.gss] || GSS_TO_ID[p.id] || p.id;
+  // ITL1 / LAD: keep the official GSS (E12… / E06… / S12… / N09…) so catalog keys join.
+  return p.gss || p.id || p.itl;
 }
 
 function sourceCite(l) {
@@ -754,12 +773,7 @@ function mapDomain(m) {
     const v = lookupValue(l, m, id, state.year).value;
     if (v != null) vals.push(v);
   }
-  if (!vals.length && m) {
-    for (const pts of Object.values(m.series || {})) {
-      const p = pts.find((x) => x.year === state.year);
-      if (p) vals.push(p.value);
-    }
-  }
+  // Do not fall back to unmatched series keys — that painted a legend while England stayed blank.
   if (!vals.length) return { min: null, max: null, diverging: false };
   const diverging = state.palette === "diverging" || /net/i.test(m?.id) || /net/i.test(m?.label);
   return { min: Math.min(...vals), max: Math.max(...vals), diverging };
@@ -856,7 +870,7 @@ function bannerText() {
     return "2011 nation totals are not in the APS extract. Switch to local authorities for the 2011 E&W census percentages.";
   }
   if ((l.id === "p1-ethnicity-census" || l.id === "p1-religion-census") && state.geoLevel === "nation") {
-    return "Each nation uses its own published census heading. E&W White / Christian is not the same category as Scotland’s heading or NISRA MS-B01 / MS-B19. See concordance.";
+    return "Each nation uses its own published census heading. E&W White / Christian is not the same category as Scotland’s heading or NISRA MS-B01 / MS-B19. Switch to ITL1 or local authorities to colour East Midlands, Halton, and the other published areas. See concordance.";
   }
   if (l.id === "p1-age-sex") {
     return "Mid-2025 pyramids are E&W / English regions. Mid-2024 UK MYE2 covers Scotland and Northern Ireland. Country-of-birth-by-age tables are census snapshots, not MYE.";
@@ -874,16 +888,17 @@ function bannerText() {
 
 function renderLegend(min, max, unit, diverging) {
   const el = $("legend");
+  const used = usedMetric(layer());
+  const level = GEO_LEVELS.find((g) => g.id === state.geoLevel)?.label || state.geoLevel;
   if (min == null || max == null) {
-    el.innerHTML = `<strong>Map</strong><div class="cite">No comparable data at this geography for this year.</div>`;
+    el.innerHTML = `<strong>Map</strong><div class="cite">No comparable data at ${level} for this year. The scale matches painted areas only.</div>`;
     return;
   }
   const stops = PALETTES[state.palette] || PALETTES.ink;
-  const m = metric();
-  el.innerHTML = `<strong>${m?.label || "Value"}</strong>
+  el.innerHTML = `<strong>${used?.label || "Value"}</strong>
     <div class="legend-bar" style="background:linear-gradient(90deg, ${stops.join(",")})"></div>
-    <div class="legend-scale"><span>${formatValue(m, min)}</span><span>${formatValue(m, max)}</span></div>
-    <div class="cite">${unit || m?.unit || ""}${diverging ? " · diverging around zero when used for net" : ""}</div>`;
+    <div class="legend-scale"><span>${formatValue(used, min)}</span><span>${formatValue(used, max)}</span></div>
+    <div class="cite">${unit || used?.unit || ""} · ${level}${diverging ? " · diverging around zero when used for net" : ""}</div>`;
 }
 
 function renderMap() {
@@ -893,9 +908,9 @@ function renderMap() {
   banner.hidden = !text;
   banner.textContent = text;
 
-  const mapMetric = l.mapMetric ? l.metrics.find((x) => x.id === l.mapMetric) : metric();
-  const { min, max, diverging } = mapDomain(mapMetric);
-  renderLegend(min, max, mapMetric?.unit, diverging);
+  const used = usedMetric(l);
+  const { min, max, diverging } = mapDomain(used);
+  renderLegend(min, max, used?.unit, diverging);
 
   if (state.geoLayer) {
     state.geoLayer.setStyle((f) => styleFeature(f));
@@ -914,13 +929,23 @@ function geoAttribution() {
 }
 
 function bindMap() {
-  state.map = L.map("map", { scrollWheelZoom: true, attributionControl: true }).setView([54.6, -2.4], 5.2);
+  state.map = L.map("map", {
+    scrollWheelZoom: true,
+    attributionControl: true,
+    worldCopyJump: false,
+    minZoom: 5,
+    maxZoom: 12,
+    maxBoundsViscosity: 0.85,
+  });
   L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
     attribution: geoAttribution(),
     maxZoom: 12,
   }).addTo(state.map);
   bindGeoLayer();
-  setTimeout(() => state.map.invalidateSize(), 80);
+  setTimeout(() => {
+    state.map.invalidateSize();
+    resetUkView();
+  }, 80);
 }
 
 function bindGeoLayer() {
@@ -961,9 +986,20 @@ function bindGeoLayer() {
   resetUkView();
 }
 
+/** Visible frame is UK + Ireland only — not a Europe/world basemap. Still zoomable. */
+const UK_IRELAND_BOUNDS = [
+  [49.85, -10.75],
+  [60.95, 2.05],
+];
+
 function resetUkView() {
   if (!state.map) return;
-  state.map.setView([54.6, -2.2], state.geoLevel === "la" ? 5.6 : 5.4);
+  const bounds = L.latLngBounds(UK_IRELAND_BOUNDS);
+  const padded = bounds.pad(0.03);
+  state.map.setMaxBounds(padded.pad(0.18));
+  state.map.fitBounds(padded, { animate: false, padding: [4, 4] });
+  const z = state.map.getBoundsZoom(padded, false);
+  if (Number.isFinite(z)) state.map.setMinZoom(Math.max(5, z - 0.4));
 }
 
 function seriesForChart(l, m) {
@@ -1606,95 +1642,41 @@ function twoAreaCompareHtml(l, m) {
   </div><p class="cite">Two published areas, same layer and year. Difference is not shown when either side is missing — nothing is interpolated.</p>`;
 }
 
+function countPainted(level, l, m) {
+  const features = state.geos[level]?.features || [];
+  return features.filter((f) => lookupValue(l, m, geoIdFromFeature(f), state.year).value != null).length;
+}
+
+function otherLevelHints(l, m) {
+  const hints = [];
+  for (const g of GEO_LEVELS) {
+    if (g.id === state.geoLevel) continue;
+    if (!levelAvailable(l, g.id)) continue;
+    const n = countPainted(g.id, l, m);
+    if (n) hints.push({ level: g.id, label: g.label, n });
+  }
+  return hints;
+}
+
+/** Rows on the Area Table = features on the current map, same lookup as the choropleth. */
 function areaRows(l) {
-  const m = (l.mapMetric && l.metrics.find((x) => x.id === l.mapMetric)) || metric();
+  const m = usedMetric(l);
   const rows = [];
-  if (m) {
-    const geos = Object.keys(m.series);
-    for (const g of geos) {
-      const p = pointAt(m.series, g, state.year);
-      if (!p) continue;
-      const name = geoName(g) || g;
-      rows.push({ code: g, name, value: p.value, note: p.flag || p.period || "" });
-    }
+  for (const f of currentFeatures()) {
+    const code = geoIdFromFeature(f);
+    const found = lookupValue(l, m, code, state.year);
+    rows.push({
+      code,
+      name: f.properties?.name || geoName(code) || code,
+      value: found.value,
+      note: found.value == null ? "no comparable data at this geography" : found.note,
+    });
   }
-  const las = l.extras?.las || l.extras?.cobLas || [];
-  const apsLas = l.extras?.apsLas || l.extras?.natApsLas || [];
-  if (l.id === "p1-nationality-stock" && state.year === 2021) {
-    for (const r of apsLas) {
-      const value = m?.id === "british" ? r.british : m?.id === "non-british" ? r.nonBritish : r.shareNonBritish;
-      if (value != null) rows.push({ code: r.code, name: r.name, value, note: "APS YE Jun 2021 nationality (not country of birth)" });
-    }
-  }
-  if (las.length && (state.year === 2011 || state.year === 2021 || l.id === "p1-ethnicity-census" || l.id === "p1-religion-census" || l.id === "p2-identity-compare")) {
-    for (const r of las) {
-      let value = null;
-      let note = "local authority";
-      if (r.y2011 != null || r.y2021 != null) {
-        if (state.year !== 2011 && state.year !== 2021) continue;
-        value = state.year === 2011 ? r.y2011 : r.y2021;
-        note = "census % non-UK-born (E&W)";
-      } else if (r.pctWhite != null && (l.id === "p1-ethnicity-census")) {
-        if (state.year !== 2021) continue;
-        value = r.pctWhite;
-        note = "2021 % White (high-level)";
-      } else if (l.id === "p1-religion-census") {
-        if (state.year !== 2021) continue;
-        const mid = metric()?.id;
-        value = mid === "none" ? r.pctNone : mid === "muslim" ? r.pctMuslim : r.pctChristian;
-        note = "2021 census %";
-      }
-      if (value != null) rows.push({ code: r.code, name: r.name, value, note });
-    }
-  }
-  const niLas = l.extras?.niLas || l.extras?.niCobLas || [];
-  if (niLas.length && state.year === 2021) {
-    for (const r of niLas) {
-      let value = null;
-      let note = r.note || "NISRA Census 2021 LGD";
-      if (r.shareNonUk != null && (l.id === "p1-cob-stock" || l.id === "p2-identity-compare") && (m?.id === "share-non-uk" || !m || m.id === "share-non-uk")) {
-        value = r.shareNonUk;
-        note = "NISRA MS-A16 % non-UK-born (four UK countries only)";
-      } else if (r.pctWhite != null && (l.id === "p1-ethnicity-census" || (l.id === "p2-identity-compare" && m?.id === "pct-white"))) {
-        value = r.pctWhite;
-        note = "NISRA MS-B01 % White (excludes Irish Traveller and Roma)";
-      } else if (l.id === "p1-religion-census") {
-        const mid = metric()?.id;
-        value = mid === "none" ? r.pctNone : mid === "muslim" ? r.pctMuslim : r.pctChristian;
-        note = "NISRA MS-B19 current religion";
-      }
-      if (value != null) rows.push({ code: r.code, name: r.name, value, note });
-    }
-  }
-  const scotLas = [...(l.extras?.scotLas || []), ...(l.extras?.scotEthLas || [])];
-  if (scotLas.length && state.year === 2022) {
-    const seen = new Set();
-    for (const r of scotLas) {
-      const key = `${r.code}:${r.shareNonUk != null ? "cob" : r.pctWhite != null ? "eth" : "rel"}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      let value = null;
-      let note = "Scotland Census 2022 Area Overview (NRS headings)";
-      if (r.shareNonUk != null && (l.id === "p1-cob-stock" || l.id === "p2-identity-compare") && (m?.id === "share-non-uk" || !m || m.id === "share-non-uk")) {
-        value = r.shareNonUk;
-        note = "Scotland 2022 Area Overview % non-UK-born (four UK countries only)";
-      } else if (r.pctWhite != null && (l.id === "p1-ethnicity-census" || (l.id === "p2-identity-compare" && m?.id === "pct-white"))) {
-        value = r.pctWhite;
-        note = "Scotland 2022 Area Overview White heading (includes Irish/Polish/Other White)";
-      } else if (l.id === "p1-religion-census") {
-        const mid = metric()?.id;
-        value = mid === "none" ? r.pctNone : mid === "muslim" ? r.pctMuslim : r.pctChristian;
-        note = "Scotland 2022 Area Overview current religion";
-      }
-      if (value != null) rows.push({ code: r.code, name: r.name, value, note });
-    }
-  }
-  const niEth = l.extras?.niEthLas || [];
-  if (niEth.length && state.year === 2021 && (l.id === "p1-ethnicity-census" || (l.id === "p2-identity-compare" && m?.id === "pct-white"))) {
-    for (const r of niEth) {
-      if (r.pctWhite != null) rows.push({ code: r.code, name: r.name, value: r.pctWhite, note: "NISRA MS-B01 % White (excludes Irish Traveller and Roma)" });
-    }
-  }
+  rows.sort((a, b) => {
+    if (a.value == null && b.value != null) return 1;
+    if (a.value != null && b.value == null) return -1;
+    return String(a.name).localeCompare(String(b.name), "en-GB");
+  });
   return rows;
 }
 
@@ -1723,18 +1705,40 @@ function renderNotes() {
   $("tab-src").innerHTML = `${allSourcesHtml(l)}<p class="cite">Downloaded files and URLs: <a href="https://github.com/bushellsblower-maker/migration/blob/main/data/SOURCES.md">data/SOURCES.md</a>.</p>`;
 
   const rows = areaRows(l);
+  const m = usedMetric(l);
+  const painted = rows.filter((r) => r.value != null).length;
+  const hints = otherLevelHints(l, m);
+  const hintHtml = hints.length
+    ? `<p class="cite other-geo-hint">${hints
+        .map((h) => `<button type="button" class="linkish" data-jump-geo="${h.level}">${h.n} ${h.label.toLowerCase()}</button>`)
+        .join(" · ")} also have a published figure this year. Switch geography to colour them — the table lists only the areas on the map.</p>`
+    : "";
   if (!rows.length) {
-    $("tab-data").innerHTML = "<p>No area rows for this year. National series remain on the chart where published.</p>";
+    $("tab-data").innerHTML = `<p>No map features at this geography.</p>${hintHtml}`;
     return;
   }
-  const m = metric();
   const shown = rows.slice(0, 80);
   $("tab-data").innerHTML = `<table class="la-table">
-    <caption>${rows.length} published rows${rows.length > 80 ? " (first 80 shown)" : ""}. Values are copied, not interpolated.</caption>
+    <caption>${painted} of ${rows.length} areas on this ${GEO_LEVELS.find((g) => g.id === state.geoLevel)?.label || "map"} have a published figure. Same join and scale as the choropleth. Values are copied, not interpolated.${rows.length > 80 ? " First 80 shown." : ""}</caption>
+    ${hintHtml}
     <thead><tr><th>Area</th><th>Value</th><th>Note</th></tr></thead>
     <tbody>${shown
-      .map((r) => `<tr><td>${r.name}<div class="cite">${r.code}</div></td><td class="num">${formatValue(m, r.value)}</td><td>${r.note || ""}</td></tr>`)
+      .map(
+        (r) =>
+          `<tr data-area="${r.code}" class="${r.value == null ? "dim" : ""}"><td><button type="button" class="linkish" data-select-area="${r.code}">${r.name}</button><div class="cite">${r.code}</div></td><td class="num">${formatValue(m, r.value)}</td><td>${r.note || ""}</td></tr>`
+      )
       .join("")}</tbody></table>`;
+  $("tab-data").querySelectorAll("[data-jump-geo]").forEach((btn) => {
+    btn.addEventListener("click", () => setGeoLevel(btn.dataset.jumpGeo));
+  });
+  $("tab-data").querySelectorAll("[data-select-area]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      state.selectedGeo = btn.dataset.selectArea;
+      renderMap();
+      renderChart();
+      writeUrl();
+    });
+  });
 }
 
 function applyTour(id) {
@@ -1762,6 +1766,50 @@ function renderTours() {
   host.innerHTML = TOURS.map((t) => `<button type="button" data-tour="${t.id}">${t.label}</button>`).join("");
   host.querySelectorAll("button").forEach((btn) => {
     btn.addEventListener("click", () => applyTour(btn.dataset.tour));
+  });
+}
+
+function applyStory(id) {
+  const story = (state.stories?.stories || []).find((s) => s.id === id);
+  if (!story) return;
+  const note = $("story-note");
+  if (note) {
+    note.hidden = false;
+    note.innerHTML = `<strong>${story.title}</strong>
+      <p><em>Can say.</em> ${story.can}</p>
+      <p><em>Cannot say.</em> ${story.cannot}</p>
+      ${(story.breaks || []).length ? `<p class="cite">Method breaks: ${story.breaks.join(" · ")}</p>` : ""}`;
+  }
+  if (story.geo === "nation" || story.geo === "region" || story.geo === "la") {
+    state.geoLevel = story.geo;
+    state.selectedGeo = story.geo === "nation" ? "UK" : story.geo === "region" ? "E12000004" : "E06000006";
+  } else if (story.geo) {
+    const parsed = parseGeoParam(story.geo);
+    state.geoLevel = parsed.level;
+    state.selectedGeo = parsed.selected;
+  }
+  state.compareGeo = story.geo2 ? parseGeoParam(story.geo2).selected || story.geo2 : null;
+  state.compareYear = null;
+  state.year = story.year;
+  setLayer(story.layer, true, false);
+  if (story.metric && layer().metrics?.some((m) => m.id === story.metric)) state.metricId = story.metric;
+  renderChrome();
+  bindGeoLayer();
+  renderAll();
+}
+
+function renderStories() {
+  const host = $("story-list");
+  if (!host) return;
+  const pack = state.stories || {};
+  const items = pack.stories || [];
+  if (!items.length) {
+    host.innerHTML = "";
+    return;
+  }
+  host.innerHTML = items.map((s) => `<button type="button" data-story="${s.id}">${s.title}</button>`).join("");
+  host.querySelectorAll("button").forEach((btn) => {
+    btn.addEventListener("click", () => applyStory(btn.dataset.story));
   });
 }
 
@@ -1862,16 +1910,18 @@ function sourceHealthHtml() {
 
 function phase6GapsHtml() {
   const g = state.catalog.phase6 || {};
+  const p7 = state.catalog.phase7 || {};
   const row = (label, obj) =>
     `<tr><td>${label}</td><td>${obj?.status || "—"}</td><td>${obj?.source || obj?.blocker || obj?.note || ""}</td></tr>`;
-  return `<h3>Phase 6 — available vs blocked</h3>
+  return `<h3>Phase 6–7 — available vs blocked</h3>
     <table><thead><tr><th>Item</th><th>Status</th><th>Note</th></tr></thead><tbody>
     ${row("Scotland UV201/UV204/UV205 bulk", g.scotlandUvBulk)}
     ${row("E&W age × birthplace sex split", g.ewCobAgeSex)}
     ${row("Scotland age × birthplace sex split", g.scotlandCobAgeSex)}
     ${row("NI age × birthplace sex split", g.niCobAgeSex)}
-    </tbody></table>`;
-}
+    ${row("Religion / census choropleth join", p7.choroplethJoin || { status: "fixed", note: "LA/ITL1 keys match GeoJSON" })}
+    </tbody></table>
+    <p class="cite">Phase 7 re-probed UV bulk and Scotland/NI static sex × age × birthplace tables. Still blocked or not published as static files — no counts invented. Narrative pack: <a href="./data/stories.json">stories.json</a>.</p>`;
 
 function printOnePager() {
   const l = layer();
@@ -1879,21 +1929,44 @@ function printOnePager() {
   const place = state.selectedGeo || (state.geoLevel === "nation" ? "UK" : state.geoLevel);
   const found = m ? lookupValue(l, m, place, state.year) : { value: null, note: "" };
   const compare = state.compareGeo && m ? lookupValue(l, m, state.compareGeo, state.year) : null;
+  const rows = areaRows(l).filter((r) => r.value != null).slice(0, 24);
+  const share = `${location.origin}${location.pathname}${queryString()}`;
   const sheet = $("print-sheet");
   if (!sheet) {
     window.print();
     return;
   }
   sheet.hidden = false;
+  const srcRows = (l.sources || [])
+    .map((s) => `<li><a href="${s.url}">${s.name}</a>${s.license ? ` (${s.license})` : ""}</li>`)
+    .join("");
   sheet.innerHTML = `<h2>Migration one-pager</h2>
-    <p><strong>${l.title}</strong> · ${state.year}${state.compareYear ? ` vs ${state.compareYear}` : ""} · ${geoName(place) || place}</p>
+    <p class="cite">Evidence-led extract — published figures only. Deep link: ${share}</p>
+    <p><strong>${l.title}</strong> · ${state.year}${state.compareYear ? ` vs ${state.compareYear}` : ""} · ${GEO_LEVELS.find((g) => g.id === state.geoLevel)?.label || ""} · ${geoName(place) || place}</p>
     <p class="big">${m ? `${m.label}: ${formatValue(m, found.value)}` : "No mapped series"}</p>
-    <p class="cite">${found.note || ""} ${sourceCite(l)}</p>
-    ${compare ? `<p>${geoName(state.compareGeo)}: ${formatValue(m, compare.value)}</p>` : ""}
+    <p class="cite">${found.note || ""}</p>
+    ${
+      compare
+        ? `<table><thead><tr><th>Area</th><th>${state.year}</th>${state.compareYear ? `<th>${state.compareYear}</th>` : ""}</tr></thead>
+      <tbody>
+        <tr><td>${geoName(place) || place}</td><td>${formatValue(m, found.value)}</td>${state.compareYear ? `<td>${formatValue(m, lookupValue(l, m, place, state.compareYear).value)}</td>` : ""}</tr>
+        <tr><td>${geoName(state.compareGeo)}</td><td>${formatValue(m, compare.value)}</td>${state.compareYear ? `<td>${formatValue(m, lookupValue(l, m, state.compareGeo, state.compareYear).value)}</td>` : ""}</tr>
+      </tbody></table>`
+        : ""
+    }
+    ${
+      rows.length
+        ? `<h3>Areas on this map (${GEO_LEVELS.find((g) => g.id === state.geoLevel)?.label})</h3>
+      <table><thead><tr><th>Area</th><th>Code</th><th>Value</th></tr></thead>
+      <tbody>${rows.map((r) => `<tr><td>${r.name}</td><td>${r.code}</td><td>${formatValue(m, r.value)}</td></tr>`).join("")}</tbody></table>`
+        : ""
+    }
     <h3>How to read</h3>
-    <ul>${(l.notes || []).slice(0, 4).map((n) => `<li>${n}</li>`).join("")}</ul>
+    <ul>${(l.notes || []).slice(0, 5).map((n) => `<li>${n}</li>`).join("")}</ul>
     ${(l.breaks || []).length ? `<h3>Method-break years</h3><ul>${l.breaks.map((b) => `<li>${b.year} — ${b.label}</li>`).join("")}</ul>` : ""}
-    <p class="cite">Printed from published catalog rows only. Detections are not an illegal-entry stock. No single net fiscal cost.</p>`;
+    <h3>Sources</h3>
+    <ul>${srcRows || "<li>See data/SOURCES.md</li>"}</ul>
+    <p class="cite">Open Government Licence v3.0 for most official files. Printed from catalog rows only. Nothing interpolated. Detections are not an illegal-entry stock. No single net fiscal cost. No pre-1991 ethnicity or pre-2001 religion continuous map.</p>`;
   window.print();
 }
 
@@ -1953,17 +2026,21 @@ function bindUi() {
   $("btn-export-png-chart")?.addEventListener("click", exportChartPng);
   $("btn-print")?.addEventListener("click", printOnePager);
   renderTours();
+  renderStories();
   $("btn-share").addEventListener("click", async () => {
     writeUrl();
-    const url = location.href;
+    const url = `${location.origin}${location.pathname}${queryString()}${location.hash || ""}`;
+    const label = state.compareGeo
+      ? `Copied two-area link (${geoName(state.selectedGeo) || state.selectedGeo} · ${geoName(state.compareGeo)})`
+      : "Copied";
     try {
       await navigator.clipboard.writeText(url);
-      $("btn-share").textContent = "Copied";
+      $("btn-share").textContent = label;
       setTimeout(() => {
         $("btn-share").textContent = "Copy link";
-      }, 1600);
+      }, 2200);
     } catch {
-      window.prompt("Copy this link", url);
+      window.prompt("Copy this restore link (includes geo2 when two areas are selected)", url);
     }
   });
   window.addEventListener("popstate", () => {
@@ -1996,7 +2073,10 @@ function bindUi() {
     $("layer-rail").classList.remove("open");
     layersBtn.setAttribute("aria-expanded", "false");
   });
-  window.addEventListener("resize", () => renderChart());
+  window.addEventListener("resize", () => {
+    renderChart();
+    if (state.map) state.map.invalidateSize();
+  });
 }
 
 async function loadJson(url, label) {
@@ -2006,7 +2086,7 @@ async function loadJson(url, label) {
 }
 
 async function main() {
-  const [catalog, nation, region, la, lookups, refreshStatus, sourceHealth] = await Promise.all([
+  const [catalog, nation, region, la, lookups, refreshStatus, sourceHealth, stories] = await Promise.all([
     loadJson("./data/catalog.json", "catalog.json"),
     loadJson("./geo/uk-nations.geojson", "uk-nations.geojson"),
     loadJson("./geo/uk-itl1.geojson", "uk-itl1.geojson"),
@@ -2014,9 +2094,11 @@ async function main() {
     loadJson("./geo/lookups.json", "lookups.json"),
     fetch("./data/refresh-status.json").then((r) => (r.ok ? r.json() : {})).catch(() => ({})),
     fetch("./data/source-health.json").then((r) => (r.ok ? r.json() : {})).catch(() => ({})),
+    fetch("./data/stories.json").then((r) => (r.ok ? r.json() : { stories: [] })).catch(() => ({ stories: [] })),
   ]);
   state.refreshStatus = refreshStatus || {};
   state.sourceHealth = sourceHealth || {};
+  state.stories = stories || { stories: [] };
   if (region.features?.length !== 12) throw new Error("ITL1 GeoJSON does not contain 12 official regions");
   if ((la.features?.length || 0) < 360) throw new Error("LAD GeoJSON is incomplete");
   state.catalog = catalog;

@@ -1,0 +1,28 @@
+{
+  "title": "Scotland / NI sex × age × birthplace static-table probe",
+  "probed": "2026-09-14T21:30:00.000Z",
+  "status": "blocked",
+  "downloadableWithoutLogin": false,
+  "fallback": "Scotland EILR Figure 8 and NISRA MS-A31 remain persons. E&W sex split stays on official CT21_0433 only. No sex dimension is invented.",
+  "blocker": "No new public static MS / UV / EILR table for Scotland or NI country of birth × age × sex. UKDS UV pages still 403 / login-walled. NRS multivariate bulk is OA/parish/island zips. NISRA MS-A31 remains persons; Flexible Table Builder is not scraped.",
+  "checks": [
+    {
+      "id": "ukds-uv204",
+      "url": "https://statistics.ukdataservice.ac.uk/dataset/scotland-s-census-2022-uv204-country-of-birth",
+      "http": 403,
+      "note": "Still not fetchable without a login wall from this environment."
+    },
+    {
+      "id": "nrs-bulk-multivariate",
+      "url": "https://www.scotlandscensus.gov.uk/documents/bulk-download-files-multivariate-data/",
+      "http": 200,
+      "note": "Page reachable; still OA / Civil Parish / Island zips, not UV council univariate or cob×age×sex."
+    },
+    {
+      "id": "nisra-ms-a31-collection",
+      "url": "https://www.nisra.gov.uk/publications/census-2021-main-statistics-demography-tables-country-birth",
+      "http": 200,
+      "note": "Collection page reachable. MS-A31 in this extract is persons. No new static sex split ingested."
+    }
+  ]
+}

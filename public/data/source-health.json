@@ -1,19 +1,19 @@
 {
-  "generated": "2026-09-14T20:26:02.854Z",
+  "generated": "2026-09-14T21:34:59.127Z",
   "ok": null,
-  "lastAttempt": "2026-09-14T20:26:02.854Z",
+  "lastAttempt": "2026-09-14T21:34:59.127Z",
   "lastSuccess": "2026-09-14T20:25:51.247Z",
   "lastFailure": null,
   "source": "local",
   "workflow": "https://github.com/bushellsblower-maker/migration/actions/workflows/refresh.yml",
   "workflowRun": null,
   "missingCritical": 0,
-  "hashMismatches": 0,
+  "hashMismatches": 1,
   "uvBulk": {
     "status": "blocked",
     "downloadableWithoutLogin": false,
     "blocker": "UKDS UV201 / UV204 / UV205 resources are still datastore-pending or not fetchable without a login wall. NRS public bulk zips are multivariate OA/parish/island files, not the UV council univariate tables. No council counts are invented from the pending datastore.",
-    "probed": "2026-09-14T20:25:43.951Z"
+    "probed": "2026-09-14T21:34:28.737Z"
   },
   "note": "Source health from current working-tree files. Pins are only rewritten on a successful refresh.",
   "feeds": [
@@ -369,13 +369,13 @@
       "url": "https://statistics.ukdataservice.ac.uk/dataset/scotland-s-census-2022-uv204-country-of-birth",
       "present": true,
       "bytes": 4372,
-      "sha256": "9ddf2e3c1741921c1a082dfb6165f5b5e95d62dd8b058d6d4b88816ccd036f3d",
+      "sha256": "2078cfb94cd393d9cffaa59d7513704bb9717a9fc5de3ff555647fb64604376d",
       "pinnedSha256": "9ddf2e3c1741921c1a082dfb6165f5b5e95d62dd8b058d6d4b88816ccd036f3d",
-      "hashMatch": true,
-      "status": "ok",
+      "hashMatch": false,
+      "status": "hash-changed",
       "lastOk": "2026-09-14T20:25:51.247Z",
       "lastFail": null,
-      "note": "Matches pinned last-good hash."
+      "note": "Hash differs from the last ingest-validated pin. Ingest must still parse before the catalog is replaced."
     },
     {
       "id": "nrs-census2022-area-overviews",

@@ -1,0 +1,72 @@
+{
+  "title": "What the data can and cannot say",
+  "intro": "Each card opens a published layer and year. Nothing is interpolated. Method-break years are labelled on the layer, not smoothed away.",
+  "stories": [
+    {
+      "id": "religion-snapshots",
+      "title": "Religion is snapshots, not a continuous map",
+      "layer": "p1-religion-census",
+      "year": 2021,
+      "geo": "region",
+      "metric": "christian",
+      "can": "Compare published 2011/2021 E&W affiliation, 2022 Scotland current religion (Area Overviews / Figure 2), and 2021 NISRA MS-B19. ITL1 England colours from sums of those published LA counts. Halton and East Midlands use the same catalog keys as the map polygons.",
+      "cannot": "There is no modern affiliation series before 2001, and 1851 worship-attendance is not this question. The three nations are not one Christian category. MS-B23 (religion brought up in) is not mixed in. NISRA has no standalone Muslim column.",
+      "breaks": ["2001 first modern affiliation question", "2011 / 2021 E&W and NI census days", "2022 Scotland census — not an E&W/NI year"]
+    },
+    {
+      "id": "identity-three-questions",
+      "title": "Birthplace, nationality, and ethnic group are three questions",
+      "layer": "p2-identity-compare",
+      "year": 2021,
+      "geo": "region",
+      "geo2": "S92000003",
+      "metric": "share-non-uk",
+      "can": "Put the three published questions side by side for the same place and year. Deep-link geo + geo2 for two-area compare. Scotland’s census year is 2022 — 2021 ethnicity/religion for Scotland stay blank.",
+      "cannot": "They cannot be added together or labelled “native”. Census national identity is not citizenship. UK-born is not White British.",
+      "breaks": ["APS household-survey stocks end YE June 2021 in this extract", "Scotland census 2022 vs E&W/NI 2021"]
+    },
+    {
+      "id": "ltim-method-break",
+      "title": "IPS-era and admin LTIM are two lines",
+      "layer": "p1-ltim-net",
+      "year": 2012,
+      "geo": "nation",
+      "metric": "emig-admin",
+      "can": "Show immigration, emigration, and net from the IPS-era 1964–2015 extract and, separately, admin-based LTIM from YE 2012. Emigration is a first-class series.",
+      "cannot": "The two methods are not one continuous net-migration line. Intentions (IPS) are not observed travel histories (admin). Do not splice 1964–2015 onto 2012–.",
+      "breaks": ["1991 LTIM methodology", "2012 admin-based LTIM"]
+    },
+    {
+      "id": "detections-not-stock",
+      "title": "Detections are not an illegal-entry stock",
+      "layer": "p1-small-boats",
+      "year": 2025,
+      "geo": "nation",
+      "metric": "small-boat-detections",
+      "can": "Plot Home Office detected small-boat arrivals and other illegal-entry-route detections as published.",
+      "cannot": "This is not a count of people in the UK without permission, not undetected entries, and not visa overstays. The Home Office does not publish that stock.",
+      "breaks": ["2018 small-boat detection series", "2022 illegal-entry-routes official statistics chapter"]
+    },
+    {
+      "id": "fiscal-not-one-number",
+      "title": "Fiscal estimates are methods, not one cost",
+      "layer": "p1-fiscal-notes",
+      "year": 2025,
+      "geo": "nation",
+      "can": "Filter cited MAC / OBR / Migration Observatory / Dustmann–Frattini figures by static vs dynamic, average vs marginal, public-goods allocation, and who is counted.",
+      "cannot": "The UI never averages them into a single true net fiscal cost of immigration. There is no official mapped cost layer.",
+      "breaks": ["Study window and public-goods allocation change the sign"]
+    },
+    {
+      "id": "ethnicity-no-pre-1991",
+      "title": "Ethnicity cannot be mapped before 1991",
+      "layer": "p1-ethnicity-census",
+      "year": 2021,
+      "geo": "la",
+      "metric": "pct-white",
+      "can": "Show E&W 2011/2021 high-level White, Scotland 2011/2022 headings, and NISRA MS-B01 2021 (White excludes Irish Traveller and Roma). 2021 E&W LAs and ITL1 roll-ups colour from published counts.",
+      "cannot": "There is no comparable UK ethnicity question before 1991. The three White headings are not one series. This extract has no 1991 counts to invent.",
+      "breaks": ["1991 first ethnicity question (not in this extract)", "2001 Mixed / category moves", "2021/22 write-in detail"]
+    }
+  ]
+}

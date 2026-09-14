@@ -27,7 +27,7 @@
     <a class="skip" href="#map">Skip to map</a>
     <header class="top">
       <div class="brand">
-        <p class="kicker">Cybush · Phase 6</p>
+        <p class="kicker">Cybush · Phase 7</p>
         <h1>Migration</h1>
         <p class="tagline">UK population and migration, as published — not as argued.</p>
         <p id="refresh-badge" class="site-badge" hidden></p>
@@ -66,6 +66,12 @@
           <p class="cite">Jumps to an existing layer and year. Nothing is interpolated between 1991, 2004, 2012 and 2021.</p>
           <div id="tour-list" class="seg" role="group" aria-label="Guided years"></div>
           <p id="tour-note" class="cite tour-note" hidden></p>
+        </fieldset>
+        <fieldset class="controls" id="story-box">
+          <legend>What the data can / cannot say</legend>
+          <p class="cite">Evidence-led cards tied to real layers. Method breaks stay labelled. No invented statistics.</p>
+          <div id="story-list" class="seg story-list" role="group" aria-label="Narrative pack"></div>
+          <div id="story-note" class="cite story-note" hidden></div>
         </fieldset>
         <fieldset class="controls">
           <legend>Colour</legend>
@@ -149,7 +155,7 @@
         Years and places without a comparable published series are marked
         <strong>no comparable data</strong> and the map is dimmed.
       </p>
-        <h3>What this Phase 6 build can and cannot show</h3>
+        <h3>What this Phase 7 build can and cannot show</h3>
       <ul>
         <li>The map has three official geography levels: UK nations (Natural Earth), ITL1 regions (ONS Open Geography January 2021 BUC), and local authority districts (ONS Open Geography December 2021 BUC). A year or layer without a published figure at the selected level is dimmed and labelled <strong>no comparable data</strong>.</li>
         <li>Country of birth, nationality, and ethnic group are separate layers, plus a side-by-side compare view. None of them is labelled “native”. Census national identity (Scotland Figure 9 / NISRA MS-B15) is listed separately — it is not citizenship.</li>
@@ -159,6 +165,7 @@
         <li>Modern religion affiliation cannot be mapped before 2001. This extract has E&amp;W 2011/2021, Scotland 2011/2022, and NISRA MS-B19 2021. MS-B23 (religion brought up in) is not mixed into affiliation maps. NISRA has no standalone Muslim column.</li>
         <li>Scotland council-area census stocks for 2022 are the official Area Overviews (published equivalents of UV201 ethnic group, UV204 country of birth, UV205 religion). UKDS UV201/UV204/UV205 bulk CSVs were still datastore-pending or login-walled when probed — no invented council counts. Categories stay in NRS wording. They are not remapped onto E&amp;W or NISRA headings.</li>
         <li>Age–sex pyramids: mid-2025 E&amp;W and mid-2024 UK nations (ONS MYE2). Country-of-birth-by-age: ONS RM011 (E&amp;W persons) plus commissioned table <strong>CT21_0433</strong> (E&amp;W male/female × age × birthplace). Scotland Figure 8 and NISRA MS-A31 remain persons — no sex split is invented where none is published.</li>
+        <li>The visible map is fitted to the UK and Ireland (not a Europe/world frame). The map panel is a compact, still zoomable/pannable choropleth. Census layers (religion, ethnicity, country of birth) join ITL1 GSS / LAD21 codes used by the polygons; the Area Table lists only the areas on the current map so the legend matches painted values.</li>
         <li>A failed monthly refresh keeps the last good catalog and shows a red site badge. <code>public/data/source-health.json</code> lists last OK vs last fail and checksum match per feed.</li>
         <li>Births by mother’s country of birth are three vital-registration systems (ONS E&amp;W, NRS, NISRA), not one UK line. The E&amp;W regional 2016–22 figure is <em>either parent</em> born outside the UK.</li>
         <li>Long-term migration flows are a UK series. IPS-era (1964–2015) and admin-based LTIM (2012–, YE December) are drawn separately and must not be read as one line.</li>

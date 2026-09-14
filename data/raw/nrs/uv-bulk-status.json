@@ -1,7 +1,7 @@
 {
   "title": "Scotland Census 2022 UV201 / UV204 / UV205 bulk probe",
   "producer": "UK Data Service / National Records of Scotland",
-  "probed": "2026-09-14T20:25:43.951Z",
+  "probed": "2026-09-14T21:34:28.737Z",
   "status": "blocked",
   "downloadableWithoutLogin": false,
   "fallback": "Scotland’s Census 2022 Area Overviews (32 councils) remain the ingested council-level COB / ethnicity / religion source. Categories stay in NRS wording.",

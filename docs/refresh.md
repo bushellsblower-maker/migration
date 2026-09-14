@@ -3,7 +3,7 @@
 The explorer never invents a number. Refreshing means re-downloading official extracts and re-running ingest.
 
 ```bash
-npm run refresh        # download (resume-safe) + geo + ingest + refresh-status + checksum pins + source-health
+npm run refresh        # UV probe + download (resume-safe) + geo + ingest + refresh-status + checksum pins + source-health
 npm run refresh:force  # re-fetch even when files already exist
 ```
 
@@ -26,7 +26,7 @@ Registry and this contract: [`data/sources.json`](../data/sources.json) → `how
 
 A failed download or ingest fails the workflow. That is the visible failure. The Action does not invent a series when a producer URL 404s.
 
-On **success**, the job commits `public/data/catalog.json`, `public/data/refresh-status.json`, `public/data/source-health.json`, `data/checksums.json`, and the manifest if they changed, so the live Worker can rebuild from `main`. On **failure** it commits only the fail stamp + source-health (not catalog.json) so the live header can show a red badge while the last good catalog stays.
+On **success**, the job commits `public/data/catalog.json`, `public/data/refresh-status.json`, `public/data/source-health.json`, `data/checksums.json`, the UV probe record, and the manifest if they changed, so the live Worker can rebuild from `main`. On **failure** it commits only the fail stamp + source-health (not catalog.json) so the live header can show a red badge while the last good catalog stays. `npm run refresh` re-runs `scripts/probe-scotland-uv.mjs` first; a still-blocked datastore does not fail the job.
 
 ## Site stamps
 

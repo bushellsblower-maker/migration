@@ -1,0 +1,158 @@
+{
+  "title": "Migration explorer — downloadable official extracts",
+  "license": "Most files are Crown copyright, reusable under OGL v3.0. Academic citations are cite-only.",
+  "ogl": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
+  "howRefreshWorks": {
+    "download": "npm run download  (or bash scripts/download-raw.sh). Resume-safe unless FORCE=1 / --force.",
+    "build": "npm run build  (normalise geo + ingest). Fails if a critical file is missing or a required sheet/column cannot be parsed.",
+    "refresh": "npm run refresh  = download + build. Use npm run refresh:force to re-fetch even when files exist.",
+    "partial": "Optional files only warn. Default: any SCHEMA ERROR exits 1 and leaves the previous catalog.json in place. MIG_ALLOW_PARTIAL=1 is a local debug escape — ingest still prints SCHEMA ERROR but writes catalog.json anyway (it may be incomplete).",
+    "schemaBreak": "ingest.mjs prints SCHEMA ERROR for a missing critical file, missing sheet, or a series with too few parseable points. Without MIG_ALLOW_PARTIAL=1 the previous public/data/catalog.json is not overwritten."
+  },
+  "files": [
+    {
+      "id": "ons-pop-csv",
+      "dest": "ons/pop.csv",
+      "url": "https://www.ons.gov.uk/file?uri=/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/populationestimatestimeseriesdataset/current/pop.csv",
+      "producer": "ONS",
+      "critical": true,
+      "stableUrl": true,
+      "usedFor": "UK/nation MYE"
+    },
+    {
+      "id": "ons-ukpop",
+      "dest": "ons/ukpop.csv",
+      "url": "https://www.ons.gov.uk/generator?format=csv&uri=/peoplepopulationandcommunity/populationandmigration/populationestimates/timeseries/ukpop/pop",
+      "producer": "ONS",
+      "critical": false,
+      "stableUrl": true,
+      "usedFor": "UK MYE confirmation"
+    },
+    {
+      "id": "ons-ew-long",
+      "dest": "ons/ew-pop-1838-2025.xlsx",
+      "url": "https://www.ons.gov.uk/file?uri=/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/estimatesofthepopulationforenglandandwales/englandandwalespopulationestimates1838to2025/ewpopulationestimates18382025.xlsx",
+      "producer": "ONS",
+      "critical": true,
+      "stableUrl": false,
+      "usedFor": "E&W historical stock; age–sex"
+    },
+    {
+      "id": "ons-regional",
+      "dest": "ons/regional-pop-1971-2023.xlsx",
+      "url": "https://www.ons.gov.uk/file?uri=/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/estimatesofthepopulationforenglandandwales/regionalpopulationestimatesforenglandandwales1971to2023editionofthisdataset/regionalpopestimatesenglandandwales19712023.xlsx",
+      "producer": "ONS",
+      "critical": true,
+      "stableUrl": false,
+      "usedFor": "English regions + Wales MYE"
+    },
+    {
+      "id": "ons-mye25",
+      "dest": "ons/mye25tablesew.xlsx",
+      "url": "https://www.ons.gov.uk/file?uri=/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/estimatesofthepopulationforenglandandwales/mid20252023localauthorityboundaries/mye25tablesew.xlsx",
+      "producer": "ONS",
+      "critical": true,
+      "stableUrl": false,
+      "usedFor": "Mid-2025 age–sex pyramids"
+    },
+    {
+      "id": "ons-ltim-ips",
+      "dest": "ons/ltim-1964-2015.xls",
+      "url": "https://www.ons.gov.uk/file?uri=/peoplepopulationandcommunity/populationandmigration/internationalmigration/adhocs/006408longterminternationalmigrationintoandoutoftheukbycitizenship1964to2015/migrationtimelinedatasheetsv1.4december2016.xls",
+      "producer": "ONS",
+      "critical": true,
+      "stableUrl": true,
+      "usedFor": "IPS-era immigration / emigration / net"
+    },
+    {
+      "id": "ons-ltim-admin",
+      "dest": "ons/ltim-flows-may2026.xlsx",
+      "url": "https://www.ons.gov.uk/file?uri=/peoplepopulationandcommunity/populationandmigration/internationalmigration/datasets/longterminternationalimmigrationemigrationandnetmigrationflowsprovisional/yearendingdecember2025/may2026publicationsspreadsheet.xlsx",
+      "producer": "ONS",
+      "critical": true,
+      "stableUrl": false,
+      "usedFor": "Admin LTIM YE Dec flows"
+    },
+    {
+      "id": "ons-births-cob",
+      "dest": "ons/births-parents-cob-2025.xlsx",
+      "url": "https://www.ons.gov.uk/file?uri=/peoplepopulationandcommunity/birthsdeathsandmarriages/livebirths/datasets/parentscountryofbirth/2025/2025birthbyparentscountry.xlsx",
+      "producer": "ONS",
+      "critical": true,
+      "stableUrl": false,
+      "usedFor": "Births by mother’s birthplace"
+    },
+    {
+      "id": "ons-aps-2021",
+      "dest": "ons/aps-cob-nationality-2021.xls",
+      "url": "https://www.ons.gov.uk/file?uri=/peoplepopulationandcommunity/populationandmigration/internationalmigration/datasets/populationoftheunitedkingdombycountryofbirthandnationality/july2020tojune2021/populationbycountryofbirthandnationalityjul20tojun21.xls",
+      "producer": "ONS",
+      "critical": true,
+      "stableUrl": false,
+      "usedFor": "APS birthplace and nationality stocks"
+    },
+    {
+      "id": "ons-emp06",
+      "dest": "ons/emp06aug2026.xls",
+      "url": "https://www.ons.gov.uk/file?uri=/employmentandlabourmarket/peopleinwork/employmentandemployeetypes/datasets/employmentbycountryofbirthandnationalityemp06/current/emp06aug2026.xls",
+      "producer": "ONS",
+      "critical": true,
+      "stableUrl": false,
+      "usedFor": "Employment rates by COB and nationality"
+    },
+    {
+      "id": "ons-housing",
+      "dest": "ons/housing-affordability.xlsx",
+      "url": "https://www.ons.gov.uk/file?uri=/peoplepopulationandcommunity/housing/datasets/ratioofhousepricetoworkplacebasedearningslowerquartileandmedian/current/aff1ratioofhousepricetoworkplacebasedearnings.xlsx",
+      "producer": "ONS",
+      "critical": true,
+      "stableUrl": false,
+      "usedFor": "House-price-to-earnings ratios"
+    },
+    {
+      "id": "ho-asylum-summary",
+      "dest": "ho/asylum-summary-jun-2026.ods",
+      "url": "https://assets.publishing.service.gov.uk/media/6a85c315b0504df9f2c89800/asylum-summary-jun-2026-tables.ods",
+      "producer": "Home Office",
+      "critical": true,
+      "stableUrl": false,
+      "usedFor": "Asylum claims / grants / refusals / awaiting"
+    },
+    {
+      "id": "ho-ier-summary",
+      "dest": "ho/illegal-entry-summary-jun-2026.ods",
+      "url": "https://assets.publishing.service.gov.uk/media/6a8c11c3a8f84a582b84281a/illegal-entry-routes-to-the-uk-summary-jun-2026-tables.ods",
+      "producer": "Home Office",
+      "critical": true,
+      "stableUrl": false,
+      "usedFor": "Detected illegal-entry / small-boat arrivals"
+    },
+    {
+      "id": "mac-fiscal-ods",
+      "dest": "mac/fiscal_report_ods_tables.checked.ods",
+      "url": "https://assets.publishing.service.gov.uk/media/69ba8a09530e305110e7f5e1/fiscal_report_ods_tables.checked.ods",
+      "producer": "MAC",
+      "critical": true,
+      "stableUrl": false,
+      "usedFor": "Static and lifetime fiscal model tables"
+    },
+    {
+      "id": "geo-itl1",
+      "dest": "geo/itl1-ons-buc.geojson",
+      "url": "https://services1.arcgis.com/ESMARspQHYMw9BZ9/arcgis/rest/services/International_Territorial_Level_1_January_2021_UK_BUC_2022/FeatureServer/0/query?where=1%3D1&outFields=*&outSR=4326&f=geojson",
+      "producer": "ONS Open Geography",
+      "critical": true,
+      "stableUrl": true,
+      "usedFor": "ITL1 choropleth"
+    },
+    {
+      "id": "geo-lad",
+      "dest": "geo/lad-ons-buc.geojson",
+      "url": "https://services1.arcgis.com/ESMARspQHYMw9BZ9/arcgis/rest/services/Local_Authority_Districts_December_2021_UK_BUC_2022/FeatureServer/0/query?where=1%3D1&outFields=*&outSR=4326&f=geojson",
+      "producer": "ONS Open Geography",
+      "critical": true,
+      "stableUrl": true,
+      "usedFor": "LA choropleth"
+    }
+  ]
+}

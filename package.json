@@ -3,11 +3,16 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Evidence-led UK migration & demographics explorer (Phase 2 HTML)",
+  "description": "Evidence-led UK migration & demographics explorer (Phase 3 HTML)",
   "scripts": {
     "download": "bash scripts/download-raw.sh",
+    "download:force": "bash scripts/download-raw.sh --force",
+    "manifest": "node scripts/write-manifest.mjs",
     "geo": "node scripts/normalize-geo.mjs",
-    "build": "node scripts/normalize-geo.mjs && node scripts/ingest.mjs",
+    "ingest": "node scripts/ingest.mjs",
+    "build": "node scripts/write-manifest.mjs && node scripts/normalize-geo.mjs && node scripts/ingest.mjs",
+    "refresh": "bash scripts/download-raw.sh && node scripts/normalize-geo.mjs && node scripts/ingest.mjs",
+    "refresh:force": "bash scripts/download-raw.sh --force && node scripts/normalize-geo.mjs && node scripts/ingest.mjs",
     "dev": "wrangler dev",
     "start": "wrangler dev",
     "preview": "python3 -m http.server 8788 --directory public"

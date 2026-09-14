@@ -75,6 +75,7 @@ const state = {
   geoLayer: null,
   selectedGeo: "UK",
   skipHistory: false,
+  fiscal: { frame: "any", incidence: "any", publicGoods: "any", population: "any" },
 };
 
 function layer() {
@@ -304,6 +305,16 @@ function formatGbp(n) {
   return `${sign}£${Math.abs(n).toLocaleString("en-GB")}`;
 }
 
+function formatFiscalValue(est) {
+  if (est.headline) return est.headline;
+  if (est.value == null) return "—";
+  const abs = Math.abs(est.value);
+  const sign = est.value < 0 ? "−" : "+";
+  if (abs >= 1_000_000_000) return `${sign}£${(abs / 1_000_000_000).toFixed(abs >= 10_000_000_000 ? 0 : 1)} billion`;
+  if (abs >= 1_000_000) return `${sign}£${Math.round(abs / 1_000_000)} million`;
+  return `${sign}${formatGbp(est.value).replace(/^−/, "")}`;
+}
+
 function lerp(a, b, t) {
   return a + (b - a) * t;
 }
@@ -433,7 +444,7 @@ function renderChrome() {
         share: "Shares / rates",
         composition: "Composition (census groups)",
         pyramid: "Age–sex pyramid",
-        panel: "Methods panel",
+        panel: "Cited estimates panel",
         compare: "Side-by-side identity",
       }[v] || v,
   }));
@@ -465,6 +476,42 @@ function renderChrome() {
   ).join("");
   ident.querySelectorAll("button").forEach((btn) => {
     btn.addEventListener("click", () => setLayer(btn.dataset.identity, true));
+  });
+
+  const fiscalBox = $("fiscal-box");
+  if (fiscalBox) {
+    fiscalBox.hidden = l.id !== "p1-fiscal-notes";
+    if (l.id === "p1-fiscal-notes") renderFiscalAssumptions(l);
+  }
+}
+
+function renderDataStamp() {
+  const el = $("data-stamp");
+  if (!el || !state.catalog) return;
+  const p = state.catalog.provenance || {};
+  const built = (p.catalogBuilt || state.catalog.generated || "").slice(0, 10);
+  const asOf = (p.dataAsOf || state.catalog.generated || "").slice(0, 10);
+  const warn = p.ingestWarnings?.length ? ` · ${p.ingestWarnings.length} ingest warning(s)` : "";
+  el.innerHTML = `Data as of ${asOf || "unknown"} · catalog ${built || "—"}${warn} · <a href="#sources">OGL attribution</a>`;
+}
+
+function renderFiscalAssumptions(l) {
+  const host = $("fiscal-assumptions");
+  if (!host) return;
+  const axes = l.extras?.assumptionAxes || [];
+  host.innerHTML = `<div class="fiscal-axes">${axes
+    .map((axis) => {
+      const opts = (axis.options || [])
+        .map((o) => `<option value="${o.id}" ${state.fiscal[axis.id] === o.id ? "selected" : ""}>${o.label}</option>`)
+        .join("");
+      return `<label>${axis.label}<select data-axis="${axis.id}">${opts}</select><span class="cite">${axis.help || ""}</span></label>`;
+    })
+    .join("")}</div>`;
+  host.querySelectorAll("select").forEach((sel) => {
+    sel.addEventListener("change", () => {
+      state.fiscal[sel.dataset.axis] = sel.value;
+      renderChart();
+    });
   });
 }
 
@@ -706,30 +753,47 @@ function resetUkView() {
 
 function seriesForChart(l, m) {
   if (!m) return [];
-  if (l.id === "p1-ltim-net") {
-    return l.metrics.map((x) => ({
+  if (l.id === "p1-ltim-net" || l.id === "p3-emigration") {
+    const ids = l.extras?.flowTrio || l.metrics.map((x) => x.id);
+    const pick = l.metrics.filter((x) => ids.includes(x.id));
+    return pick.map((x) => ({
       id: x.id,
       label: x.label,
       format: x.format,
       unit: x.unit,
       points: x.series.UK || [],
       dash: /ips/.test(x.id),
-      emphasize: x.id === m.id,
+      emphasize: x.id === m.id || x.flow === "emigration",
     }));
   }
-  if (l.id === "p1-asylum" && m.id === (l.defaultMetric || "people-claiming-asylum")) {
-    const ids = ["people-claiming-asylum", "grants-of-protection-or-other-leave", "refusals", "people-awaiting-an-initial-decision"];
-    return l.metrics
-      .filter((x) => ids.includes(x.id))
-      .map((x) => ({ id: x.id, label: x.label, format: x.format, unit: x.unit, points: x.series.UK || [] }));
+  if (l.id === "p1-asylum") {
+    const ids = l.extras?.throughputIds || [
+      "people-claiming-asylum",
+      "grants-of-protection-or-other-leave",
+      "refusals",
+      "people-awaiting-an-initial-decision",
+    ];
+    const core = l.metrics.filter((x) => ids.includes(x.id));
+    if (core.length && (ids.includes(m.id) || m.group === "flow" || m.group === "stock")) {
+      return core.map((x) => ({
+        id: x.id,
+        label: x.label,
+        format: x.format,
+        unit: x.unit,
+        points: x.series.UK || [],
+        emphasize: x.id === m.id,
+      }));
+    }
   }
-  if (l.id === "p1-small-boats" && /small-boat/.test(m.id)) {
+  if (l.id === "p1-small-boats") {
     return l.metrics.map((x) => ({
       id: x.id,
-      label: x.label,
+      label: `${x.label}${x.group === "other-detection" ? " (other detections)" : ""}`,
       format: x.format,
       unit: x.unit,
       points: x.series.UK || [],
+      dash: x.group === "other-detection",
+      emphasize: x.id === m.id || x.group === "small-boat",
     }));
   }
   const geos = Object.keys(m.series);
@@ -982,10 +1046,34 @@ function identityCompareHtml() {
   </div>`;
 }
 
+function estimateMatches(est) {
+  const f = state.fiscal || {};
+  const axis = (key, value) => f[key] === "any" || !f[key] || f[key] === value;
+  return axis("frame", est.frame) && axis("incidence", est.incidence) && axis("publicGoods", est.publicGoods) && axis("population", est.population);
+}
+
 function fiscalHtml(l) {
   const rows = l.extras?.macStatic || [];
   const sens = l.extras?.macSensitivities || [];
+  const lifetime = l.extras?.macLifetime || [];
   const methods = l.extras?.methods || [];
+  const cited = l.extras?.citedEstimates || [];
+  const matching = cited.filter(estimateMatches);
+  const cards = cited
+    .map((est) => {
+      const on = estimateMatches(est);
+      const tags = [est.frame, est.incidence, est.publicGoods, est.population].filter(Boolean);
+      return `<article class="estimate-card ${on ? "" : "dim"}" data-match="${on}">
+        <h3>${est.producer}</h3>
+        <p class="who">${est.title}</p>
+        <div class="big">${formatFiscalValue(est)}</div>
+        <p class="cite">${est.period || ""}${est.group ? ` · ${est.group}` : ""}</p>
+        <div class="estimate-tags">${tags.map((t) => `<span class="badge">${t}</span>`).join("")}</div>
+        <p class="cite">${est.methodNote || ""}</p>
+        <p class="cite">Source: <a href="${est.url}" target="_blank" rel="noopener">${est.sourceId}</a>${est.via ? ` · via <a href="${est.viaUrl || est.url}" target="_blank" rel="noopener">cited table</a>` : ""} · ${est.license || ""}</p>
+      </article>`;
+    })
+    .join("");
   const table = rows.length
     ? `<table><caption>MAC Figure 10 — static net fiscal estimates, 2022/23 (model outputs, not a stock total)</caption>
         <thead><tr><th>Group in the MAC workbook</th><th>Net static estimate</th></tr></thead>
@@ -995,22 +1083,62 @@ function fiscalHtml(l) {
   let sensTable = "";
   if (sens.length) {
     const headers = [...new Set(sens.flatMap((s) => Object.keys(s.cells)))];
-    sensTable = `<table><caption>MAC Table 11 — sensitivities on the static estimates (same workbook)</caption>
+    const f = state.fiscal || {};
+    sensTable = `<table><caption>MAC Table 11 — sensitivities on the static estimates (same workbook). Highlighted rows match the public-goods / incidence filters.</caption>
       <thead><tr><th>Scenario</th>${headers.map((h) => `<th>${h}</th>`).join("")}</tr></thead>
       <tbody>${sens
-        .map(
-          (s) =>
-            `<tr><td>${s.scenario}</td>${headers.map((h) => `<td class="num">${s.cells[h] != null ? formatGbp(s.cells[h]) : "—"}</td>`).join("")}</tr>`
-        )
+        .map((s) => {
+          const hit =
+            (f.publicGoods === "any" || !f.publicGoods || f.publicGoods === s.publicGoods) &&
+            (f.incidence === "any" || !f.incidence || f.incidence === s.incidence) &&
+            (f.frame === "any" || !f.frame || f.frame === "static");
+          return `<tr class="${hit ? "" : "dim"}"><td>${s.scenario}</td>${headers
+            .map((h) => `<td class="num">${s.cells[h] != null ? formatGbp(s.cells[h]) : "—"}</td>`)
+            .join("")}</tr>`;
+        })
         .join("")}</tbody></table>`;
   }
-  return `<div class="chart-html">
-    <p><strong>This is not a map of “the cost of immigration”.</strong> Published models disagree in sign and scale once the visa route, dependants, public-goods allocation, and time window change.</p>
+  const lifeTable = lifetime.length
+    ? `<table><caption>MAC Table 23 — lifetime cohort totals, 2022/23 visa cohort (£ million). Not a whole-stock NPV and not comparable to Dustmann–Frattini period billions.</caption>
+        <thead><tr><th>Group</th><th>Tax</th><th>Visa fees</th><th>Expenditure</th><th>Net</th></tr></thead>
+        <tbody>${lifetime
+          .map(
+            (r) =>
+              `<tr><td>${r.label}</td><td class="num">${r.taxGbpMillion ?? "—"}</td><td class="num">${r.visaFeesGbpMillion ?? "—"}</td><td class="num">${r.expenditureGbpMillion ?? "—"}</td><td class="num">${r.netGbpMillion ?? "—"}</td></tr>`
+          )
+          .join("")}</tbody></table>`
+    : "";
+  return `<div class="chart-html fiscal-panel">
+    <p class="no-true-total"><strong>This panel does not produce a true net cost or benefit.</strong> ${matching.length} of ${cited.length} cited estimates match the current assumption filters. Dimmed cards are still the published figures — they are just out of scope for the filters. Nothing is averaged.</p>
+    <div class="estimate-grid">${cards}</div>
     <dl class="methods">${methods.map((m) => `<dt>${m.name}</dt><dd>${m.frame}</dd>`).join("")}</dl>
     ${table}
     ${sensTable}
+    ${lifeTable}
+    <p class="context-note"><strong>Context, not causation.</strong> Employment by country of birth / nationality (ONS EMP06, Oct–Dec) and house-price-to-earnings ratios (ONS) are shown because they are the usual missing ingredients in a fiscal argument. They do not prove a fiscal effect.</p>
+    <canvas id="fiscal-context" width="900" height="200"></canvas>
     ${allSourcesHtml(l)}
   </div>`;
+}
+
+function drawFiscalContext() {
+  const canvas = $("fiscal-context");
+  if (!canvas || !state.catalog) return;
+  const labour = state.catalog.layers.find((x) => x.id === "p1-labour-housing");
+  if (!labour) return;
+  const series = ["emp-uk-born", "emp-non-uk-born", "emp-uk-nationality", "emp-non-uk-nationality"]
+    .map((id) => labour.metrics.find((m) => m.id === id))
+    .filter(Boolean)
+    .map((m) => ({
+      id: m.id,
+      label: m.label.replace("Employment rate, ", "").replace(" (Oct–Dec)", ""),
+      format: m.format,
+      unit: m.unit,
+      points: m.series.UK || [],
+    }))
+    .filter((s) => s.points.length);
+  if (!series.length) return;
+  drawLineChart(canvas, series, labour.breaks);
 }
 
 function renderChart() {
@@ -1033,6 +1161,7 @@ function renderChart() {
     canvas.hidden = true;
     html.hidden = false;
     html.innerHTML = fiscalHtml(l);
+    drawFiscalContext();
     return;
   }
 
@@ -1050,12 +1179,27 @@ function renderChart() {
       Object.keys(l.extras?.pyramids || {}).find((k) => k === `EW:${state.year}`);
     const bands = key ? l.extras.pyramids[key] : null;
     const ok = drawPyramid(canvas, bands);
+    const cobAge = l.extras?.cobAge;
     if (!ok) {
       canvas.hidden = true;
       empty.hidden = false;
       empty.textContent = "No age–sex pyramid in this extract for the selected year or place.";
     } else {
       $("chart-title").textContent = `Age–sex pyramid · ${key.replace(":", " · ")}`;
+    }
+    if (cobAge?.bands?.length && (state.year === cobAge.year || !ok)) {
+      html.hidden = false;
+      const rows = cobAge.bands
+        .map((b) => {
+          const t = (b.uk || 0) + (b.nonUk || 0);
+          const share = t ? (100 * b.nonUk) / t : null;
+          return `<tr><td>${b.band}</td><td class="num">${formatCount(b.uk)}</td><td class="num">${formatCount(b.nonUk)}</td><td class="num">${share == null ? "—" : `${share.toFixed(1)}%`}</td></tr>`;
+        })
+        .join("");
+      html.innerHTML = `<p class="cite">${cobAge.source} · ${cobAge.geography} · ${cobAge.year}. Age by country of birth, not a sex split. Not a MYE pyramid.</p>
+        <table><caption>Usual residents by age and UK-born / non-UK-born (RM011 categories summed as published)</caption>
+        <thead><tr><th>Age</th><th>UK-born</th><th>Non-UK-born</th><th>Non-UK-born share</th></tr></thead>
+        <tbody>${rows}</tbody></table>`;
     }
     return;
   }
@@ -1173,11 +1317,25 @@ function renderSourcesPage() {
     const years = l.years?.length ? `${l.years[0]}–${l.years[l.years.length - 1]}` : "—";
     return `<tr><td>${l.title}<div class="cite">${l.id}</div></td><td>${years}</td><td>${l.confidence || ""}</td><td>${src}</td></tr>`;
   });
-  el.innerHTML = `<table>
+  const p = state.catalog.provenance || {};
+  const files = (p.files || [])
+    .map(
+      (f) =>
+        `<tr><td>${f.id}<div class="cite">${f.dest}</div></td><td>${f.present ? "present" : "missing"}</td><td>${f.critical ? "critical" : "optional"}</td><td class="cite">${f.sha256 ? f.sha256.slice(0, 12) : "—"}</td></tr>`
+    )
+    .join("");
+  el.innerHTML = `<p><strong>Data as of</strong> ${(p.dataAsOf || state.catalog.generated || "").slice(0, 19)}. Catalog built ${(p.catalogBuilt || state.catalog.generated || "").slice(0, 19)}. Refresh: <code>npm run refresh</code>. Schema breaks fail ingest unless <code>MIG_ALLOW_PARTIAL=1</code> — see <code>data/sources.json</code>.</p>
+  <p>Most official files: <a href="${p.ogl || "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/"}">Open Government Licence v3.0</a>.</p>
+  <table>
     <thead><tr><th>Layer</th><th>Years in extract</th><th>Confidence</th><th>Cited sources</th></tr></thead>
     <tbody>${rows.join("")}</tbody>
   </table>
-  <p>Generated catalog: ${state.catalog.generated}. Principles: ${state.catalog.principles.join(" ")}</p>`;
+  ${
+    files
+      ? `<h3>Downloaded extracts (provenance)</h3><table><thead><tr><th>Source</th><th>Status</th><th>Role</th><th>SHA-256</th></tr></thead><tbody>${files}</tbody></table>`
+      : ""
+  }
+  <p>Generated catalog: ${state.catalog.generated}. Principles: ${(state.catalog.principles || []).join(" ")}</p>`;
 }
 
 function renderAll() {
@@ -1185,6 +1343,7 @@ function renderAll() {
   renderMap();
   renderChart();
   renderNotes();
+  renderDataStamp();
   writeUrl();
 }
 
@@ -1296,6 +1455,7 @@ async function main() {
   bindUi();
   bindMap();
   setLayer(state.layerId, true, true);
+  renderDataStamp();
   renderSourcesPage();
 }
 

@@ -27,9 +27,10 @@
     <a class="skip" href="#map">Skip to map</a>
     <header class="top">
       <div class="brand">
-        <p class="kicker">Cybush · Phase 2</p>
+        <p class="kicker">Cybush · Phase 3</p>
         <h1>Migration</h1>
         <p class="tagline">UK population and migration, as published — not as argued.</p>
+        <p id="data-stamp" class="data-stamp"></p>
       </div>
       <p class="guard">
         Country of birth is not nationality. Nationality is not ethnic group. None of these means “native”. Detections are not a stock of people without permission.
@@ -49,6 +50,11 @@
           <legend>Identity question</legend>
           <div id="identity-modes" class="seg" role="group" aria-label="Identity question"></div>
           <p class="cite">These are three different published questions. They are never added together or labelled “native”.</p>
+        </fieldset>
+        <fieldset class="controls" id="fiscal-box" hidden>
+          <legend>Fiscal assumptions</legend>
+          <p class="cite">These filters hide published estimates that do not match. They never invent a single true net cost or benefit.</p>
+          <div id="fiscal-assumptions"></div>
         </fieldset>
         <div id="layer-list" class="layer-list"></div>
         <fieldset class="controls">
@@ -127,7 +133,7 @@
         Years and places without a comparable published series are marked
         <strong>no comparable data</strong> and the map is dimmed.
       </p>
-      <h3>What this Phase 2 build can and cannot show</h3>
+      <h3>What this Phase 3 build can and cannot show</h3>
       <ul>
         <li>The map has three official geography levels: UK nations (Natural Earth), ITL1 regions (ONS Open Geography January 2021 BUC), and local authority districts (ONS Open Geography December 2021 BUC). A year or layer without a published figure at the selected level is dimmed and labelled <strong>no comparable data</strong>.</li>
         <li>Country of birth, nationality, and ethnic group are separate layers, plus a side-by-side compare view. None of them is labelled “native”.</li>
@@ -136,7 +142,8 @@
         <li>Modern religion affiliation cannot be mapped before 2001. This extract has E&amp;W 2011 and 2021.</li>
         <li>Long-term migration flows are a UK series. IPS-era (1964–2015) and admin-based LTIM (2012–, YE December) are drawn separately and must not be read as one line.</li>
         <li>Small-boat and illegal-entry figures are <em>detections</em>. They are not a count of people in the UK without permission.</li>
-        <li>The fiscal panel reports published model results and methods. It is not a map of “the cost of immigration”.</li>
+        <li>The fiscal panel is an assumptions filter over cited MAC / OBR / Migration Observatory / Dustmann–Frattini figures. It is not a map of “the cost of immigration” and it never averages studies into one number.</li>
+        <li>Emigration is a published outflow series, not only the residual of net migration. Small-boat figures are detections; other IER_01 rows are separate detection series.</li>
         <li>Parents’ country of birth has been collected in E&amp;W since 1969; the workbook ingested here supplies a consistent 2008–2025 table.</li>
       </ul>
       <div id="source-index"></div>

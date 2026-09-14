@@ -8,6 +8,8 @@ data/raw/geo/uk-click.json
 data/raw/geo/countries-arcgis.json
 data/raw/geo/eng-region.json
 data/raw/geo/itl1-arcgis.json
+# Full-resolution ONS BGC is too large to commit; BUC + public/geo are the web copies.
+data/raw/geo/itl1-ons-bgc.geojson
 data/raw/ho/asylum-claims-jun-2026.xlsx
 data/raw/ho/asylum-awaiting-jun-2026.xlsx
 data/raw/ho/illegal-entry-dataset-jun-2026.xlsx

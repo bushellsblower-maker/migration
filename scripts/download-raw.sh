@@ -114,9 +114,17 @@ dl "$RAW/nomis/census2021-ts021-extra.zip" \
 dl "$RAW/nomis/census2021-ts030-extra.zip" \
   "https://www.nomisweb.co.uk/output/census/2021/census2021-ts030-extra.zip" || true
 
-# Compact UK NUTS1 / region geometry (derived from OS OpenData / Eurostat; cite in SOURCES)
-dl "$RAW/geo/nuts1.json" \
-  "https://raw.githubusercontent.com/martinjc/UK-GeoJSON/master/json/eurostat/uk/nuts1.json" || true
+# ONS Open Geography (OGL) — ITL1 Jan 2021 BUC and LAD Dec 2021 BUC, WGS84
+# FeatureServer query is the official ArcGIS download used by the Open Geography Portal.
+dl "$RAW/geo/itl1-ons-buc.geojson" \
+  "https://services1.arcgis.com/ESMARspQHYMw9BZ9/arcgis/rest/services/International_Territorial_Level_1_January_2021_UK_BUC_2022/FeatureServer/0/query?where=1%3D1&outFields=*&outSR=4326&f=geojson"
+
+dl "$RAW/geo/lad-ons-buc.geojson" \
+  "https://services1.arcgis.com/ESMARspQHYMw9BZ9/arcgis/rest/services/Local_Authority_Districts_December_2021_UK_BUC_2022/FeatureServer/0/query?where=1%3D1&outFields=*&outSR=4326&f=geojson"
+
+# Optional full-resolution ITL1 BGC (gitignored; not required for the web map)
+# dl "$RAW/geo/itl1-ons-bgc.geojson" \
+#   "https://services1.arcgis.com/ESMARspQHYMw9BZ9/arcgis/rest/services/International_Territorial_Level_1_January_2021_UK_BGC_2022/FeatureServer/0/query?where=1%3D1&outFields=*&outSR=4326&f=geojson"
 
 echo "DONE (failed=$FAILED)"
 ls -lh "$RAW"/ons "$RAW"/ho "$RAW"/mac "$RAW"/geo "$RAW"/nomis 2>/dev/null || true
